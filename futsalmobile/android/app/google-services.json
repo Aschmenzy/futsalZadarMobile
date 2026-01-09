@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "723278264803",
+    "project_id": "fucalzadar",
+    "storage_bucket": "fucalzadar.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:723278264803:android:ddfe6ca12b783a205148d6",
+        "android_client_info": {
+          "package_name": "com.example.futsalmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAD7lfWajwp4xH01XlE8HMRtr6uB0AnkfU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
