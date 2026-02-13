@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/pages/leaguePage/leauge1/leauge1.dart';
 
 class LeaugeContainer extends StatefulWidget {
   LeaugeContainer({super.key, required this.ligaName});
@@ -28,135 +29,145 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
     final smallSpacing = screenHeight * 0.004;
     final iconTextGap = screenWidth * 0.01;
 
-    return Container(
-      width: screenWidth * 0.85,
-      height: screenHeight * 0.12,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (context) => const Leauge1()),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          SizedBox(width: horizontalPadding),
-          SizedBox(
-            width: screenHeight * 0.08,
-            height: screenHeight * 0.08,
-            child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-          ),
-          SizedBox(width: horizontalPadding),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.ligaName,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
-                    fontSize: titleFontSize,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: verticalSpacing),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.people,
-                                color: Colors.blue,
-                                size: labelIconSize,
-                              ),
-                              SizedBox(width: iconTextGap),
-                              Flexible(
-                                child: Text(
-                                  "Broj timova:",
-                                  style: TextStyle(
-                                    fontFamily: AppFonts.roboto.fontFamily,
-                                    fontSize: labelFontSize,
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: smallSpacing),
-                          Padding(
-                            padding: EdgeInsets.only(
-                              left: labelIconSize + iconTextGap,
-                            ),
-                            child: Text(
-                              "12",
-                              style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
-                                fontSize: valueFontSize,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.emoji_events,
-                                color: Colors.amber,
-                                size: labelIconSize,
-                              ),
-                              SizedBox(width: iconTextGap),
-                              Flexible(
-                                child: Text(
-                                  "Vodeći tim:",
-                                  style: TextStyle(
-                                    fontFamily: AppFonts.roboto.fontFamily,
-                                    fontSize: labelFontSize,
-                                    color: Colors.amber,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: smallSpacing),
-                          Padding(
-                            padding: EdgeInsets.only(
-                              left: labelIconSize + iconTextGap,
-                            ),
-                            child: Text(
-                              "Hajduk",
-                              style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
-                                fontSize: valueFontSize,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+      child: Container(
+        width: screenWidth * 0.85,
+        height: screenHeight * 0.12,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SizedBox(width: horizontalPadding),
+            SizedBox(
+              width: screenHeight * 0.08,
+              height: screenHeight * 0.08,
+              child: Image.asset('assets/images/logo.png', fit: BoxFit.contain),
             ),
-          ),
-          SizedBox(width: horizontalPadding),
-          Icon(Icons.chevron_right, color: Colors.grey, size: chevronIconSize),
-          SizedBox(width: horizontalPadding),
-        ],
+            SizedBox(width: horizontalPadding),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.ligaName,
+                    style: TextStyle(
+                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: verticalSpacing),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.people,
+                                  color: Colors.blue,
+                                  size: labelIconSize,
+                                ),
+                                SizedBox(width: iconTextGap),
+                                Flexible(
+                                  child: Text(
+                                    "Broj timova:",
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.roboto.fontFamily,
+                                      fontSize: labelFontSize,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: smallSpacing),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: labelIconSize + iconTextGap,
+                              ),
+                              child: Text(
+                                "12",
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto.fontFamily,
+                                  fontSize: valueFontSize,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.emoji_events,
+                                  color: Colors.amber,
+                                  size: labelIconSize,
+                                ),
+                                SizedBox(width: iconTextGap),
+                                Flexible(
+                                  child: Text(
+                                    "Vodeći tim:",
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.roboto.fontFamily,
+                                      fontSize: labelFontSize,
+                                      color: Colors.amber,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: smallSpacing),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                left: labelIconSize + iconTextGap,
+                              ),
+                              child: Text(
+                                "Hajduk",
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto.fontFamily,
+                                  fontSize: valueFontSize,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: horizontalPadding),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey,
+              size: chevronIconSize,
+            ),
+            SizedBox(width: horizontalPadding),
+          ],
+        ),
       ),
     );
   }
