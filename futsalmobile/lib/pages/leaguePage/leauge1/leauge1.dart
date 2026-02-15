@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/pages/leaguePage/leauge1/tabs/details_tab.dart';
+import 'package:futsalmobile/pages/leaguePage/leauge1/tabs/matches_tab.dart';
+import 'package:futsalmobile/pages/leaguePage/leauge1/tabs/stats_tab.dart';
+import 'package:futsalmobile/pages/leaguePage/leauge1/tabs/table_tab.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_appBar.dart';
+
 
 class Leauge1 extends StatefulWidget {
   const Leauge1({super.key});
@@ -27,13 +32,18 @@ class _Leauge1State extends State<Leauge1> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: LeagueAppBar(
-        leagueName: '4. futsal liga Zadar',
+        leagueName: '1. futsal liga Zadar',
         season: '25/26',
         tabController: _tabController,
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [/* your tab views */],
+        children: [
+          DetailsTab(),
+          MatchesTab(),
+          TableTab(),
+          StatisticsTab(),
+          ],
       ),
     );
   }
