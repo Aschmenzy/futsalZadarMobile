@@ -94,7 +94,7 @@ class UtakmicaContainer extends StatelessWidget {
                           width: screenWidth * 0.08,
                           height: screenWidth * 0.08,
                           child: Image.asset(
-                            "assets/images/clubLogo/diamo.png",
+                            "assets/images/clubLogo/dinamo.png",
                             fit: BoxFit.contain,
                           ),
                         ),

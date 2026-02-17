@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
-import 'package:futsalmobile/pages/leaguePage/leauge1/leauge1.dart';
+import 'package:futsalmobile/pages/leaguePage/leagueDetails/league_detals.dart';
+import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
 
 class LeaugeContainer extends StatefulWidget {
-  LeaugeContainer({super.key, required this.ligaName});
+  const LeaugeContainer({
+    super.key,
 
-  final String ligaName;
+    required this.leaugeNum,
+    required this.leaugeName,
+    required this.leaugeID,
+  });
+
+  final String leaugeName;
+  final String leaugeID;
+  final int leaugeNum;
 
   @override
   State<LeaugeContainer> createState() => _LeaugeContainerState();
@@ -32,7 +41,15 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute<void>(builder: (context) => const Leauge1()),
+        MaterialPageRoute(
+          builder: (_) => LeagueDetails(
+            league: LeagueData(
+              id: widget.leaugeID,
+              leagueNumber: widget.leaugeNum,
+              clubs: [],
+            ),
+          ),
+        ),
       ),
       child: Container(
         width: screenWidth * 0.85,
@@ -57,7 +74,7 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.ligaName,
+                    widget.leaugeName,
                     style: TextStyle(
                       fontFamily: AppFonts.roboto.fontFamily,
                       fontSize: titleFontSize,

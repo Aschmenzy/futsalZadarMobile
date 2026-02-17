@@ -31,14 +31,38 @@ class LeaguePage extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                   SizedBox(height: 2),
-                  LeaugeContainer(ligaName: "Liga 1"),
+
+                  LeaugeContainer(
+                    leaugeNum: 1,
+                    leaugeName: 'Liga 1',
+                    leaugeID: 'liga1',
+                  ),
+
                   SizedBox(height: 20),
-                  LeaugeContainer(ligaName: "Liga 2"),
+
+                  LeaugeContainer(
+                    leaugeNum: 2,
+                    leaugeName: 'Liga 2',
+                    leaugeID: 'liga2',
+                  ),
+
                   SizedBox(height: 20),
-                  LeaugeContainer(ligaName: "Liga 3"),
+
+                  LeaugeContainer(
+                    leaugeNum: 3,
+                    leaugeName: 'Liga 3',
+                    leaugeID: 'liga3',
+                  ),
+
                   SizedBox(height: 20),
-                  LeaugeContainer(ligaName: "Liga 4"),
+
+                  LeaugeContainer(
+                    leaugeNum: 4,
+                    leaugeName: 'Liga 4',
+                    leaugeID: 'liga4',
+                  ),
                 ],
               ),
             ),
