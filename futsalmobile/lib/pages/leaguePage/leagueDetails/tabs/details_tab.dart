@@ -1,16 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
+import 'package:futsalmobile/pages/leaguePage/models/club_data.dart';
+import 'package:intl/intl.dart';
 
-class DetailsTab extends StatelessWidget {
+class DetailsTab extends StatefulWidget {
   final LeagueData league;
   const DetailsTab({super.key, required this.league});
+
+  @override
+  State<DetailsTab> createState() => _DetailsTabState();
+}
+
+class _DetailsTabState extends State<DetailsTab> {
+  final _service = FirebaseService();
+  List<ClubData> _clubs = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClubs();
+  }
+
+  Future<void> _loadClubs() async {
+    try {
+      final clubs = await _service.getClubsByLeague(widget.league.id);
+      setState(() {
+        _clubs = clubs;
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('FIREBASE ERROR: $e');
+      setState(() {
+        _error = 'Greska pri ucitavanju podataka $e';
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final dateFormat = DateFormat('d.M.yyyy');
 
     return SingleChildScrollView(
       child: Padding(
@@ -22,7 +58,7 @@ class DetailsTab extends StatelessWidget {
               SponsorsBanner(),
               SizedBox(height: screenHeight * 0.02),
 
-              // Liga progress card
+              //  LIGA PROGRESS CARD
               Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
@@ -51,7 +87,7 @@ class DetailsTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${league.name}, Runda ${league.currentRound}',
+                              '${widget.league.name}, Runda ${widget.league.currentRound}',
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto.fontFamily,
                                 fontSize: 14,
@@ -62,7 +98,7 @@ class DetailsTab extends StatelessWidget {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
-                                value: league.currentRound / 22,
+                                value: widget.league.currentRound / 22,
                                 minHeight: 8,
                                 backgroundColor: Colors.grey.shade300,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
@@ -75,7 +111,7 @@ class DetailsTab extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "",
+                                  dateFormat.format(LeagueData.startDate),
                                   style: TextStyle(
                                     fontFamily: AppFonts.roboto.fontFamily,
                                     fontSize: 12,
@@ -83,7 +119,7 @@ class DetailsTab extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  "dateFormat.format(LeagueData.endDate)",
+                                  dateFormat.format(LeagueData.endDate),
                                   style: TextStyle(
                                     fontFamily: AppFonts.roboto.fontFamily,
                                     fontSize: 12,
@@ -102,7 +138,7 @@ class DetailsTab extends StatelessWidget {
 
               SizedBox(height: screenHeight * 0.01),
 
-              // Sljedeca utakmica card
+              // SLJEDECA UTAKMICA CARD
               Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
@@ -170,7 +206,7 @@ class DetailsTab extends StatelessWidget {
                           ),
                           _buildTeamColumn(
                             teamName: "Dinamo",
-                            logoPath: 'assets/images/logo_withBg.png',
+                            logoPath: 'assets/images/clubLogo/dinamo.png',
                           ),
                         ],
                       ),
@@ -181,7 +217,7 @@ class DetailsTab extends StatelessWidget {
 
               SizedBox(height: screenHeight * 0.01),
 
-              // Broj ekipa card
+              //  BROJ EKIPA CARD
               Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
@@ -194,51 +230,70 @@ class DetailsTab extends StatelessWidget {
                     color: AppColors.ternary,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Broj ekipa",
-                        style: TextStyle(
-                          fontFamily: AppFonts.roboto.fontFamily,
-                          color: AppColors.ternaryGray,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w300,
+                  child: _loading
+                      ? const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Broj ekipa",
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto.fontFamily,
+                                color: AppColors.ternaryGray,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w300,
+                              ),
+                            ),
+                            Text(
+                              '${_clubs.length}',
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '${league.teamCount}',
-                        style: TextStyle(
-                          fontFamily: AppFonts.roboto.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
 
               SizedBox(height: screenHeight * 0.01),
 
-              // Visa liga
-              if (league.higherLeagueName != null)
+              //  VISA LIGA
+              if (widget.league.higherLeagueName != null)
                 _buildRelatedLeagueCard(
                   screenWidth: screenWidth,
                   screenHeight: screenHeight,
-                  label: "Viša liga",
-                  leagueName: league.higherLeagueName!,
+                  label: "Visa liga",
+                  leagueName: widget.league.higherLeagueName!,
                 ),
-              // Niza liga
-              if (league.lowerLeagueName != null)
+
+              //  NIZA LIGA
+              if (widget.league.lowerLeagueName != null)
                 _buildRelatedLeagueCard(
                   screenWidth: screenWidth,
                   screenHeight: screenHeight,
-                  label: "Niža liga",
-                  leagueName: league.lowerLeagueName!,
+                  label: "Niza liga",
+                  leagueName: widget.league.lowerLeagueName!,
                 ),
 
               SizedBox(height: screenHeight * 0.01),
+
+              //  ERROR PORUKA
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ),
             ],
           ),
         ),

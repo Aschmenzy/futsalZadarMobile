@@ -38,6 +38,8 @@ dependencies:
   animated_bottom_navigation_bar: ^1.4.0
   flutter_svg: ^2.2.3
   google_fonts: ^7.0.0
+  cloud_firestore: ^6.1.2
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/league_detals.dart';
 import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
+import 'package:futsalmobile/widgets/shimmer_loading.dart';
 
 class LeaugeContainer extends StatefulWidget {
   const LeaugeContainer({
@@ -10,11 +11,13 @@ class LeaugeContainer extends StatefulWidget {
     required this.leaugeNum,
     required this.leaugeName,
     required this.leaugeID,
+    this.numOfClubs,
   });
 
   final String leaugeName;
   final String leaugeID;
   final int leaugeNum;
+  final int? numOfClubs;
 
   @override
   State<LeaugeContainer> createState() => _LeaugeContainerState();
@@ -116,18 +119,25 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                               padding: EdgeInsets.only(
                                 left: labelIconSize + iconTextGap,
                               ),
-                              child: Text(
-                                "12",
-                                style: TextStyle(
-                                  fontFamily: AppFonts.roboto.fontFamily,
-                                  fontSize: valueFontSize,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              child: widget.numOfClubs != null
+                                  ? Text(
+                                      widget.numOfClubs.toString(),
+                                      style: TextStyle(
+                                        fontFamily: AppFonts.roboto.fontFamily,
+                                        fontSize: valueFontSize,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    )
+                                  : ShimmerLoading(
+                                      width: 20,
+                                      height: valueFontSize,
+                                    ),
                             ),
                           ],
                         ),
                       ),
+
+                      //vodeci tim
                       Flexible(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

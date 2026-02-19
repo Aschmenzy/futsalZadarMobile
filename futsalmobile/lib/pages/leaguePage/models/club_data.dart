@@ -36,7 +36,9 @@ class ClubData {
       clubProfileImg: map['clubProfileImg'] ?? '',
       contact: map['contact'] ?? '',
       contactPerson: map['contactPerson'] ?? '',
-      createdAt: (map['createdAt'] as dynamic).toDate(),
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] as dynamic).toDate()
+          : DateTime.now(),
       dresDomaci: map['dresDomaci'] ?? '',
       dresGostujuci: map['dresGostujuci'] ?? '',
       email: map['email'] ?? '',
