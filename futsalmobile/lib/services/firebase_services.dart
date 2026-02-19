@@ -44,7 +44,7 @@ class FirebaseService {
     }
   }
 
-  /// Dohvati samo broj klubova u ligi (bez podataka)
+  /// Dohvati samo broj klubova u ligi
   Future<int> getClubCount(String leagueId) async {
     try {
       final snapshot = await _db.collection(leagueId).count().get();
