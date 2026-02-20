@@ -14,6 +14,7 @@ class NewsContainer extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
       children: [
+        
         Container(
           width: screenWidth * 0.85,
           height: screenHeight * 0.2,
@@ -63,7 +64,7 @@ class NewsContainer extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: screenHeight * 0.02,)
+        SizedBox(height: screenHeight * 0.03,)
       ],
     );
   }

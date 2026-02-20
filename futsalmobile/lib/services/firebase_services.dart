@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
+import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:futsalmobile/models/player_data.dart';
 
 class FirebaseService {
@@ -137,23 +138,37 @@ void clearCache() {
     return clubsWithPlayers;
   }
 
-  // TODO: Vijesti
-  Future<List<NewsData>> getNews() async {
+  // Vijesti, funkcija vraca vijesti 5 po 5
+  Future<NewsPaginated> getNewsPaginated({
+  int limit = 5,
+  DocumentSnapshot? lastDocument,
+}) async {
   try {
-    
-    final snapshot = await _db
+    Query query = _db
         .collection('seasons')
         .doc(_cachedSeason)
         .collection('news')
         .orderBy('createdAt', descending: true)
-        .get();
+        .limit(limit);
 
-    return snapshot.docs.map((doc) {
-      return NewsData.fromFirestore(doc.data(), doc.id);
-    }).toList();
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+
+    final snapshot = await query.get();
+    final items = snapshot.docs
+        .map((doc) => NewsData.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
+        .toList();
+
+    return NewsPaginated(
+      items: items,
+      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      hasMore: snapshot.docs.length == limit,
+    );
   } catch (e) {
     throw Exception('Greska pri dohvatu vijesti: $e');
   }
+}
 
   // TODO: Sezone
   // Future<List<SeasonData>> getSeasons() async { }
@@ -161,5 +176,4 @@ void clearCache() {
 
   // TODO: Podatci prosle sezone
   // Future<List<ClubData>> getClubsBySeason(String seasonId, String leagueId) async { }
-}
 }
