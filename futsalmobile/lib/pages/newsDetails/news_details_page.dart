@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/pages/newsDetails/widgets/news_appBar.dart';
+import 'package:intl/intl.dart';
 
 class NewsDetailsPage extends StatelessWidget {
-  const NewsDetailsPage({super.key});
+  final String header;
+  final String body;
+  final String? imageUrl;
+  final DateTime date;
+  const NewsDetailsPage({super.key, required this.header, required this.body, this.imageUrl, required this.date});
 
   @override
   Widget build(BuildContext context) {
     final screenWith = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+     final dateFormat = DateFormat('d.M.yyyy');
     return Scaffold(
       appBar: NewsAppbar(),
       body: SafeArea(
@@ -18,9 +24,11 @@ class NewsDetailsPage extends StatelessWidget {
             scrollDirection: Axis.vertical,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Image.asset("assets/images/newsBanner.png", fit: BoxFit.cover),
+                imageUrl != null && imageUrl!.isNotEmpty
+    ? Image.network(imageUrl!, fit: BoxFit.cover, )
+    : Image.asset('assets/images/newsImage.png',fit: BoxFit.fitWidth),
 
                 //datum kad je vijest objavljena
                 Padding(
@@ -42,7 +50,7 @@ class NewsDetailsPage extends StatelessWidget {
 
                           //formatirani datum
                           Text(
-                            "24.studeni 2025.",
+                            dateFormat.format(date),
                             style: TextStyle(
                               fontFamily: AppFonts.roboto.fontFamily,
                               color: AppColors.ternaryGray,
@@ -55,43 +63,24 @@ class NewsDetailsPage extends StatelessWidget {
                       SizedBox(height: screenHeight * 0.02),
 
                       Text(
-                        "Poraz hrvatske reprezentacije",
+                        header,
                         style: TextStyle(
                           fontFamily: AppFonts.roboto.fontFamily,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w800,
-                          fontSize: 22,
+                          fontSize: 24,
                         ),
                       ),
 
-                      //tko je napisao vijest
-                      SizedBox(height: screenHeight * 0.02),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Image.asset("assets/images/clubLogo/hajduk.png"),
-
-                          SizedBox(width: screenWith * 0.02),
-
-                          Text(
-                            "Marko Kovačević",
-                            style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-
+                     
                       //divider
                       SizedBox(height: screenHeight * 0.02),
                       Divider(),
 
                       //tekst cijele vijesti
-                      //tekst cijele vijesti
                       SizedBox(height: screenHeight * 0.02),
                       Text(
-                        "Hrvatska nogometna reprezentacija doživjela je poraz u susretu koji je od samog početka nosio ogroman pritisak i visoka očekivanja. Unatoč borbenosti i nekoliko obećavajućih trenutaka, ključne prilike ostale su neiskorištene, a protivnik je znao kazniti svaku pogrešku.\n\nPrvo poluvrijeme donijelo je izjednačenu igru, ali Hrvatska je teško pronalazila ritam u završnici. Nekoliko opasnih situacija pred protivničkim golom ostalo je bez realizacije, što se pokazalo presudnim. U nastavku susreta protivnik je iskoristio trenutak nepažnje i stigao do vodstva koje je promijenilo tijek utakmice.\n\nPokušaji Hrvatske da se vrati u igru bili su energični, no nedovoljno konkretni. Završni pritisak nije donio pogodak, a frustracija se mogla osjetiti i na terenu i na tribinama.\n\nPoraz predstavlja korak unazad u borbi za plasman, ali ostavlja i jasnu poruku: pred reprezentacijom je posao koji zahtijeva više koncentracije, bolju realizaciju i povratak prepoznatljivoj čvrstini.",
+                        body,
                         style: TextStyle(
                           fontFamily: AppFonts.roboto.fontFamily,
                           fontSize: 18,

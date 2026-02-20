@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
-import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
-import 'package:futsalmobile/pages/leaguePage/models/club_data.dart';
+import 'package:futsalmobile/models/league_data.dart';
+import 'package:futsalmobile/models/club_data.dart';
 import 'package:intl/intl.dart';
 
 class DetailsTab extends StatefulWidget {

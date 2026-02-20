@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/details_tab.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/matches_tab.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/stats_tab.dart';
-import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
+import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_appBar.dart';
 
 class LeagueDetails extends StatefulWidget {

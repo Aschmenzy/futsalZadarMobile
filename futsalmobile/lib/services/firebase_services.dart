@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:futsalmobile/pages/leaguePage/models/club_data.dart';
-import 'package:futsalmobile/pages/leaguePage/models/player_data.dart';
+import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/models/news/news_data.dart';
+import 'package:futsalmobile/models/player_data.dart';
 
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
@@ -13,6 +14,36 @@ class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
   factory FirebaseService() => _instance;
   FirebaseService._internal();
+  // ============================================================
+  // DOHVACANJE TRENUTE SEZONE
+  // ============================================================
+
+    String? _cachedSeason;
+
+    /// Dohvati aktivnu sezonu — cachira rezultat
+Future<String> getActiveSeason({bool forceRefresh = false}) async {
+  if (_cachedSeason != null && !forceRefresh) return _cachedSeason!;
+
+  try {
+    final doc = await _db.collection('config').doc('app').get();
+
+    if (!doc.exists) {
+      throw Exception('Config dokument ne postoji');
+    }
+
+    _cachedSeason = doc.data()?['activeSeason'] ?? '';
+    return _cachedSeason!;
+  } catch (e) {
+    throw Exception('Greska pri dohvatu aktivne sezone: $e');
+  }
+}
+
+/// Resetiraj cache (npr. kod pull-to-refresh)
+void clearCache() {
+  _cachedSeason = null;
+}
+
+
 
   // ============================================================
   // KLUBOVI
@@ -106,12 +137,23 @@ class FirebaseService {
     return clubsWithPlayers;
   }
 
-  // ============================================================
-  // BUDUCE METODE (placeholder za kasnije)
-  // ============================================================
-
   // TODO: Vijesti
-  // Future<List<NewsData>> getNews() async { }
+  Future<List<NewsData>> getNews() async {
+  try {
+    
+    final snapshot = await _db
+        .collection('seasons')
+        .doc(_cachedSeason)
+        .collection('news')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      return NewsData.fromFirestore(doc.data(), doc.id);
+    }).toList();
+  } catch (e) {
+    throw Exception('Greska pri dohvatu vijesti: $e');
+  }
 
   // TODO: Sezone
   // Future<List<SeasonData>> getSeasons() async { }
@@ -119,4 +161,5 @@ class FirebaseService {
 
   // TODO: Podatci prosle sezone
   // Future<List<ClubData>> getClubsBySeason(String seasonId, String leagueId) async { }
+}
 }

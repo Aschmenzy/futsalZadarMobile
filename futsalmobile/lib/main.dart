@@ -5,12 +5,16 @@ import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsPage/news_page.dart';
+import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await FirebaseService().getActiveSeason();
+
   runApp(const MyApp());
 }
 

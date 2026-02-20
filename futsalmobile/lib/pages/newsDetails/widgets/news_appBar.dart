@@ -13,6 +13,7 @@ class NewsAppbar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.secondary,
       elevation: 0,
       automaticallyImplyLeading: false,
+      
       flexibleSpace: SafeArea(
         child: Container(
           height: kToolbarHeight,

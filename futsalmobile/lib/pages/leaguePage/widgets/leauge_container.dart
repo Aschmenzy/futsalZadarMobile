@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/league_detals.dart';
-import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
+import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
 
 class LeaugeContainer extends StatefulWidget {

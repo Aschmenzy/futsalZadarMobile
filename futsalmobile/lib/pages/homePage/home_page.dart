@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
-import 'package:futsalmobile/widgets/news_container.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/widgets/utakmica_container.dart';
 
@@ -32,7 +31,9 @@ class HomePage extends StatelessWidget {
                 SizedBox(height: 20),
                 UtakmicaContainer(),
                 SizedBox(height: 20),
-                NewsContainer(),
+
+                //treba fetchati newsContainer ali samo onaj zadnji
+                // NewsContainer(header: header, body: body)
               ],
             ),
           ),

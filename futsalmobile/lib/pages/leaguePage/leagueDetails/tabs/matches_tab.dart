@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:futsalmobile/pages/leaguePage/models/league_data.dart';
+import 'package:futsalmobile/models/league_data.dart';
 
 class MatchesTab extends StatelessWidget {
   final LeagueData league;
