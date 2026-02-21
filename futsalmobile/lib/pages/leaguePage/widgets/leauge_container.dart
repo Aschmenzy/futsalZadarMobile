@@ -60,6 +60,14 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.25),
+            offset: Offset(0, 4),
+            blurRadius: 4,
+            spreadRadius: 0,
+          ),
+        ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

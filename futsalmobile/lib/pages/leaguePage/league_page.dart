@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/pages/leaguePage/widgets/leading_teams.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_container.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
@@ -81,6 +82,12 @@ class _LeaguePageState extends State<LeaguePage> {
                     leaugeID: 'liga4',
                     numOfClubs: _clubCounts["liga4"],
                   ),
+
+                  SizedBox(height: 20),
+
+                  //vodeci timpovi po ligama PLACE HOLDER
+                  LeadingTeams()
+
                 ],
               ),
             ),
