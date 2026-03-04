@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/pages/leaguePage/widgets/next_match.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/models/league_data.dart';
@@ -17,20 +19,26 @@ class DetailsTab extends StatefulWidget {
 class _DetailsTabState extends State<DetailsTab> {
   final _service = FirebaseService();
   List<ClubData> _clubs = [];
+  MatchData? _nextMatch;
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadClubs();
+    _loadData();
   }
 
-  Future<void> _loadClubs() async {
+  Future<void> _loadData() async {
     try {
-      final clubs = await _service.getClubsByLeague(widget.league.id);
+      final results = await Future.wait([
+        _service.getClubsByLeague(widget.league.id),
+        _service.getNextMatch(widget.league.id),
+      ]);
+
       setState(() {
-        _clubs = clubs;
+        _clubs = results[0] as List<ClubData>;
+        _nextMatch = results[1] as MatchData?;
         _loading = false;
       });
     } catch (e) {
@@ -58,7 +66,7 @@ class _DetailsTabState extends State<DetailsTab> {
               SponsorsBanner(),
               SizedBox(height: screenHeight * 0.02),
 
-              //  LIGA PROGRESS CARD
+              // LIGA PROGRESS CARD
               Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
@@ -139,85 +147,13 @@ class _DetailsTabState extends State<DetailsTab> {
               SizedBox(height: screenHeight * 0.01),
 
               // SLJEDECA UTAKMICA CARD
-              Card(
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: screenWidth * 0.85,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.ternary,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Spacer(),
-                          Text(
-                            "Sljedeca utakmica",
-                            style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
-                              fontSize: screenWidth * 0.045,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const Spacer(),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: Colors.blue,
-                            size: 28,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: screenHeight * 0.015),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildTeamColumn(
-                            teamName: "Hajduk",
-                            logoPath: 'assets/images/clubLogo/hajduk.png',
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                "Za 7 dana",
-                                style: TextStyle(
-                                  fontFamily: AppFonts.roboto.fontFamily,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "18.01.2026. 19:00",
-                                style: TextStyle(
-                                  fontFamily: AppFonts.roboto.fontFamily,
-                                  fontSize: 13,
-                                  color: AppColors.ternaryGray,
-                                ),
-                              ),
-                            ],
-                          ),
-                          _buildTeamColumn(
-                            teamName: "Dinamo",
-                            logoPath: 'assets/images/clubLogo/dinamo.png',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : NextMatch(match: _nextMatch),
 
               SizedBox(height: screenHeight * 0.01),
 
-              //  BROJ EKIPA CARD
+              // BROJ EKIPA CARD
               Card(
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(
@@ -242,7 +178,7 @@ class _DetailsTabState extends State<DetailsTab> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              "Broj ekipa",
+                              'Broj ekipa',
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto.fontFamily,
                                 color: AppColors.ternaryGray,
@@ -265,27 +201,27 @@ class _DetailsTabState extends State<DetailsTab> {
 
               SizedBox(height: screenHeight * 0.01),
 
-              //  VISA LIGA
+              // VISA LIGA
               if (widget.league.higherLeagueName != null)
                 _buildRelatedLeagueCard(
                   screenWidth: screenWidth,
                   screenHeight: screenHeight,
-                  label: "Visa liga",
+                  label: 'Visa liga',
                   leagueName: widget.league.higherLeagueName!,
                 ),
 
-              //  NIZA LIGA
+              // NIZA LIGA
               if (widget.league.lowerLeagueName != null)
                 _buildRelatedLeagueCard(
                   screenWidth: screenWidth,
                   screenHeight: screenHeight,
-                  label: "Niza liga",
+                  label: 'Niza liga',
                   leagueName: widget.league.lowerLeagueName!,
                 ),
 
               SizedBox(height: screenHeight * 0.01),
 
-              //  ERROR PORUKA
+              // ERROR PORUKA
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -298,33 +234,6 @@ class _DetailsTabState extends State<DetailsTab> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTeamColumn({
-    required String teamName,
-    required String logoPath,
-  }) {
-    return Column(
-      children: [
-        ClipOval(
-          child: Image.asset(
-            logoPath,
-            width: 56,
-            height: 56,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          teamName,
-          style: TextStyle(
-            fontFamily: AppFonts.roboto.fontFamily,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 

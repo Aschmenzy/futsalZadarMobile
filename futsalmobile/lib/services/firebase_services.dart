@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:futsalmobile/models/player_data.dart';
@@ -167,6 +168,30 @@ void clearCache() {
     );
   } catch (e) {
     throw Exception('Greska pri dohvatu vijesti: $e');
+  }
+}
+
+Future<MatchData?> getNextMatch(String leagueCode) async {
+  try {
+    
+    final snapshot = await _db
+        .collection('seasons')
+        .doc(_cachedSeason)
+        .collection('leagues')
+        .doc(leagueCode)
+        .collection('matches')
+        .where('status', isEqualTo: 'scheduled')
+        .orderBy('matchDate')
+        .orderBy('matchTime')
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+
+    final doc = snapshot.docs.first;
+    return MatchData.fromFirestore(doc.data(), doc.id);
+  } catch (e) {
+    throw Exception('Greska pri dohvatu sljedece utakmice: $e');
   }
 }
 
