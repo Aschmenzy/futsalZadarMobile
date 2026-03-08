@@ -4,11 +4,12 @@ import 'package:futsalmobile/constants/constants.dart';
 class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String leagueName;
   final String season;
+  final List<String> seasons;
   final TabController tabController;
   final VoidCallback? onBack;
   final VoidCallback? onNotification;
   final VoidCallback? onStar;
-  final VoidCallback? onSeasonTap;
+  final ValueChanged<String>? onSeasonChanged;
   final Widget? leagueLogo;
 
   const LeagueAppBar({
@@ -19,8 +20,9 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.onNotification,
     this.onStar,
-    this.onSeasonTap,
     this.leagueLogo,
+    required this.seasons,
+    this.onSeasonChanged,
   });
 
   @override
@@ -35,7 +37,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
       flexibleSpace: SafeArea(
         child: Column(
           children: [
-          //tipka natrag na lige
+            //tipka natrag na lige
             Container(
               height: kToolbarHeight,
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -60,7 +62,10 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.star_border, color: AppColors.ternary),
+                    icon: const Icon(
+                      Icons.star_border,
+                      color: AppColors.ternary,
+                    ),
                     onPressed: onStar,
                   ),
                 ],
@@ -104,8 +109,28 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: onSeasonTap,
+                        PopupMenuButton<String>(
+                          onSelected: onSeasonChanged,
+                          enabled: seasons.isNotEmpty,
+                          padding: EdgeInsets.zero,
+                          color: AppColors.secondary,
+                          itemBuilder: (context) => seasons
+                              .map(
+                                (s) => PopupMenuItem<String>(
+                                  value: s,
+                                  child: Text(
+                                    s,
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.roboto.fontFamily,
+                                      color: Colors.white,
+                                      fontWeight: s == season
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

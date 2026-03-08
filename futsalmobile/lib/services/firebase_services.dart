@@ -4,6 +4,7 @@ import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
+import 'package:flutter/foundation.dart';
 import 'package:futsalmobile/models/player_data.dart';
 
 class FirebaseService {
@@ -20,32 +21,44 @@ class FirebaseService {
   // DOHVACANJE TRENUTE SEZONE
   // ============================================================
 
-    String? _cachedSeason;
+  String? _cachedSeason;
 
-    /// Dohvati aktivnu sezonu — cachira rezultat
-Future<String> getActiveSeason({bool forceRefresh = false}) async {
-  if (_cachedSeason != null && !forceRefresh) return _cachedSeason!;
+  /// Dohvati aktivnu sezonu — cachira rezultat
+  Future<String> getActiveSeason({bool forceRefresh = false}) async {
+    if (_cachedSeason != null && !forceRefresh) return _cachedSeason!;
 
-  try {
-    final doc = await _db.collection('config').doc('app').get();
+    try {
+      final doc = await _db.collection('config').doc('app').get();
 
-    if (!doc.exists) {
-      throw Exception('Config dokument ne postoji');
+      if (!doc.exists) {
+        throw Exception('Config dokument ne postoji');
+      }
+
+      _cachedSeason = doc.data()?['activeSeason'] ?? '';
+      debugPrint('✅ getActiveSeason → "$_cachedSeason"');
+
+      return _cachedSeason!;
+    } catch (e) {
+      throw Exception('Greska pri dohvatu aktivne sezone: $e');
     }
-
-    _cachedSeason = doc.data()?['activeSeason'] ?? '';
-    return _cachedSeason!;
-  } catch (e) {
-    throw Exception('Greska pri dohvatu aktivne sezone: $e');
   }
-}
 
-/// Resetiraj cache (npr. kod pull-to-refresh)
-void clearCache() {
-  _cachedSeason = null;
-}
+  //dohvati sve sezone
+  Future<List<String>> getSeasons() async {
+    try {
+      final snapshot = await _db.collection('seasons').get();
+      final seasons = snapshot.docs.map((doc) => doc.id).toList();
+      seasons.sort((a, b) => b.compareTo(a)); // newest first
+      return seasons;
+    } catch (e) {
+      throw Exception('Greska pri dohvatu sezona: $e');
+    }
+  }
 
-
+  /// Resetiraj cache (npr. kod pull-to-refresh)
+  void clearCache() {
+    _cachedSeason = null;
+  }
 
   // ============================================================
   // KLUBOVI
@@ -125,7 +138,6 @@ void clearCache() {
   }
 
   /// Dohvati sve klubove s igracima za cijelu ligu
-  /// PAZNJA: Ovo radi puno Firestore citanja - koristi samo kad je stvarno potrebno
   Future<List<ClubData>> getLeagueWithAllPlayers(String leagueId) async {
     final clubs = await getClubsByLeague(leagueId);
 
@@ -141,59 +153,97 @@ void clearCache() {
 
   // Vijesti, funkcija vraca vijesti 5 po 5
   Future<NewsPaginated> getNewsPaginated({
-  int limit = 5,
-  DocumentSnapshot? lastDocument,
-}) async {
-  try {
-    Query query = _db
-        .collection('seasons')
-        .doc(_cachedSeason)
-        .collection('news')
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
+    int limit = 5,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    try {
+      Query query = _db
+          .collection('seasons')
+          .doc(_cachedSeason)
+          .collection('news')
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
 
-    if (lastDocument != null) {
-      query = query.startAfterDocument(lastDocument);
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+
+      final snapshot = await query.get();
+      final items = snapshot.docs
+          .map(
+            (doc) => NewsData.fromFirestore(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
+          .toList();
+
+      return NewsPaginated(
+        items: items,
+        lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+        hasMore: snapshot.docs.length == limit,
+      );
+    } catch (e) {
+      throw Exception('Greska pri dohvatu vijesti: $e');
     }
-
-    final snapshot = await query.get();
-    final items = snapshot.docs
-        .map((doc) => NewsData.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-        .toList();
-
-    return NewsPaginated(
-      items: items,
-      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
-      hasMore: snapshot.docs.length == limit,
-    );
-  } catch (e) {
-    throw Exception('Greska pri dohvatu vijesti: $e');
   }
-}
 
-Future<MatchData?> getNextMatch(String leagueCode) async {
-  try {
-    
-    final snapshot = await _db
-        .collection('seasons')
-        .doc(_cachedSeason)
-        .collection('leagues')
-        .doc(leagueCode)
-        .collection('matches')
-        .where('status', isEqualTo: 'scheduled')
-        .orderBy('matchDate')
-        .orderBy('matchTime')
-        .limit(1)
-        .get();
+  Future<int> getCurrentRound(String leagueCode, {String? season}) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
 
-    if (snapshot.docs.isEmpty) return null;
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('matches')
+          .where('status', isEqualTo: 'scheduled')
+          .orderBy('round', descending: true)
+          .limit(1)
+          .get();
 
-    final doc = snapshot.docs.first;
-    return MatchData.fromFirestore(doc.data(), doc.id);
-  } catch (e) {
-    throw Exception('Greska pri dohvatu sljedece utakmice: $e');
+      if (snapshot.docs.isEmpty) return 0;
+      return (snapshot.docs.first.data()['round'] as int?) ?? 0;
+    } catch (e) {
+      throw Exception('Greska pri dohvatu runde: $e');
+    }
   }
-}
+
+  Future<MatchData?> getNextMatch(String leagueCode, {String? season}) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final today = DateTime.now();
+      final todayStr =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('matches')
+          .where('status', isEqualTo: 'scheduled')
+          .where('matchDate', isGreaterThanOrEqualTo: todayStr)
+          .orderBy('matchDate', descending: false)
+          .orderBy('matchTime')
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+
+      final doc = snapshot.docs.first;
+      debugPrint('${doc.data()}');
+      return MatchData.fromFirestore(doc.data(), doc.id);
+    } catch (e) {
+      throw Exception('Greska pri dohvatu sljedece utakmice: $e');
+    }
+  }
 
   // TODO: Sezone
   // Future<List<SeasonData>> getSeasons() async { }

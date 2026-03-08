@@ -72,57 +72,63 @@ class _NewsPageState extends State<NewsPage> {
         child: Container(
           color: AppColors.background,
           child: _paginated.items.isEmpty && _isLoading
-              ?  Center(child:CircularProgressIndicator() )
+              ? Center(child: CircularProgressIndicator())
               : _error != null && _paginated.items.isEmpty
-                  ? Center(child: Text(_error!))
-                  : ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _paginated.items.length + (_paginated.hasMore ? 1 : 0) + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Column(
-                            children: [
-                              Center(
-                                child: Image.asset('assets/images/logo.png', scale: 0.7),
-                              ),
-
-                              SizedBox(height: screenHeight * 0.02,)
-                            ],
-                          );
-                        }
-                        final newsIndex = index - 1;
-                        if (newsIndex >= _paginated.items.length) {
-                          return  Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: ShimmerLoading(
-                                width: screenWidth * 0.85,
-                                height: screenHeight * 0.2,
-                                )
-                              ),
-                          );
-                        }
-                        final item = _paginated.items[newsIndex];
-                        return GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => NewsDetailsPage(
-                                header: item.header,
-                                body: item.body,
-                                imageUrl: item.imageUrl,
-                                date: item.createdAt,
-                              ),
+              ? Center(child: Text(_error!))
+              : ListView.builder(
+                  controller: _scrollController,
+                  itemCount:
+                      _paginated.items.length +
+                      (_paginated.hasMore ? 1 : 0) +
+                      1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Column(
+                        children: [
+                          Center(
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              scale: 0.7,
                             ),
                           ),
-                          child: NewsContainer(
+
+                          SizedBox(height: screenHeight * 0.02),
+                        ],
+                      );
+                    }
+                    final newsIndex = index - 1;
+                    if (newsIndex >= _paginated.items.length) {
+                      return Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: ShimmerLoading(
+                            width: screenWidth * 0.85,
+                            height: screenHeight * 0.2,
+                          ),
+                        ),
+                      );
+                    }
+                    final item = _paginated.items[newsIndex];
+                    return GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => NewsDetailsPage(
                             header: item.header,
                             body: item.body,
                             imageUrl: item.imageUrl,
+                            date: item.createdAt,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                      child: NewsContainer(
+                        header: item.header,
+                        body: item.body,
+                        imageUrl: item.imageUrl,
+                      ),
+                    );
+                  },
+                ),
         ),
       ),
     );

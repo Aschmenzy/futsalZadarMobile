@@ -10,7 +10,8 @@ import 'package:intl/intl.dart';
 
 class DetailsTab extends StatefulWidget {
   final LeagueData league;
-  const DetailsTab({super.key, required this.league});
+  final String season;
+  const DetailsTab({super.key, required this.league, required this.season});
 
   @override
   State<DetailsTab> createState() => _DetailsTabState();
@@ -21,6 +22,7 @@ class _DetailsTabState extends State<DetailsTab> {
   List<ClubData> _clubs = [];
   MatchData? _nextMatch;
   bool _loading = true;
+  int _currentRound = 0;
   String? _error;
 
   @override
@@ -33,16 +35,21 @@ class _DetailsTabState extends State<DetailsTab> {
     try {
       final results = await Future.wait([
         _service.getClubsByLeague(widget.league.id),
-        _service.getNextMatch(widget.league.id),
+        _service.getNextMatch(widget.league.id, season: widget.season),
+        _service.getCurrentRound(widget.league.id, season: widget.season),
       ]);
 
+      if (!mounted) return;
       setState(() {
         _clubs = results[0] as List<ClubData>;
         _nextMatch = results[1] as MatchData?;
+        _currentRound = results[2] as int;
         _loading = false;
       });
     } catch (e) {
       debugPrint('FIREBASE ERROR: $e');
+      if (!mounted) return;
+
       setState(() {
         _error = 'Greska pri ucitavanju podataka $e';
         _loading = false;
@@ -95,7 +102,7 @@ class _DetailsTabState extends State<DetailsTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${widget.league.name}, Runda ${widget.league.currentRound}',
+                              '${widget.league.name}, Runda: $_currentRound',
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto.fontFamily,
                                 fontSize: 14,
@@ -106,7 +113,7 @@ class _DetailsTabState extends State<DetailsTab> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
-                                value: widget.league.currentRound / 22,
+                                value: _currentRound / 22,
                                 minHeight: 8,
                                 backgroundColor: Colors.grey.shade300,
                                 valueColor: const AlwaysStoppedAnimation<Color>(

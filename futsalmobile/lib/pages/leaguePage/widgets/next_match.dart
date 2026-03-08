@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 
-
 class NextMatch extends StatelessWidget {
   final MatchData? match;
 
@@ -15,9 +14,7 @@ class NextMatch extends StatelessWidget {
 
     return Card(
       elevation: 0.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Container(
         width: screenWidth * 0.85,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -25,7 +22,7 @@ class NextMatch extends StatelessWidget {
           color: AppColors.ternary,
           borderRadius: BorderRadius.circular(15),
         ),
-        child: match == null
+        child: (match == null || _daysDiff(match!.matchDate) < 0)
             ? const Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
@@ -47,7 +44,11 @@ class NextMatch extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.chevron_right, color: Colors.blue, size: 24),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: Colors.blue,
+                        size: 24,
+                      ),
                     ],
                   ),
                   SizedBox(height: screenHeight * 0.015),
@@ -148,12 +149,15 @@ class NextMatch extends StatelessWidget {
     );
   }
 
-  /// Returns "Za X dana", "Sutra", or "Danas" based on matchDate
-  String _daysUntil(String matchDate) {
+  int _daysDiff(String matchDate) {
     final date = DateTime.tryParse(matchDate);
-    if (date == null) return '';
+    if (date == null) return 0;
     final now = DateTime.now();
-    final diff = date.difference(DateTime(now.year, now.month, now.day)).inDays;
+    return date.difference(DateTime(now.year, now.month, now.day)).inDays;
+  }
+
+  String _daysUntil(String matchDate) {
+    final diff = _daysDiff(matchDate);
     if (diff == 0) return 'Danas';
     if (diff == 1) return 'Sutra';
     return 'Za $diff dana';
