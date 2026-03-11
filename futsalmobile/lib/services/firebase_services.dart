@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:flutter/foundation.dart';
-import 'package:futsalmobile/models/player_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
@@ -101,7 +102,7 @@ class FirebaseService {
   }
 
   // ============================================================
-  // IGRACI
+  // IGRACI I MECEVI
   // ============================================================
 
   /// Dohvati sve igrace jednog kluba
@@ -245,10 +246,170 @@ class FirebaseService {
     }
   }
 
-  // TODO: Sezone
-  // Future<List<SeasonData>> getSeasons() async { }
-  // Future<SeasonData> getCurrentSeason() async { }
+  Future<List<MatchData>> getAllMatches(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
 
-  // TODO: Podatci prosle sezone
-  // Future<List<ClubData>> getClubsBySeason(String seasonId, String leagueId) async { }
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('matches')
+          .orderBy('matchDate', descending: true)
+          .orderBy('matchTime')
+          .get();
+
+      return snapshot.docs
+          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Greska pri dohvatu utakmica: $e');
+    }
+  }
+
+  // ============================================================
+  // STATISTIKE
+  // ============================================================
+
+  Future<List<PlayerStatsData>> getLeadingPlayersByGoals(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('playerStats')
+          .get();
+
+      if (snapshot.docs.isEmpty) return [];
+
+      final players = snapshot.docs
+          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      players.sort((a, b) {
+        final totalA = a.goals + a.goals10m + a.goals6m;
+        final totalB = b.goals + b.goals10m + b.goals6m;
+        return totalB.compareTo(totalA);
+      });
+
+      return players.take(5).toList();
+    } catch (e) {
+      throw Exception(
+        'Greska pri dohvatu najboljih igraca po broju golova: $e',
+      );
+    }
+  }
+
+  Future<List<PlayerStatsData>> getLeadingPlayersByRedCards(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('playerStats')
+          .orderBy('redCards', descending: true)
+          .limit(5)
+          .get();
+
+      if (snapshot.docs.isEmpty) return [];
+
+      return snapshot.docs
+          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception(
+        'Greska pri dohvatu najboljih igraca po broju crvenih kartona: $e',
+      );
+    }
+  }
+
+  Future<List<PlayerStatsData>> getLeadingPlayersByYellowCards(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('playerStats')
+          .orderBy('yellowCards', descending: true)
+          .limit(5)
+          .get();
+
+      if (snapshot.docs.isEmpty) return [];
+
+      return snapshot.docs
+          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Greska pri dohvatu igraca po broju zutih kartona: $e');
+    }
+  }
+
+  Future<Map<String, List<PlayerStatsData>>> getPlayersByActiveYellows(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('playerStats')
+          .where('activeYellows', isGreaterThan: 0)
+          .get();
+
+      if (snapshot.docs.isEmpty) return {'oneYellow': [], 'twoYellows': []};
+
+      final players = snapshot.docs
+          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      return {
+        'oneYellow': players
+            .where((p) => p.activeYellows == 1)
+            .take(5)
+            .toList(),
+        'twoYellows': players
+            .where((p) => p.activeYellows == 2)
+            .take(5)
+            .toList(),
+      };
+    } catch (e) {
+      throw Exception('Greska pri dohvatu igraca po zutim kartonima: $e');
+    }
+  }
 }

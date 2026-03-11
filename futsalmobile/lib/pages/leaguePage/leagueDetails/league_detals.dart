@@ -3,6 +3,7 @@ import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/details_tab.dar
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/matches_tab.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/stats_tab.dart';
 import 'package:futsalmobile/models/league_data.dart';
+import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/table_tab.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_appBar.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
@@ -76,7 +77,7 @@ class _LeagueDetailsState extends State<LeagueDetails>
                   league: widget.league,
                   season: _selectedSeason,
                 ),
-                MatchesTab(
+                TableTab(
                   key: ValueKey('table_$_selectedSeason'),
                   league: widget.league,
                   season: _selectedSeason,

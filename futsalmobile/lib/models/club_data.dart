@@ -1,4 +1,4 @@
-import 'player_data.dart';
+import 'leaugePage/playerData/player_data.dart';
 
 class ClubData {
   final String id;

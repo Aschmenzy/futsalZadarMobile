@@ -64,6 +64,7 @@ class _DetailsTabState extends State<DetailsTab> {
     final dateFormat = DateFormat('d.M.yyyy');
 
     return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Container(

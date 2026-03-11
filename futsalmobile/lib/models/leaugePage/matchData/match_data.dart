@@ -9,9 +9,9 @@ class MatchData {
   final String leagueCode;
   final String season;
   final int round;
-  final String matchDate;   
-  final String matchTime;   
-  final String status;     
+  final String matchDate;
+  final String matchTime;
+  final String status;
   final String homeTeam;
   final String homeTeamLogo;
   final int homeTeamGoals;
@@ -19,7 +19,7 @@ class MatchData {
   final String awayTeamLogo;
   final int awayTeamGoals;
   final String delegate;
-  final String? referee1;   // Firestore document ID
+  final String? referee1;
   final String? referee2;
 
   // null when status is "scheduled"
@@ -71,7 +71,9 @@ class MatchData {
     if (map['originalPlayerStats'] != null) {
       originalStats = {};
       (map['originalPlayerStats'] as Map<String, dynamic>).forEach((k, v) {
-        originalStats![k] = PlayerStats.fromFirestore(v as Map<String, dynamic>);
+        originalStats![k] = PlayerStats.fromFirestore(
+          v as Map<String, dynamic>,
+        );
       });
     }
 
