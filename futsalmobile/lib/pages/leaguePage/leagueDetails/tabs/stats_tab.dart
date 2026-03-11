@@ -18,7 +18,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
   final _service = FirebaseService();
   List<PlayerStatsData> _topScorers = [];
   List<PlayerStatsData> _topRedCards = [];
-  List<PlayerStatsData> _topYellowCards = [];
   List<PlayerStatsData> _oneYellow = [];
   List<PlayerStatsData> _twoYellows = [];
   bool _loading = true;
@@ -40,10 +39,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
         widget.league.id,
         season: widget.season,
       );
-      final yellowCards = await _service.getLeadingPlayersByYellowCards(
-        widget.league.id,
-        season: widget.season,
-      );
       final activeYellows = await _service.getPlayersByActiveYellows(
         widget.league.id,
         season: widget.season,
@@ -53,7 +48,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
       setState(() {
         _topScorers = scorers;
         _topRedCards = redCards;
-        _topYellowCards = yellowCards;
         _oneYellow = activeYellows['oneYellow']!;
         _twoYellows = activeYellows['twoYellows']!;
         _loading = false;
@@ -61,7 +55,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Greska pri ucitavanju: $e';
+        _error = 'Greška pri učitavanju: $e';
         _loading = false;
       });
     }
@@ -71,339 +65,316 @@ class _StatisticsTabState extends State<StatisticsTab> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-          decoration: BoxDecoration(color: AppColors.background),
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              _buildCard(
-                title: 'Strijelci',
-                players: _topScorers,
-                statValue: (p) => '${p.totalGoals.toInt()}',
-              ),
-              const SizedBox(height: 12),
-              _buildCard(
-                title: 'Crveni kartoni',
-                players: _topRedCards,
-                statValue: (p) => '${p.redCards.toInt()}',
-              ),
-              const SizedBox(height: 12),
-              _buildCard(
-                title: 'Žuti kartoni',
-                players: _topYellowCards,
-                statValue: (p) => '${p.yellowCards.toInt()}',
-              ),
-              const SizedBox(height: 12),
-              _buildSimpleYellowCard(
-                title: 'Pred isključenjem (2 žuta)',
-                players: _twoYellows,
-                count: 2,
-                labelColor: Colors.amber.shade700,
-                icon: Icons.warning_amber_rounded,
-                iconColor: Colors.amber,
-              ),
-              const SizedBox(height: 12),
-              _buildSimpleYellowCard(
-                title: 'Upozorenje (1 žuti)',
-                players: _oneYellow,
-                count: 1,
-                labelColor: Colors.orange,
-                icon: Icons.info_outline,
-                iconColor: Colors.orange,
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard({
-    required String title,
-    required List<PlayerStatsData> players,
-    required String Function(PlayerStatsData) statValue,
-  }) {
-    return Card(
-      elevation: 1,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.ternary,
-          borderRadius: BorderRadius.circular(10),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-            _cardHeader(),
-            const SizedBox(height: 10),
-            _sectionTitle(title),
-            const SizedBox(height: 6),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              )
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              )
-            else if (players.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Nema dostupnih statistika'),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: players.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
-                itemBuilder: (context, index) =>
-                    _scorerRow(index + 1, players[index], statValue),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSimpleYellowCard({
-    required String title,
-    required List<PlayerStatsData> players,
-    required int count,
-    required Color labelColor,
-    required IconData icon,
-    required Color iconColor,
-  }) {
-    return Card(
-      elevation: 1,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.ternary,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            _cardHeader(),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  Icon(icon, color: iconColor, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: labelColor,
-                    ),
-                  ),
-                ],
+            _buildStatCard(
+              title: 'Vodeći strijelci u lizi',
+              players: _topScorers,
+              trailing: (p) => _statWithIcon(
+                label: '${p.totalGoals.toInt()}',
+                icon: 'assets/icons/stats/SoccerBall.png',
               ),
             ),
-            const SizedBox(height: 6),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              )
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              )
-            else if (players.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Nema igrača s aktivnim žutim kartonima'),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: players.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
-                itemBuilder: (context, index) =>
-                    _yellowRow(players[index], count),
+            const SizedBox(height: 10),
+
+            _buildStatCard(
+              title: 'Vodeći po žutim kartonima',
+              players: _topRedCards,
+              trailing: (p) =>
+                  _statWithYellowCard(label: '${p.redCards.toInt()}'),
+            ),
+            const SizedBox(height: 10),
+
+            _buildStatCard(
+              title: '2. Akumulirani žuti karton',
+              titleColor: Colors.amber.shade700,
+              titleIcon: Icons.warning_amber_rounded,
+              players: _twoYellows,
+              trailing: (p) => Container(
+                width: 25,
+                height: 25,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icons/stats/yellowCard.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
-            const SizedBox(height: 8),
+              emptyText: 'Nema igrača s aktivnim žutim kartonima',
+            ),
+            const SizedBox(height: 10),
+
+            _buildStatCard(
+              title: '1. Akumulirani žuti karton',
+              titleColor: Colors.orange,
+              titleIcon: Icons.info_outline,
+              players: _oneYellow,
+              trailing: (p) => Container(
+                width: 25,
+                height: 25,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icons/stats/yellowCard.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              emptyText: 'Nema igrača s aktivnim žutim kartonima',
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
 
-  Widget _cardHeader() {
+  // ── Card container ───────────────────────────────────────────────────────────
+
+  Widget _buildStatCard({
+    required String title,
+    Color? titleColor,
+    IconData? titleIcon,
+    required List<PlayerStatsData> players,
+    required Widget Function(PlayerStatsData) trailing,
+    String emptyText = 'Nema dostupnih statistika',
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4E4E4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            child: Row(
+              children: [
+                if (titleIcon != null) ...[
+                  Icon(
+                    titleIcon,
+                    size: 16,
+                    color: titleColor ?? Colors.black87,
+                  ),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: titleColor ?? Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+
+          // Body
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(28),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+              ),
+            )
+          else if (players.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                emptyText,
+                style: TextStyle(
+                  fontFamily: AppFonts.roboto.fontFamily,
+                  color: Colors.grey,
+                  fontSize: 13,
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: players.length,
+              separatorBuilder: (_, __) => const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFF0F0F0),
+                indent: 14,
+                endIndent: 14,
+              ),
+              itemBuilder: (context, index) =>
+                  _playerRow(players[index], trailing),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Player row ───────────────────────────────────────────────────────────────
+
+  Widget _playerRow(
+    PlayerStatsData player,
+    Widget Function(PlayerStatsData) trailing,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          // Player photo
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEEEEE),
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo_withBg.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Name + club
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  player.playerFullName,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEEEEEE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/clubLogo/dinamo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      player.clubName,
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto.fontFamily,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Trailing widget (stat or card pips)
+          trailing(player),
+        ],
+      ),
+    );
+  }
+
+  // ── Trailing stat widgets ────────────────────────────────────────────────────
+
+  /// Bold number + small circular asset icon (e.g. soccer ball)
+  Widget _statWithIcon({required String label, required String icon}) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: AppFonts.roboto.fontFamily,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 6),
         Container(
-          width: 40,
-          height: 40,
+          width: 26,
+          height: 26,
+          decoration: const BoxDecoration(
+            color: Color(0xFFEEEEEE),
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(child: Image.asset(icon, fit: BoxFit.cover)),
+        ),
+      ],
+    );
+  }
+
+  /// Bold number + single yellow card shape (yellow leaderboard)
+  Widget _statWithYellowCard({required String label}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: AppFonts.roboto.fontFamily,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 6),
+
+        Container(
+          width: 25,
+          height: 25,
           decoration: const BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
           ),
           child: ClipOval(
             child: Image.asset(
-              'assets/images/logo_withBg.png',
+              'assets/icons/stats/yellowCard.png',
               fit: BoxFit.cover,
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          widget.league.name,
-          style: TextStyle(
-            fontFamily: AppFonts.roboto.fontFamily,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
       ],
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontFamily: AppFonts.roboto.fontFamily,
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
-          color: AppColors.ternaryGray,
-        ),
-      ),
-    );
-  }
-
-  Widget _scorerRow(
-    int rank,
-    PlayerStatsData player,
-    String Function(PlayerStatsData) statValue,
-  ) {
-    return IntrinsicHeight(
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            child: Center(
-              child: Text(
-                '$rank.',
-                style: TextStyle(
-                  fontFamily: AppFonts.roboto.fontFamily,
-                  fontSize: 13,
-                  color: AppColors.ternaryGray,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          VerticalDivider(
-            width: 1,
-            thickness: 2.5,
-            color: AppColors.ternaryGray,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.playerFullName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppFonts.roboto.fontFamily,
-                  ),
-                ),
-                Text(
-                  player.clubName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.ternaryGray,
-                    fontFamily: AppFonts.roboto.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            statValue(player),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _yellowRow(PlayerStatsData player, int count) {
-    return IntrinsicHeight(
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  count,
-                  (_) => const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 1),
-                    child: Icon(Icons.rectangle, color: Colors.amber, size: 16),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          VerticalDivider(
-            width: 1,
-            thickness: 2.5,
-            color: AppColors.ternaryGray,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.playerFullName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppFonts.roboto.fontFamily,
-                  ),
-                ),
-                Text(
-                  player.clubName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.ternaryGray,
-                    fontFamily: AppFonts.roboto.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
     );
   }
 }

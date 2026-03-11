@@ -50,7 +50,7 @@ class PlayerStatsData {
       playerFullName: map['playerName'] as String? ?? '',
       redCards: map['redCards'] as num? ?? 0,
       yellowCards: map['yellowCards'] as num? ?? 0,
-      activeYellows: map['activeYellows'] as num ?? 0,
+      activeYellows: map['activeYellows'] as num,
       suspendedUntilRound: map['suspendedUntilRound'] as num? ?? 0,
     );
   }
