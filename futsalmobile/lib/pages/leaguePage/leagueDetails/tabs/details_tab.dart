@@ -105,7 +105,7 @@ class _DetailsTabState extends State<DetailsTab> {
                             Text(
                               '${widget.league.name}, Runda: $_currentRound',
                               style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontFamily: AppFonts.roboto,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -129,7 +129,7 @@ class _DetailsTabState extends State<DetailsTab> {
                                 Text(
                                   dateFormat.format(LeagueData.startDate),
                                   style: TextStyle(
-                                    fontFamily: AppFonts.roboto.fontFamily,
+                                    fontFamily: AppFonts.roboto,
                                     fontSize: 12,
                                     color: AppColors.ternaryGray,
                                   ),
@@ -137,7 +137,7 @@ class _DetailsTabState extends State<DetailsTab> {
                                 Text(
                                   dateFormat.format(LeagueData.endDate),
                                   style: TextStyle(
-                                    fontFamily: AppFonts.roboto.fontFamily,
+                                    fontFamily: AppFonts.roboto,
                                     fontSize: 12,
                                     color: AppColors.ternaryGray,
                                   ),
@@ -188,7 +188,7 @@ class _DetailsTabState extends State<DetailsTab> {
                             Text(
                               'Broj ekipa',
                               style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontFamily: AppFonts.roboto,
                                 color: AppColors.ternaryGray,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w300,
@@ -197,7 +197,7 @@ class _DetailsTabState extends State<DetailsTab> {
                             Text(
                               '${_clubs.length}',
                               style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontFamily: AppFonts.roboto,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -272,7 +272,7 @@ class _DetailsTabState extends State<DetailsTab> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontFamily: AppFonts.roboto,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -284,7 +284,7 @@ class _DetailsTabState extends State<DetailsTab> {
                     SizedBox(width: screenWidth * 0.02),
                     Text(
                       leagueName,
-                      style: TextStyle(fontFamily: AppFonts.roboto.fontFamily),
+                      style: TextStyle(fontFamily: AppFonts.roboto),
                     ),
                   ],
                 ),

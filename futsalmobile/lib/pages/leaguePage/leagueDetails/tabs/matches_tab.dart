@@ -107,7 +107,7 @@ class _MatchesTabState extends State<MatchesTab> {
                           Text(
                             widget.league.name,
                             style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
+                              fontFamily: AppFonts.roboto,
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
                             ),
@@ -197,7 +197,7 @@ class _MatchesTabState extends State<MatchesTab> {
                 Text(
                   date,
                   style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontFamily: AppFonts.roboto,
                     fontSize: 13,
                     color: AppColors.ternaryGray,
                     fontWeight: FontWeight.w500,
@@ -206,7 +206,7 @@ class _MatchesTabState extends State<MatchesTab> {
                 Text(
                   time,
                   style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontFamily: AppFonts.roboto,
                     fontSize: 13,
                     color: AppColors.ternaryGray,
                     fontWeight: FontWeight.w500,
@@ -296,7 +296,7 @@ class _MatchesTabState extends State<MatchesTab> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            fontFamily: AppFonts.roboto.fontFamily,
+            fontFamily: AppFonts.roboto,
           ),
         ),
       ],

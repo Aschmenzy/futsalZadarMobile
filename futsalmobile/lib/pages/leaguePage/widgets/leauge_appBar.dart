@@ -54,7 +54,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Text(
                     "Natrag na lige",
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: AppColors.ternary,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -102,7 +102,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                         Text(
                           leagueName,
                           style: TextStyle(
-                            fontFamily: AppFonts.roboto.fontFamily,
+                            fontFamily: AppFonts.roboto,
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -121,7 +121,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   child: Text(
                                     s,
                                     style: TextStyle(
-                                      fontFamily: AppFonts.roboto.fontFamily,
+                                      fontFamily: AppFonts.roboto,
                                       color: Colors.white,
                                       fontWeight: s == season
                                           ? FontWeight.bold
@@ -137,7 +137,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                               Text(
                                 season,
                                 style: TextStyle(
-                                  fontFamily: AppFonts.roboto.fontFamily,
+                                  fontFamily: AppFonts.roboto,
                                   color: AppColors.ternary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -168,12 +168,12 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
         labelColor: Colors.white,
         unselectedLabelColor: Colors.white60,
         labelStyle: TextStyle(
-          fontFamily: AppFonts.roboto.fontFamily,
+          fontFamily: AppFonts.roboto,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
         unselectedLabelStyle: TextStyle(
-          fontFamily: AppFonts.roboto.fontFamily,
+          fontFamily: AppFonts.roboto,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),

@@ -28,7 +28,7 @@ class UtakmicaContainer extends StatelessWidget {
                   Text(
                     "Uzivo",
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: Color.fromRGBO(26, 109, 175, 1),
                       fontSize: screenWidth * 0.035,
                     ),
@@ -36,7 +36,7 @@ class UtakmicaContainer extends StatelessWidget {
                   Text(
                     "25:14",
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: Color.fromRGBO(26, 109, 175, 1),
                       fontSize: screenWidth * 0.035,
                     ),
@@ -62,7 +62,7 @@ class UtakmicaContainer extends StatelessWidget {
                           child: Text(
                             "Hajduk",
                             style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
+                              fontFamily: AppFonts.roboto,
                               color: Colors.black,
                               fontSize: screenWidth * 0.04,
                             ),
@@ -74,7 +74,7 @@ class UtakmicaContainer extends StatelessWidget {
                   Text(
                     "2",
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: Colors.black,
                       fontSize: screenWidth * 0.05,
                       fontWeight: FontWeight.w700,
@@ -102,7 +102,7 @@ class UtakmicaContainer extends StatelessWidget {
                           child: Text(
                             "Dinamo",
                             style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
+                              fontFamily: AppFonts.roboto,
                               color: Colors.black,
                               fontSize: screenWidth * 0.04,
                             ),
@@ -114,7 +114,7 @@ class UtakmicaContainer extends StatelessWidget {
                   Text(
                     "0",
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: Colors.black,
                       fontSize: screenWidth * 0.05,
                       fontWeight: FontWeight.w700,

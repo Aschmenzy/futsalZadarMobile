@@ -8,13 +8,19 @@ class NewsDetailsPage extends StatelessWidget {
   final String body;
   final String? imageUrl;
   final DateTime date;
-  const NewsDetailsPage({super.key, required this.header, required this.body, this.imageUrl, required this.date});
+  const NewsDetailsPage({
+    super.key,
+    required this.header,
+    required this.body,
+    this.imageUrl,
+    required this.date,
+  });
 
   @override
   Widget build(BuildContext context) {
     final screenWith = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-     final dateFormat = DateFormat('d.M.yyyy');
+    final dateFormat = DateFormat('d.M.yyyy');
     return Scaffold(
       appBar: NewsAppbar(),
       body: SafeArea(
@@ -27,8 +33,11 @@ class NewsDetailsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 imageUrl != null && imageUrl!.isNotEmpty
-    ? Image.network(imageUrl!, fit: BoxFit.cover, )
-    : Image.asset('assets/images/newsImage.png',fit: BoxFit.fitWidth),
+                    ? Image.network(imageUrl!, fit: BoxFit.cover)
+                    : Image.asset(
+                        'assets/images/newsImage.png',
+                        fit: BoxFit.fitWidth,
+                      ),
 
                 //datum kad je vijest objavljena
                 Padding(
@@ -52,7 +61,7 @@ class NewsDetailsPage extends StatelessWidget {
                           Text(
                             dateFormat.format(date),
                             style: TextStyle(
-                              fontFamily: AppFonts.roboto.fontFamily,
+                              fontFamily: AppFonts.roboto,
                               color: AppColors.ternaryGray,
                             ),
                           ),
@@ -65,14 +74,13 @@ class NewsDetailsPage extends StatelessWidget {
                       Text(
                         header,
                         style: TextStyle(
-                          fontFamily: AppFonts.roboto.fontFamily,
+                          fontFamily: AppFonts.roboto,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w800,
                           fontSize: 24,
                         ),
                       ),
 
-                     
                       //divider
                       SizedBox(height: screenHeight * 0.02),
                       Divider(),
@@ -82,7 +90,7 @@ class NewsDetailsPage extends StatelessWidget {
                       Text(
                         body,
                         style: TextStyle(
-                          fontFamily: AppFonts.roboto.fontFamily,
+                          fontFamily: AppFonts.roboto,
                           fontSize: 18,
                         ),
                         textAlign: TextAlign.start,

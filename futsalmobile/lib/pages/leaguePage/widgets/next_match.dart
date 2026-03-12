@@ -38,7 +38,7 @@ class NextMatch extends StatelessWidget {
                       Text(
                         'Sljedeca utakmica',
                         style: TextStyle(
-                          fontFamily: AppFonts.roboto.fontFamily,
+                          fontFamily: AppFonts.roboto,
                           fontSize: screenWidth * 0.042,
                           fontWeight: FontWeight.w900,
                         ),
@@ -76,7 +76,7 @@ class NextMatch extends StatelessWidget {
                             Text(
                               _daysUntil(match!.matchDate),
                               style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontFamily: AppFonts.roboto,
                                 fontSize: screenWidth * 0.045,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -86,7 +86,7 @@ class NextMatch extends StatelessWidget {
                             Text(
                               '${match!.matchDate.split('-').reversed.join('.')}. ${match!.matchTime}',
                               style: TextStyle(
-                                fontFamily: AppFonts.roboto.fontFamily,
+                                fontFamily: AppFonts.roboto,
                                 fontSize: screenWidth * 0.030,
                                 color: AppColors.ternaryGray,
                               ),
@@ -137,7 +137,7 @@ class NextMatch extends StatelessWidget {
         Text(
           teamName,
           style: TextStyle(
-            fontFamily: AppFonts.roboto.fontFamily,
+            fontFamily: AppFonts.roboto,
             fontSize: screenWidth * 0.032,
             fontWeight: FontWeight.w600,
           ),

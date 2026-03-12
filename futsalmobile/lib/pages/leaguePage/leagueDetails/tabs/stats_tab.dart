@@ -173,7 +173,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontFamily: AppFonts.roboto,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: titleColor ?? Colors.black87,
@@ -205,7 +205,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
               child: Text(
                 emptyText,
                 style: TextStyle(
-                  fontFamily: AppFonts.roboto.fontFamily,
+                  fontFamily: AppFonts.roboto,
                   color: Colors.grey,
                   fontSize: 13,
                 ),
@@ -268,7 +268,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                 Text(
                   player.playerFullName,
                   style: TextStyle(
-                    fontFamily: AppFonts.roboto.fontFamily,
+                    fontFamily: AppFonts.roboto,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: Colors.black87,
@@ -295,7 +295,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                     Text(
                       player.clubName,
                       style: TextStyle(
-                        fontFamily: AppFonts.roboto.fontFamily,
+                        fontFamily: AppFonts.roboto,
                         fontWeight: FontWeight.w400,
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -314,8 +314,6 @@ class _StatisticsTabState extends State<StatisticsTab> {
     );
   }
 
-  // ── Trailing stat widgets ────────────────────────────────────────────────────
-
   /// Bold number + small circular asset icon (e.g. soccer ball)
   Widget _statWithIcon({required String label, required String icon}) {
     return Row(
@@ -324,7 +322,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
         Text(
           label,
           style: TextStyle(
-            fontFamily: AppFonts.roboto.fontFamily,
+            fontFamily: AppFonts.roboto,
             fontWeight: FontWeight.w700,
             fontSize: 18,
             color: Colors.black87,
@@ -352,7 +350,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
         Text(
           label,
           style: TextStyle(
-            fontFamily: AppFonts.roboto.fontFamily,
+            fontFamily: AppFonts.roboto,
             fontWeight: FontWeight.w700,
             fontSize: 18,
             color: Colors.black87,

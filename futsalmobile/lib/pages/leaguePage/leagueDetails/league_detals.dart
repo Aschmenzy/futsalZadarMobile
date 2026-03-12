@@ -44,12 +44,6 @@ class _LeagueDetailsState extends State<LeagueDetails>
       });
     } catch (e) {
       debugPrint('Season load error: $e');
-      if (!mounted) return;
-
-      setState(() {
-        _selectedSeason = '2025-2026';
-        _seasons = ['2025-2026'];
-      });
     }
   }
 

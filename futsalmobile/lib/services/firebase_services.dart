@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
@@ -36,7 +37,6 @@ class FirebaseService {
       }
 
       _cachedSeason = doc.data()?['activeSeason'] ?? '';
-      debugPrint('✅ getActiveSeason → "$_cachedSeason"');
 
       return _cachedSeason!;
     } catch (e) {
@@ -49,7 +49,7 @@ class FirebaseService {
     try {
       final snapshot = await _db.collection('seasons').get();
       final seasons = snapshot.docs.map((doc) => doc.id).toList();
-      seasons.sort((a, b) => b.compareTo(a)); // newest first
+      seasons.sort((a, b) => b.compareTo(a));
       return seasons;
     } catch (e) {
       throw Exception('Greska pri dohvatu sezona: $e');
@@ -152,43 +152,6 @@ class FirebaseService {
     return clubsWithPlayers;
   }
 
-  // Vijesti, funkcija vraca vijesti 5 po 5
-  Future<NewsPaginated> getNewsPaginated({
-    int limit = 5,
-    DocumentSnapshot? lastDocument,
-  }) async {
-    try {
-      Query query = _db
-          .collection('seasons')
-          .doc(_cachedSeason)
-          .collection('news')
-          .orderBy('createdAt', descending: true)
-          .limit(limit);
-
-      if (lastDocument != null) {
-        query = query.startAfterDocument(lastDocument);
-      }
-
-      final snapshot = await query.get();
-      final items = snapshot.docs
-          .map(
-            (doc) => NewsData.fromFirestore(
-              doc.data() as Map<String, dynamic>,
-              doc.id,
-            ),
-          )
-          .toList();
-
-      return NewsPaginated(
-        items: items,
-        lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
-        hasMore: snapshot.docs.length == limit,
-      );
-    } catch (e) {
-      throw Exception('Greska pri dohvatu vijesti: $e');
-    }
-  }
-
   Future<int> getCurrentRound(String leagueCode, {String? season}) async {
     try {
       final seasonId = (season != null && season.isNotEmpty)
@@ -265,9 +228,13 @@ class FirebaseService {
           .orderBy('matchTime')
           .get();
 
-      return snapshot.docs
-          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
-          .toList();
+      return snapshot.docs.map((doc) {
+        try {
+          return MatchData.fromFirestore(doc.data(), doc.id);
+        } catch (e) {
+          rethrow;
+        }
+      }).toList();
     } catch (e) {
       throw Exception('Greska pri dohvatu utakmica: $e');
     }
@@ -410,6 +377,91 @@ class FirebaseService {
       };
     } catch (e) {
       throw Exception('Greska pri dohvatu igraca po zutim kartonima: $e');
+    }
+  }
+
+  Future<ClubStanding?> getBestClubInLeague(String leagueCode) async {
+    try {
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(_cachedSeason)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('standings')
+          .orderBy('points', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+
+      print("leaugeCode : $leagueCode, sezona je $_cachedSeason");
+
+      final doc = snapshot.docs.first;
+      return ClubStanding.fromFirestore(doc.data(), doc.id);
+    } catch (e) {
+      throw Exception('Greska pri pronalasku najboljeg tima u lizi: $e');
+    }
+  }
+
+  // ============================================================
+  // VIJESTI
+  // ============================================================
+
+  // Vijesti, funkcija vraca vijesti 5 po 5
+  Future<NewsPaginated> getNewsPaginated({
+    int limit = 5,
+    DocumentSnapshot? lastDocument,
+  }) async {
+    try {
+      Query query = _db
+          .collection('seasons')
+          .doc(_cachedSeason)
+          .collection('news')
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+
+      if (lastDocument != null) {
+        query = query.startAfterDocument(lastDocument);
+      }
+
+      final snapshot = await query.get();
+      final items = snapshot.docs
+          .map(
+            (doc) => NewsData.fromFirestore(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
+          .toList();
+
+      return NewsPaginated(
+        items: items,
+        lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+        hasMore: snapshot.docs.length == limit,
+      );
+    } catch (e) {
+      throw Exception('Greska pri dohvatu vijesti: $e');
+    }
+  }
+
+  Future<NewsData?> getLatestNews() async {
+    try {
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(_cachedSeason)
+          .collection('news')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+
+      return NewsData.fromFirestore(
+        snapshot.docs.first.data(),
+        snapshot.docs.first.id,
+      );
+    } catch (e) {
+      throw Exception('Greska pri dohvatu vijesti: $e');
     }
   }
 }

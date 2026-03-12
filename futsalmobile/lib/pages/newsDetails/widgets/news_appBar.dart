@@ -13,7 +13,7 @@ class NewsAppbar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppColors.secondary,
       elevation: 0,
       automaticallyImplyLeading: false,
-      
+
       flexibleSpace: SafeArea(
         child: Container(
           height: kToolbarHeight,
@@ -34,7 +34,7 @@ class NewsAppbar extends StatelessWidget implements PreferredSizeWidget {
               Text(
                 "Natrag na vijesti",
                 style: TextStyle(
-                  fontFamily: AppFonts.roboto.fontFamily,
+                  fontFamily: AppFonts.roboto,
                   color: AppColors.ternary,
                 ),
               ),

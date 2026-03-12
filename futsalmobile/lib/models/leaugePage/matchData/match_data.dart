@@ -83,31 +83,33 @@ class MatchData {
           ? (map['createdAt'] as dynamic).toDate()
           : DateTime.now(),
       updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'])
+          ? (map['updatedAt'] is String
+                ? DateTime.parse(map['updatedAt'] as String)
+                : (map['updatedAt'] as dynamic).toDate())
           : DateTime.now(),
-      league: map['league'] ?? '',
-      leagueCode: map['leagueCode'] ?? '',
-      season: map['season'] ?? '',
-      round: map['round'] ?? 0,
-      matchDate: map['matchDate'] ?? '',
-      matchTime: map['matchTime'] ?? '',
-      status: map['status'] ?? '',
-      homeTeam: map['homeTeam'] ?? '',
-      homeTeamLogo: map['homeTeamLogo'] ?? '',
-      homeTeamGoals: map['homeTeamGoals'] ?? 0,
-      awayTeam: map['awayTeam'] ?? '',
-      awayTeamLogo: map['awayTeamLogo'] ?? '',
-      awayTeamGoals: map['awayTeamGoals'] ?? 0,
-      delegate: map['delegate'] ?? '',
-      referee1: map['referee1'],
-      referee2: map['referee2'],
+      league: map['league'] as String? ?? '',
+      leagueCode: map['leagueCode'] as String? ?? '',
+      season: map['season'] as String? ?? '',
+      round: map['round'] as int? ?? 0,
+      matchDate: map['matchDate'] as String? ?? '',
+      matchTime: map['matchTime'] as String? ?? '',
+      status: map['status'] as String? ?? '',
+      homeTeam: map['homeTeam'] as String? ?? '',
+      homeTeamLogo: map['homeTeamLogo'] as String? ?? '',
+      homeTeamGoals: map['homeTeamGoals'] as int? ?? 0,
+      awayTeam: map['awayTeam'] as String? ?? '',
+      awayTeamLogo: map['awayTeamLogo'] as String? ?? '',
+      awayTeamGoals: map['awayTeamGoals'] as int? ?? 0,
+      delegate: map['delegate'] as String? ?? '',
+      referee1: map['referee1'] as String?,
+      referee2: map['referee2'] as String?,
       matchState: map['matchState'] != null
           ? MatchState.fromFirestore(map['matchState'] as Map<String, dynamic>)
           : null,
-      originalHomeScore: map['originalHomeScore'],
-      originalAwayScore: map['originalAwayScore'],
+      originalHomeScore: map['originalHomeScore'] as int?,
+      originalAwayScore: map['originalAwayScore'] as int?,
       originalPlayerStats: originalStats,
-      statsProcessed: map['statsProcessed'],
+      statsProcessed: map['statsProcessed'] as bool?,
       statsProcessedAt: map['statsProcessedAt'] != null
           ? (map['statsProcessedAt'] as dynamic).toDate()
           : null,

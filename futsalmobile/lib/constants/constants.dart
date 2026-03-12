@@ -13,7 +13,7 @@ class AppColors {
 }
 
 class AppFonts {
-  static final roboto = GoogleFonts.roboto();
+  static final roboto = GoogleFonts.roboto().fontFamily;
 
   AppFonts._();
 }

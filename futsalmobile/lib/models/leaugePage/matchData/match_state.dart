@@ -2,21 +2,21 @@ import 'match_event.dart';
 import 'match_player.dart';
 
 class MatchState {
-  final String status;          // "scheduled" | "live" | "finished" | "postponed" | "cancelled"
-  final String currentPeriod;   // "1st" | "2nd" | "ot" | "penalties"
+  final String status;
+  final String currentPeriod;
 
   final bool isConfirmed;
   final DateTime? confirmedAt;
   final bool isPaused;
 
-  final int timerDuration;      // seconds
-  final int timerRemaining;     // seconds
+  final int timerDuration;
+  final int timerRemaining;
   final DateTime timerStartedAt;
   final DateTime updatedAt;
 
   final List<MatchPlayer> homeTeamPlayers;
-  final List<String> homeInPlay;                  // player IDs currently on field
-  final Map<String, String> homeShirtNumbers;     // { playerId: shirtNumber }
+  final List<String> homeInPlay;
+  final Map<String, String> homeShirtNumbers;
   final int homeTeamFouls1st;
   final int homeTeamFouls2nd;
 
@@ -27,7 +27,7 @@ class MatchState {
   final int awayTeamFouls2nd;
 
   final List<MatchEvent> events;
-  final Map<String, PlayerStats> playerStats;     // { playerId: PlayerStats }
+  final Map<String, PlayerStats> playerStats;
 
   const MatchState({
     required this.status,
@@ -70,31 +70,45 @@ class MatchState {
     });
 
     return MatchState(
-      status: map['status'] ?? '',
-      currentPeriod: map['currentPeriod'] ?? '',
-      isConfirmed: map['isConfirmed'] ?? false,
+      status: map['status'] as String? ?? '',
+      currentPeriod: map['currentPeriod'] as String? ?? '',
+      isConfirmed: map['isConfirmed'] as bool? ?? false,
       confirmedAt: map['confirmedAt'] != null
-          ? DateTime.parse(map['confirmedAt'])
+          ? (map['confirmedAt'] is String
+                ? DateTime.parse(map['confirmedAt'] as String)
+                : (map['confirmedAt'] as dynamic).toDate())
           : null,
-      isPaused: map['isPaused'] ?? false,
-      timerDuration: map['timerDuration'] ?? 0,
-      timerRemaining: map['timerRemaining'] ?? 0,
-      timerStartedAt: DateTime.parse(map['timerStartedAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      isPaused: map['isPaused'] as bool? ?? false,
+      timerDuration: map['timerDuration'] as int? ?? 0,
+      timerRemaining: map['timerRemaining'] as int? ?? 0,
+      timerStartedAt: map['timerStartedAt'] != null
+          ? (map['timerStartedAt'] is String
+                ? DateTime.parse(map['timerStartedAt'] as String)
+                : (map['timerStartedAt'] as dynamic).toDate())
+          : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] is String
+                ? DateTime.parse(map['updatedAt'] as String)
+                : (map['updatedAt'] as dynamic).toDate())
+          : DateTime.now(),
       homeTeamPlayers: (map['homeTeamPlayers'] as List<dynamic>? ?? [])
           .map((p) => MatchPlayer.fromFirestore(p as Map<String, dynamic>))
           .toList(),
-      homeInPlay: List<String>.from(map['homeInPlay'] ?? []),
+      homeInPlay: (map['homeInPlay'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
       homeShirtNumbers: homeShirts,
-      homeTeamFouls1st: map['homeTeamFouls1st'] ?? 0,
-      homeTeamFouls2nd: map['homeTeamFouls2nd'] ?? 0,
+      homeTeamFouls1st: map['homeTeamFouls1st'] as int? ?? 0,
+      homeTeamFouls2nd: map['homeTeamFouls2nd'] as int? ?? 0,
       awayTeamPlayers: (map['awayTeamPlayers'] as List<dynamic>? ?? [])
           .map((p) => MatchPlayer.fromFirestore(p as Map<String, dynamic>))
           .toList(),
-      awayInPlay: List<String>.from(map['awayInPlay'] ?? []),
+      awayInPlay: (map['awayInPlay'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
       awayShirtNumbers: awayShirts,
-      awayTeamFouls1st: map['awayTeamFouls1st'] ?? 0,
-      awayTeamFouls2nd: map['awayTeamFouls2nd'] ?? 0,
+      awayTeamFouls1st: map['awayTeamFouls1st'] as int? ?? 0,
+      awayTeamFouls2nd: map['awayTeamFouls2nd'] as int? ?? 0,
       events: (map['events'] as List<dynamic>? ?? [])
           .map((e) => MatchEvent.fromFirestore(e as Map<String, dynamic>))
           .toList(),

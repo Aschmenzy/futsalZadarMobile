@@ -6,7 +6,12 @@ class NewsContainer extends StatelessWidget {
   final String body;
   final String? imageUrl;
 
-  const NewsContainer({super.key, required this.header, required this.body, this.imageUrl});
+  const NewsContainer({
+    super.key,
+    required this.header,
+    required this.body,
+    this.imageUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +19,6 @@ class NewsContainer extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
       children: [
-        
         Container(
           width: screenWidth * 0.85,
           height: screenHeight * 0.2,
@@ -28,14 +32,14 @@ class NewsContainer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 imageUrl != null && imageUrl!.isNotEmpty
-    ? Image.network(imageUrl!, fit: BoxFit.cover)
-    : Image.asset('assets/images/newsImage.png', scale: 0.7),
+                    ? Image.network(imageUrl!, fit: BoxFit.cover)
+                    : Image.asset('assets/images/newsImage.png', scale: 0.7),
                 Padding(
                   padding: const EdgeInsets.only(left: 12, top: 4),
                   child: Text(
-                  header,
+                    header,
                     style: TextStyle(
-                      fontFamily: AppFonts.roboto.fontFamily,
+                      fontFamily: AppFonts.roboto,
                       color: Colors.black,
                       fontWeight: FontWeight.w800,
                     ),
@@ -51,7 +55,7 @@ class NewsContainer extends StatelessWidget {
                     child: Text(
                       body,
                       style: TextStyle(
-                        fontFamily: AppFonts.roboto.fontFamily,
+                        fontFamily: AppFonts.roboto,
                         color: Color.fromRGBO(167, 167, 167, 1),
                       ),
                       softWrap: true,
@@ -64,7 +68,7 @@ class NewsContainer extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: screenHeight * 0.03,)
+        SizedBox(height: screenHeight * 0.03),
       ],
     );
   }
