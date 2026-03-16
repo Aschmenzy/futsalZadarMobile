@@ -404,6 +404,39 @@ class FirebaseService {
   }
 
   // ============================================================
+  // TABLICE
+  // ============================================================
+  Future<List<ClubStanding>> getAllClubsInLeague(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      final snapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('standings')
+          .orderBy('points', descending: true)
+          .get();
+
+      if (snapshot.docs.isEmpty) return [];
+
+      print("leagueCode: $leagueCode, sezona je $_cachedSeason");
+
+      return snapshot.docs
+          .map((doc) => ClubStanding.fromFirestore(doc.data(), doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('Greška pri dohvaćanju klubova u ligi: $e');
+    }
+  }
+
+  // ============================================================
   // VIJESTI
   // ============================================================
 

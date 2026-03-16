@@ -63,80 +63,91 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        child: Column(
-          children: [
-            _buildStatCard(
-              title: 'Vodeći strijelci u lizi',
-              players: _topScorers,
-              trailing: (p) => _statWithIcon(
-                label: '${p.totalGoals.toInt()}',
-                icon: 'assets/icons/stats/SoccerBall.png',
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            _buildStatCard(
-              title: 'Vodeći po žutim kartonima',
-              players: _topRedCards,
-              trailing: (p) =>
-                  _statWithYellowCard(label: '${p.redCards.toInt()}'),
-            ),
-            const SizedBox(height: 10),
-
-            _buildStatCard(
-              title: '2. Akumulirani žuti karton',
-              titleColor: Colors.amber.shade700,
-              titleIcon: Icons.warning_amber_rounded,
-              players: _twoYellows,
-              trailing: (p) => Container(
-                width: 25,
-                height: 25,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
+    return Container(
+      color: AppColors.background,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Column(
+            children: [
+              // 1. Top Scorers
+              _buildStatCard(
+                title: 'Vodeći strijelci u lizi',
+                players: _topScorers,
+                trailing: (p) => _statWithIcon(
+                  label: '${p.totalGoals.toInt()}',
+                  icon: 'assets/icons/stats/SoccerBall.png',
                 ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/icons/stats/yellowCard.png',
-                    fit: BoxFit.cover,
+              ),
+              const SizedBox(height: 10),
+
+              // 2. Top Red Cards
+              _buildStatCard(
+                title: 'Vodeći po crvenim kartonima',
+                players: _topRedCards,
+                trailing: (p) =>
+                    _statWithRedCard(label: '${p.redCards.toInt()}'),
+              ),
+              const SizedBox(height: 10),
+
+              // 3. Top Yellow Cards
+              _buildStatCard(
+                title: 'Vodeći po žutim kartonima',
+                players: _topScorers, // replace with your yellow card list
+                trailing: (p) =>
+                    _statWithYellowCard(label: '${p.totalGoals.toInt()}'),
+              ),
+              const SizedBox(height: 10),
+
+              // 4. 2nd Accumulated Yellow
+              _buildStatCard(
+                title: '2. Akumulirani žuti karton',
+                players: _twoYellows,
+                trailing: (p) => Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/icons/stats/yellowCard.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
+                emptyText: 'Nema igrača s aktivnim žutim kartonima',
               ),
-              emptyText: 'Nema igrača s aktivnim žutim kartonima',
-            ),
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            _buildStatCard(
-              title: '1. Akumulirani žuti karton',
-              titleColor: Colors.orange,
-              titleIcon: Icons.info_outline,
-              players: _oneYellow,
-              trailing: (p) => Container(
-                width: 25,
-                height: 25,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/icons/stats/yellowCard.png',
-                    fit: BoxFit.cover,
+              // 5. 1st Accumulated Yellow
+              _buildStatCard(
+                title: '1. Akumulirani žuti karton',
+                players: _oneYellow,
+                trailing: (p) => Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/icons/stats/yellowCard.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
+                emptyText: 'Nema igrača s aktivnim žutim kartonima',
               ),
-              emptyText: 'Nema igrača s aktivnim žutim kartonima',
-            ),
-            const SizedBox(height: 10),
-          ],
+              const SizedBox(height: 10),
+            ],
+          ),
         ),
       ),
     );
   }
-
   // ── Card container ───────────────────────────────────────────────────────────
 
   Widget _buildStatCard({
@@ -368,6 +379,39 @@ class _StatisticsTabState extends State<StatisticsTab> {
           child: ClipOval(
             child: Image.asset(
               'assets/icons/stats/yellowCard.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statWithRedCard({required String label}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 6),
+
+        Container(
+          width: 25,
+          height: 25,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/icons/stats/Foul.png',
               fit: BoxFit.cover,
             ),
           ),
