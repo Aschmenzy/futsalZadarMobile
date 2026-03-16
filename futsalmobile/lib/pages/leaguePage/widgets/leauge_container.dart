@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/pages/leaguePage/leagueDetails/league_detals.dart';
 import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
 
-class LeaugeContainer extends StatefulWidget {
+class LeaugeContainer extends StatelessWidget {
   const LeaugeContainer({
     super.key,
 
     required this.leaugeNum,
     required this.leaugeName,
     required this.leaugeID,
+    required this.leadingTeam,
     this.numOfClubs,
   });
 
@@ -18,12 +20,8 @@ class LeaugeContainer extends StatefulWidget {
   final String leaugeID;
   final int leaugeNum;
   final int? numOfClubs;
+  final ClubStanding? leadingTeam;
 
-  @override
-  State<LeaugeContainer> createState() => _LeaugeContainerState();
-}
-
-class _LeaugeContainerState extends State<LeaugeContainer> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -47,8 +45,8 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
         MaterialPageRoute(
           builder: (_) => LeagueDetails(
             league: LeagueData(
-              id: widget.leaugeID,
-              leagueNumber: widget.leaugeNum,
+              id: leaugeID,
+              leagueNumber: leaugeNum,
               clubs: [],
             ),
           ),
@@ -82,7 +80,7 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.leaugeName,
+                      leaugeName,
                       style: TextStyle(
                         fontFamily: AppFonts.roboto,
                         fontSize: titleFontSize,
@@ -111,7 +109,7 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                                       style: TextStyle(
                                         fontFamily: AppFonts.roboto,
                                         fontSize: labelFontSize,
-                                        color: Colors.blue,
+                                        color: AppColors.secondary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -124,9 +122,9 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                                 padding: EdgeInsets.only(
                                   left: labelIconSize + iconTextGap,
                                 ),
-                                child: widget.numOfClubs != null
+                                child: numOfClubs != null
                                     ? Text(
-                                        widget.numOfClubs.toString(),
+                                        numOfClubs.toString(),
                                         style: TextStyle(
                                           fontFamily: AppFonts.roboto,
                                           fontSize: valueFontSize,
@@ -175,7 +173,7 @@ class _LeaugeContainerState extends State<LeaugeContainer> {
                                   left: labelIconSize + iconTextGap,
                                 ),
                                 child: Text(
-                                  "Hajduk",
+                                  leadingTeam?.clubName ?? "",
                                   style: TextStyle(
                                     fontFamily: AppFonts.roboto,
                                     fontSize: valueFontSize,

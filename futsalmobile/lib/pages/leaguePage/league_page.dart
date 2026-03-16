@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leading_teams.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_container.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -14,6 +15,7 @@ class LeaguePage extends StatefulWidget {
 class _LeaguePageState extends State<LeaguePage> {
   final _service = FirebaseService();
   final Map<String, int> _clubCounts = {};
+  final Map<String, ClubStanding?> _leadingClubs = {};
 
   @override
   void initState() {
@@ -25,6 +27,11 @@ class _LeaguePageState extends State<LeaguePage> {
     for (final id in ['liga1', 'liga2', 'liga3', 'liga4']) {
       final count = await _service.getClubCount(id);
       setState(() => _clubCounts[id] = count);
+    }
+
+    for (final id in ['liga1', 'liga2', 'liga3', 'liga4']) {
+      final club = await _service.getBestClubInLeague(id);
+      setState(() => _leadingClubs[id] = club);
     }
   }
 
@@ -54,6 +61,7 @@ class _LeaguePageState extends State<LeaguePage> {
                     leaugeName: 'Liga 1',
                     leaugeID: 'liga1',
                     numOfClubs: _clubCounts["liga1"],
+                    leadingTeam: _leadingClubs["liga1"],
                   ),
 
                   SizedBox(height: 20),
@@ -63,6 +71,7 @@ class _LeaguePageState extends State<LeaguePage> {
                     leaugeName: 'Liga 2',
                     leaugeID: 'liga2',
                     numOfClubs: _clubCounts["liga2"],
+                    leadingTeam: _leadingClubs["liga2"],
                   ),
 
                   SizedBox(height: 20),
@@ -72,6 +81,7 @@ class _LeaguePageState extends State<LeaguePage> {
                     leaugeName: 'Liga 3',
                     leaugeID: 'liga3',
                     numOfClubs: _clubCounts["liga3"],
+                    leadingTeam: _leadingClubs["liga3"],
                   ),
 
                   SizedBox(height: 20),
@@ -81,13 +91,13 @@ class _LeaguePageState extends State<LeaguePage> {
                     leaugeName: 'Liga 4',
                     leaugeID: 'liga4',
                     numOfClubs: _clubCounts["liga4"],
+                    leadingTeam: _leadingClubs["liga4"],
                   ),
 
                   SizedBox(height: 20),
 
                   //vodeci timpovi po ligama PLACE HOLDER
-                  LeadingTeams()
-
+                  LeadingTeams(),
                 ],
               ),
             ),
