@@ -44,7 +44,7 @@ class _LeaguePageState extends State<LeaguePage> {
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             child: Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.only(left: 32.0, right: 32.0, top: 16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,

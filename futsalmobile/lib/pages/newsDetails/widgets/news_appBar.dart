@@ -36,6 +36,7 @@ class NewsAppbar extends StatelessWidget implements PreferredSizeWidget {
                 style: TextStyle(
                   fontFamily: AppFonts.roboto,
                   color: AppColors.ternary,
+                  fontSize: 17
                 ),
               ),
             ],

@@ -65,7 +65,6 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       body: SafeArea(
@@ -83,26 +82,29 @@ class _NewsPageState extends State<NewsPage> {
                       1,
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      return Column(
-                        children: [
-                          Center(
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              scale: 0.7,
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Column(
+                          children: [
+                            Center(
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                scale: 0.7,
+                              ),
                             ),
-                          ),
-
-                          SizedBox(height: screenHeight * 0.02),
-                        ],
+                        
+                            SizedBox(height: screenHeight * 0.02),
+                          ],
+                        ),
                       );
                     }
                     final newsIndex = index - 1;
                     if (newsIndex >= _paginated.items.length) {
                       return Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.only(left: 32, right: 32),
                         child: Center(
                           child: ShimmerLoading(
-                            width: screenWidth * 0.85,
+                            width: double.infinity,
                             height: screenHeight * 0.2,
                           ),
                         ),
@@ -121,10 +123,13 @@ class _NewsPageState extends State<NewsPage> {
                           ),
                         ),
                       ),
-                      child: NewsContainer(
-                        header: item.header,
-                        body: item.body,
-                        imageUrl: item.imageUrl,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 32.0, right: 32),
+                        child: NewsContainer(
+                          header: item.header,
+                          body: item.body,
+                          imageUrl: item.imageUrl,
+                        ),
                       ),
                     );
                   },

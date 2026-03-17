@@ -291,12 +291,17 @@ class _MatchesTabState extends State<MatchesTab> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          name,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            fontFamily: AppFonts.roboto,
+        Expanded(
+          child: Text(
+            name,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              fontFamily: AppFonts.roboto,
+          
+            ),
+          
           ),
         ),
       ],

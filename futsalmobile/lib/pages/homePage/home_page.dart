@@ -23,55 +23,78 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Container(
           color: AppColors.background,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-
-              children: [
-                Center(
-                  child: Image.asset('assets/images/logo.png', scale: 0.7),
-                ),
-                SizedBox(height: 20),
-                SponsorsBanner(),
-                SizedBox(height: 20),
-                UtakmicaContainer(),
-                SizedBox(height: 20),
-                UtakmicaContainer(),
-                SizedBox(height: 20),
-                UtakmicaContainer(),
-                SizedBox(height: 20),
-                UtakmicaContainer(),
-                SizedBox(height: 20),
-
-                SizedBox(height: screenHeight * 0.02),
-                //treba fetchati newsContainer ali samo onaj zadnji
-                Text(
-                  "Najnovija vijest",
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+          child: Padding(
+            padding: const EdgeInsets.only( left: 32.0, right: 32.0, top: 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+          
+                children: [
+                  Center(
+                    child: Image.asset('assets/images/logo.png', scale: 0.7),
                   ),
-                ),
+                  SizedBox(height: 20),
+                  SponsorsBanner(),
 
-                SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: 20),
 
-                FutureBuilder<NewsData?>(
-                  future: _service.getLatestNews(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    }
-                    if (!snapshot.hasData || snapshot.data == null) {
-                      return SizedBox.shrink();
-                    }
-
-                    final news = snapshot.data!;
-                    return NewsContainer(header: news.header, body: news.body);
-                  },
-                ),
-              ],
+                  Row(
+                    children: [
+                      Text(
+                        "Utakmice",
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          
+                  SizedBox(height: 20),
+                  UtakmicaContainer(),
+                  SizedBox(height: 20),
+                  UtakmicaContainer(),
+                  SizedBox(height: 20),
+                  UtakmicaContainer(),
+                  SizedBox(height: 20),
+                  UtakmicaContainer(),
+                  SizedBox(height: 20),
+          
+                  SizedBox(height: screenHeight * 0.02),
+                  //treba fetchati newsContainer ali samo onaj zadnji
+                  Row(
+                    children: [
+                      Text(
+                        "Najnovija vijest",
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          
+                  SizedBox(height: screenHeight * 0.02),
+          
+                  FutureBuilder<NewsData?>(
+                    future: _service.getLatestNews(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return SizedBox.shrink();
+                      }
+          
+                      final news = snapshot.data!;
+                      return NewsContainer(header: news.header, body: news.body);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

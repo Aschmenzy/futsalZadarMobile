@@ -406,7 +406,7 @@ class FirebaseService {
   // ============================================================
   // TABLICE
   // ============================================================
-  Future<List<ClubStanding>> getAllClubsInLeague(
+    Future<List<ClubStanding>> getAllClubsInLeague(
     String leagueCode, {
     String? season,
   }) async {
@@ -435,6 +435,63 @@ class FirebaseService {
       throw Exception('Greška pri dohvaćanju klubova u ligi: $e');
     }
   }
+
+  //funkcija za dohvacanje zadnjih stanja zadnjih 5 meceva
+  //prvo treba otic u collection liga[1,2,3,4] te ic po svakom dokumentu i gledati club name
+  //onda treba ici u seasons/[seasonID]/leauges/liga[1,2,3,4]/matches pa po svakom dokumentu gledati 
+  //je li clubName == awayTeam ili clubName == homeTeam
+  Future<Map<String, List<MatchData>>> getLastFiveMatchScores(String leagueCode, {String? season}) async {
+  try {
+    final seasonId = (season != null && season.isNotEmpty)
+        ? season
+        : _cachedSeason;
+
+    // 1. Dohvati klubove sortirane po bodovima iz standings kolekcije
+    final standingsSnapshot = await _db
+        .collection('seasons')
+        .doc(seasonId)
+        .collection('leagues')
+        .doc(leagueCode)
+        .collection('standings')
+        .orderBy('points', descending: true)
+        .get();
+
+    if (standingsSnapshot.docs.isEmpty) return {};
+
+    // 2. Dohvati sve mečeve jednom
+    final matchesSnapshot = await _db
+        .collection('seasons')
+        .doc(seasonId)
+        .collection('leagues')
+        .doc(leagueCode)
+        .collection('matches')
+        .orderBy('matchDate', descending: true)
+        .get();
+
+    // 3. Pretvori sve mečeve u listu jednom
+    final allMatches = matchesSnapshot.docs
+        .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+        .toList();
+
+    // 4. Za svaki klub (već sortiran po bodovima) filtriraj zadnjih 5 mečeva
+    final Map<String, List<MatchData>> result = {};
+
+    for (final standingDoc in standingsSnapshot.docs) {
+      final clubName = standingDoc.data()['clubName'] as String?;
+      if (clubName == null) continue;
+
+      result[clubName] = allMatches
+          .where((match) =>
+              match.homeTeam == clubName || match.awayTeam == clubName)
+          .take(5)
+          .toList();
+    }
+
+    return result;
+  } catch (e) {
+    throw Exception('Greška pri dohvaćanju zadnjih meceva za svaki klub: $e');
+  }
+}
 
   // ============================================================
   // VIJESTI

@@ -15,12 +15,12 @@ class NewsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
       children: [
         Container(
-          width: screenWidth * 0.85,
+          width: double.infinity,
           height: screenHeight * 0.2,
           decoration: BoxDecoration(
             color: Colors.white,

@@ -5,11 +5,11 @@ class SponsorsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    
     final screenHeight = MediaQuery.of(context).size.height;
     return Container(
       decoration: BoxDecoration(color: Colors.black12),
-      width: screenWidth * 0.85,
+      width: double.infinity,
       height: screenHeight * 0.12,
     );
   }

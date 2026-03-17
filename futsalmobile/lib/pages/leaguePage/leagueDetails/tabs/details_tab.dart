@@ -65,10 +65,10 @@ class _DetailsTabState extends State<DetailsTab> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-          decoration: BoxDecoration(color: AppColors.background),
+      child: Container(
+        decoration: BoxDecoration(color: AppColors.background),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16.0, top: 16, right: 16.0),
           child: Column(
             children: [
               SponsorsBanner(),
@@ -81,7 +81,7 @@ class _DetailsTabState extends State<DetailsTab> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Container(
-                  width: screenWidth * 0.85,
+                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 14,
@@ -168,7 +168,7 @@ class _DetailsTabState extends State<DetailsTab> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Container(
-                  width: screenWidth * 0.85,
+                  width: double.infinity,
                   height: screenHeight * 0.08,
                   decoration: BoxDecoration(
                     color: AppColors.ternary,
@@ -257,7 +257,7 @@ class _DetailsTabState extends State<DetailsTab> {
         elevation: 0.5,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Container(
-          width: screenWidth * 0.85,
+          width: double.infinity,
           height: screenHeight * 0.09,
           decoration: BoxDecoration(
             color: AppColors.ternary,

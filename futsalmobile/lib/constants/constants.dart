@@ -5,6 +5,7 @@ class AppColors {
   static const background = Color.fromRGBO(247, 247, 247, 1);
   static const secondary = Color.fromRGBO(8, 104, 165, 1);
   static const accent = Color.fromRGBO(240, 76, 165, 1);
+  static const accentYellow = Color.fromRGBO(253, 202, 48, 1);
   static const primary = Color.fromRGBO(0, 0, 0, 1);
   static const ternary = Color.fromRGBO(255, 255, 255, 1);
   static const ternaryGray = Color.fromRGBO(167, 167, 167, 1);

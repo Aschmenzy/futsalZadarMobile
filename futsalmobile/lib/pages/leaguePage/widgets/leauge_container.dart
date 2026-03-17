@@ -55,7 +55,7 @@ class LeaugeContainer extends StatelessWidget {
       child: Card(
         elevation: 1,
         child: Container(
-          width: screenWidth * 0.85,
+          width: double.infinity,
           height: screenHeight * 0.12,
           decoration: BoxDecoration(
             color: Colors.white,
@@ -99,7 +99,7 @@ class LeaugeContainer extends StatelessWidget {
                                 children: [
                                   Icon(
                                     Icons.people,
-                                    color: Colors.blue,
+                                    color: AppColors.accent,
                                     size: labelIconSize,
                                   ),
                                   SizedBox(width: iconTextGap),
@@ -149,7 +149,7 @@ class LeaugeContainer extends StatelessWidget {
                                 children: [
                                   Icon(
                                     Icons.emoji_events,
-                                    color: Colors.amber,
+                                    color: AppColors.accentYellow,
                                     size: labelIconSize,
                                   ),
                                   SizedBox(width: iconTextGap),
@@ -159,7 +159,7 @@ class LeaugeContainer extends StatelessWidget {
                                       style: TextStyle(
                                         fontFamily: AppFonts.roboto,
                                         fontSize: labelFontSize,
-                                        color: Colors.amber,
+                                        color: AppColors.accentYellow,
                                         fontWeight: FontWeight.w500,
                                       ),
                                       overflow: TextOverflow.ellipsis,
