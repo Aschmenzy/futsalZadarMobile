@@ -53,6 +53,12 @@ class _MainPageState extends State<MainPage> {
   ];
 
   @override
+  void dispose() {
+    FirebaseService().disposeMatchesStream();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_bottomNavIndex],

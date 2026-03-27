@@ -8,6 +8,7 @@ import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:flutter/foundation.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
+import 'package:rxdart/rxdart.dart';
 
 class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instanceFor(
@@ -240,6 +241,197 @@ class FirebaseService {
     }
   }
 
+  Future<MatchData?> getClosestUpcomingMatch({
+    DateTime? targetDate,
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
+
+      targetDate ??= DateTime.now();
+
+      // Step 1: Search in leagues
+      final leaguesSnapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .get();
+
+      final List<MatchData> allMatches = [];
+
+      for (final leagueDoc in leaguesSnapshot.docs) {
+        final matchesSnapshot = await leagueDoc.reference
+            .collection('matches')
+            .where('matchDate', isGreaterThanOrEqualTo: targetDate)
+            .orderBy('matchDate')
+            .limit(1)
+            .get();
+
+        for (final matchDoc in matchesSnapshot.docs) {
+          final match = MatchData.fromFirestore(matchDoc.data(), matchDoc.id);
+          allMatches.add(match);
+        }
+      }
+
+      // Step 2: Return closest league match if found
+      if (allMatches.isNotEmpty) {
+        allMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
+        return allMatches.first;
+      }
+
+      // Step 3: Search in playoffs if no league matches found
+      final playoffsSnapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('playoffs')
+          .get();
+
+      final List<MatchData> playoffMatches = [];
+
+      for (final playoffDoc in playoffsSnapshot.docs) {
+        final matchesSnapshot = await playoffDoc.reference
+            .collection('matches')
+            .where('matchDate', isGreaterThanOrEqualTo: targetDate)
+            .orderBy('matchDate')
+            .limit(1)
+            .get();
+
+        for (final matchDoc in matchesSnapshot.docs) {
+          final match = MatchData.fromFirestore(matchDoc.data(), matchDoc.id);
+          playoffMatches.add(match);
+        }
+      }
+
+      // Step 4: Return closest playoff match if found
+      if (playoffMatches.isNotEmpty) {
+        playoffMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
+        return playoffMatches.first;
+      }
+
+      return null;
+    } catch (e) {
+      throw Exception('Greska pri dohvatu najblize utakmice: $e');
+    }
+  }
+
+  // Add this FIXED version to your FirebaseService class
+
+  BehaviorSubject<List<MatchData>>? _matchesSubject;
+
+  /// Stream of upcoming matches with real-time updates (cached across navigation)
+  Stream<List<MatchData>> getUpcomingMatchesStream({
+    DateTime? targetDate,
+    String? season,
+  }) {
+    // If we already have an active stream, return it
+    if (_matchesSubject != null && !_matchesSubject!.isClosed) {
+      return _matchesSubject!.stream;
+    }
+
+    final seasonId = (season != null && season.isNotEmpty)
+        ? season
+        : _cachedSeason;
+
+    targetDate ??= DateTime.now();
+    final dateString =
+        "${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}";
+
+    // Create a BehaviorSubject to cache and replay the last value
+    _matchesSubject = BehaviorSubject<List<MatchData>>();
+
+    // Fetch immediately on first call
+    _getUpcomingMatches(seasonId!, dateString)
+        .then((matches) {
+          if (!_matchesSubject!.isClosed) {
+            _matchesSubject!.add(matches);
+          }
+        })
+        .catchError((error) {
+          if (!_matchesSubject!.isClosed) {
+            _matchesSubject!.addError(error);
+          }
+        });
+
+    // Fetch matches periodically (every 5 seconds)
+    Stream.periodic(Duration(seconds: 5))
+        .asyncMap((_) {
+          return _getUpcomingMatches(seasonId, dateString);
+        })
+        .listen((matches) {
+          if (!_matchesSubject!.isClosed) {
+            _matchesSubject!.add(matches);
+          }
+        })
+        .onError((error) {
+          if (!_matchesSubject!.isClosed) {}
+        });
+
+    return _matchesSubject!.stream;
+  }
+
+  /// Clean up the matches stream (call this when app closes)
+  void disposeMatchesStream() {
+    _matchesSubject?.close();
+    _matchesSubject = null;
+  }
+
+  Future<List<MatchData>> _getUpcomingMatches(
+    String seasonId,
+    String dateString,
+  ) async {
+    try {
+      final List<MatchData> allMatches = [];
+
+      // Define league codes we know exist (or query them differently)
+      // For now, let's try to fetch from all possible league collections
+      // by using collectionGroup which searches all subcollections with that name
+
+      print(
+        'DEBUG: Fetching matches from season: $seasonId, date: $dateString',
+      );
+
+      // Try using collectionGroup to find all 'matches' collections in this season
+      final allMatchesSnapshot = await _db
+          .collectionGroup('matches')
+          .where('season', isEqualTo: seasonId)
+          .where('matchDate', isGreaterThanOrEqualTo: dateString)
+          .orderBy('matchDate')
+          .get();
+
+      print(
+        'DEBUG: collectionGroup found ${allMatchesSnapshot.docs.length} matches',
+      );
+
+      for (final matchDoc in allMatchesSnapshot.docs) {
+        try {
+          final data = matchDoc.data();
+          print(
+            'DEBUG: Processing ${data['homeTeam']} vs ${data['awayTeam']} on ${data['matchDate']}',
+          );
+
+          final match = MatchData.fromFirestore(data, matchDoc.id);
+          allMatches.add(match);
+        } catch (e) {
+          print('DEBUG: Error parsing match: $e');
+        }
+      }
+
+      print('DEBUG: Total matches: ${allMatches.length}');
+
+      // Sort by date
+      allMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
+
+      return allMatches;
+    } catch (e) {
+      print('ERROR in _getUpcomingMatches: $e');
+      throw Exception('Greška pri dohvatu utakmica: $e');
+    }
+  }
+
+  // Helper function to filter and organize matches
+
   // ============================================================
   // STATISTIKE
   // ============================================================
@@ -406,7 +598,7 @@ class FirebaseService {
   // ============================================================
   // TABLICE
   // ============================================================
-    Future<List<ClubStanding>> getAllClubsInLeague(
+  Future<List<ClubStanding>> getAllClubsInLeague(
     String leagueCode, {
     String? season,
   }) async {
@@ -438,60 +630,65 @@ class FirebaseService {
 
   //funkcija za dohvacanje zadnjih stanja zadnjih 5 meceva
   //prvo treba otic u collection liga[1,2,3,4] te ic po svakom dokumentu i gledati club name
-  //onda treba ici u seasons/[seasonID]/leauges/liga[1,2,3,4]/matches pa po svakom dokumentu gledati 
+  //onda treba ici u seasons/[seasonID]/leauges/liga[1,2,3,4]/matches pa po svakom dokumentu gledati
   //je li clubName == awayTeam ili clubName == homeTeam
-  Future<Map<String, List<MatchData>>> getLastFiveMatchScores(String leagueCode, {String? season}) async {
-  try {
-    final seasonId = (season != null && season.isNotEmpty)
-        ? season
-        : _cachedSeason;
+  Future<Map<String, List<MatchData>>> getLastFiveMatchScores(
+    String leagueCode, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = (season != null && season.isNotEmpty)
+          ? season
+          : _cachedSeason;
 
-    // 1. Dohvati klubove sortirane po bodovima iz standings kolekcije
-    final standingsSnapshot = await _db
-        .collection('seasons')
-        .doc(seasonId)
-        .collection('leagues')
-        .doc(leagueCode)
-        .collection('standings')
-        .orderBy('points', descending: true)
-        .get();
+      // 1. Dohvati klubove sortirane po bodovima iz standings kolekcije
+      final standingsSnapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('standings')
+          .orderBy('points', descending: true)
+          .get();
 
-    if (standingsSnapshot.docs.isEmpty) return {};
+      if (standingsSnapshot.docs.isEmpty) return {};
 
-    // 2. Dohvati sve mečeve jednom
-    final matchesSnapshot = await _db
-        .collection('seasons')
-        .doc(seasonId)
-        .collection('leagues')
-        .doc(leagueCode)
-        .collection('matches')
-        .orderBy('matchDate', descending: true)
-        .get();
+      // 2. Dohvati sve mečeve jednom
+      final matchesSnapshot = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('matches')
+          .orderBy('matchDate', descending: true)
+          .get();
 
-    // 3. Pretvori sve mečeve u listu jednom
-    final allMatches = matchesSnapshot.docs
-        .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
-        .toList();
-
-    // 4. Za svaki klub (već sortiran po bodovima) filtriraj zadnjih 5 mečeva
-    final Map<String, List<MatchData>> result = {};
-
-    for (final standingDoc in standingsSnapshot.docs) {
-      final clubName = standingDoc.data()['clubName'] as String?;
-      if (clubName == null) continue;
-
-      result[clubName] = allMatches
-          .where((match) =>
-              match.homeTeam == clubName || match.awayTeam == clubName)
-          .take(5)
+      // 3. Pretvori sve mečeve u listu jednom
+      final allMatches = matchesSnapshot.docs
+          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
           .toList();
-    }
 
-    return result;
-  } catch (e) {
-    throw Exception('Greška pri dohvaćanju zadnjih meceva za svaki klub: $e');
+      // 4. Za svaki klub (već sortiran po bodovima) filtriraj zadnjih 5 mečeva
+      final Map<String, List<MatchData>> result = {};
+
+      for (final standingDoc in standingsSnapshot.docs) {
+        final clubName = standingDoc.data()['clubName'] as String?;
+        if (clubName == null) continue;
+
+        result[clubName] = allMatches
+            .where(
+              (match) =>
+                  match.homeTeam == clubName || match.awayTeam == clubName,
+            )
+            .take(5)
+            .toList();
+      }
+
+      return result;
+    } catch (e) {
+      throw Exception('Greška pri dohvaćanju zadnjih meceva za svaki klub: $e');
+    }
   }
-}
 
   // ============================================================
   // VIJESTI

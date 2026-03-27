@@ -63,7 +63,7 @@ class MatchData {
   String get score => '$homeTeamGoals : $awayTeamGoals';
 
   bool get isScheduled => status == 'scheduled';
-  bool get isLive => status == 'live';
+  bool get isLive => status == 'ongoing';
   bool get isFinished => status == 'finished';
 
   factory MatchData.fromFirestore(Map<String, dynamic> map, String docId) {
