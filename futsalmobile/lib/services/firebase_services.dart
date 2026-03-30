@@ -342,7 +342,7 @@ class FirebaseService {
     _matchesSubject = BehaviorSubject<List<MatchData>>();
 
     // Fetch immediately on first call
-    _getUpcomingMatches(seasonId!, dateString)
+    getUpcomingMatches(seasonId!, dateString)
         .then((matches) {
           if (!_matchesSubject!.isClosed) {
             _matchesSubject!.add(matches);
@@ -357,7 +357,7 @@ class FirebaseService {
     // Fetch matches periodically (every 5 seconds)
     Stream.periodic(Duration(seconds: 5))
         .asyncMap((_) {
-          return _getUpcomingMatches(seasonId, dateString);
+          return getUpcomingMatches(seasonId, dateString);
         })
         .listen((matches) {
           if (!_matchesSubject!.isClosed) {
@@ -371,28 +371,18 @@ class FirebaseService {
     return _matchesSubject!.stream;
   }
 
-  /// Clean up the matches stream (call this when app closes)
   void disposeMatchesStream() {
     _matchesSubject?.close();
     _matchesSubject = null;
   }
 
-  Future<List<MatchData>> _getUpcomingMatches(
+  Future<List<MatchData>> getUpcomingMatches(
     String seasonId,
     String dateString,
   ) async {
     try {
       final List<MatchData> allMatches = [];
 
-      // Define league codes we know exist (or query them differently)
-      // For now, let's try to fetch from all possible league collections
-      // by using collectionGroup which searches all subcollections with that name
-
-      print(
-        'DEBUG: Fetching matches from season: $seasonId, date: $dateString',
-      );
-
-      // Try using collectionGroup to find all 'matches' collections in this season
       final allMatchesSnapshot = await _db
           .collectionGroup('matches')
           .where('season', isEqualTo: seasonId)
@@ -400,37 +390,25 @@ class FirebaseService {
           .orderBy('matchDate')
           .get();
 
-      print(
-        'DEBUG: collectionGroup found ${allMatchesSnapshot.docs.length} matches',
-      );
-
       for (final matchDoc in allMatchesSnapshot.docs) {
         try {
           final data = matchDoc.data();
-          print(
-            'DEBUG: Processing ${data['homeTeam']} vs ${data['awayTeam']} on ${data['matchDate']}',
-          );
 
           final match = MatchData.fromFirestore(data, matchDoc.id);
           allMatches.add(match);
         } catch (e) {
-          print('DEBUG: Error parsing match: $e');
+          throw Exception('Greška pri dohvatu utakmica: $e');
         }
       }
-
-      print('DEBUG: Total matches: ${allMatches.length}');
 
       // Sort by date
       allMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
 
       return allMatches;
     } catch (e) {
-      print('ERROR in _getUpcomingMatches: $e');
       throw Exception('Greška pri dohvatu utakmica: $e');
     }
   }
-
-  // Helper function to filter and organize matches
 
   // ============================================================
   // STATISTIKE

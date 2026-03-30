@@ -217,7 +217,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     // Return live matches first, then closest upcoming matches
-    return [...liveMatches, ...upcomingMatches];
+    return [...liveMatches, ...upcomingMatches].take(2).toList();
   }
 
   /// Parse matchDate - handles "2026-03-29" format

@@ -133,6 +133,40 @@ class UtakmicaContainer extends StatelessWidget {
           ],
         ),
       );
+    } else if (matchStatus == "finished") {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.025,
+          vertical: screenWidth * 0.008,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.accentYellow,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.025,
+              height: screenWidth * 0.025,
+              decoration: BoxDecoration(
+                color: AppColors.ternary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              "ZAVRŠENO",
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                color: AppColors.ternary,
+                fontSize: screenWidth * 0.03,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
     } else {
       // Scheduled status - clock icon
       return Row(
