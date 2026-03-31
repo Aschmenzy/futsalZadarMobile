@@ -227,7 +227,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: players.length,
-              separatorBuilder: (_, __) => const Divider(
+              separatorBuilder: (_, _) => const Divider(
                 height: 1,
                 thickness: 1,
                 color: Color(0xFFF0F0F0),

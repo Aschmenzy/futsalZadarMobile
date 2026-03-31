@@ -141,7 +141,7 @@ class _MatchesTabState extends State<MatchesTab> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _matches.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final match = _matches[index];
@@ -284,7 +284,7 @@ class _MatchesTabState extends State<MatchesTab> {
                 ? Image.network(
                     logo,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                    errorBuilder: (_, _, _) =>
                         const Icon(Icons.sports, size: 16),
                   )
                 : Image.asset(logo, fit: BoxFit.cover),
@@ -299,9 +299,7 @@ class _MatchesTabState extends State<MatchesTab> {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               fontFamily: AppFonts.roboto,
-          
             ),
-          
           ),
         ),
       ],

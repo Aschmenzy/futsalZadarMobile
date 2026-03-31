@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 
-class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
+class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String leagueName;
-  final String season;
-  final List<String> seasons;
+  final String? clubName;
   final TabController tabController;
   final VoidCallback? onBack;
   final VoidCallback? onNotification;
   final VoidCallback? onStar;
-  final ValueChanged<String>? onSeasonChanged;
-  final Widget? clubLogo;
+  final String? clubLogo;
 
-  const LeagueAppBar({
+  const ClubDetailsAppBar({
     super.key,
     required this.leagueName,
-    required this.season,
     required this.tabController,
     this.onBack,
     this.onNotification,
     this.onStar,
     this.clubLogo,
-    required this.seasons,
-    this.onSeasonChanged,
+    this.clubName,
   });
 
   @override
@@ -62,8 +58,17 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const Spacer(),
                   IconButton(
+                    onPressed: onNotification,
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      size: 32,
+                      color: AppColors.ternary,
+                    ),
+                  ),
+                  IconButton(
                     icon: const Icon(
                       Icons.star_border,
+                      size: 32,
                       color: AppColors.ternary,
                     ),
                     onPressed: onStar,
@@ -77,21 +82,17 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: Row(
                 children: [
                   // Logo lige
-                  clubLogo ??
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/logo_withBg.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: Image.network(clubLogo!, fit: BoxFit.cover),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   // League Info
                   Expanded(
@@ -109,47 +110,13 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        PopupMenuButton<String>(
-                          onSelected: onSeasonChanged,
-                          enabled: seasons.isNotEmpty,
-                          padding: EdgeInsets.zero,
-                          color: AppColors.secondary,
-                          itemBuilder: (context) => seasons
-                              .map(
-                                (s) => PopupMenuItem<String>(
-                                  value: s,
-                                  child: Text(
-                                    s,
-                                    style: TextStyle(
-                                      fontFamily: AppFonts.roboto,
-                                      color: Colors.white,
-                                      fontWeight: s == season
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                season,
-                                style: TextStyle(
-                                  fontFamily: AppFonts.roboto,
-                                  color: AppColors.ternary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_drop_down,
-                                color: AppColors.ternary,
-                                size: 24,
-                              ),
-                            ],
+                        Text(
+                          clubName!,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
@@ -181,7 +148,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
           Tab(text: 'Detalji'),
           Tab(text: 'Utakmice'),
           Tab(text: 'Tablica'),
-          Tab(text: 'Statistika'),
+          Tab(text: 'Ekipa'),
         ],
       ),
     );

@@ -225,7 +225,6 @@ class _HomePageState extends State<HomePage> {
     try {
       return DateTime.parse(dateString);
     } catch (e) {
-      print('Error parsing date: $dateString - $e');
       return DateTime.now();
     }
   }

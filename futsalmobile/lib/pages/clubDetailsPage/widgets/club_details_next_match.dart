@@ -1,11 +1,56 @@
+// ignore_for_file: unused_field
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/services/firebase_services.dart';
 
-class NextMatch extends StatelessWidget {
-  final MatchData? match;
+class ClubDetailsNextMatch extends StatefulWidget {
+  final String leaugeId;
+  final String clubName;
 
-  const NextMatch({super.key, this.match});
+  const ClubDetailsNextMatch({
+    super.key,
+    required this.leaugeId,
+    required this.clubName,
+  });
+
+  @override
+  State<ClubDetailsNextMatch> createState() => _ClubDetailsNextMatchState();
+}
+
+class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
+  MatchData? _nextMatch;
+  final _service = FirebaseService();
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final results = await Future.wait([
+        _service.getNextMatchByClub(widget.leaugeId, widget.clubName),
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _nextMatch = results[1];
+      });
+    } catch (e) {
+      debugPrint('FIREBASE ERROR: $e');
+      if (!mounted) return;
+
+      setState(() {
+        _error = 'Greska pri ucitavanju podataka $e';
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +67,13 @@ class NextMatch extends StatelessWidget {
           color: AppColors.ternary,
           borderRadius: BorderRadius.circular(15),
         ),
-        child: (match == null || _daysDiff(match!.matchDate) < 0)
-            ? const Center(
+        child: (_nextMatch == null || _daysDiff(_nextMatch!.matchDate) < 0)
+            ? Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('Nema zakazanih utakmica'),
+                  child: Text(
+                    'Nema zakazanih utakmica ${widget.leaugeId} ${widget.clubName}',
+                  ),
                 ),
               )
             : Column(
@@ -61,8 +108,8 @@ class NextMatch extends StatelessWidget {
                       Expanded(
                         flex: 3,
                         child: _buildTeamColumn(
-                          teamName: match!.homeTeam,
-                          logoUrl: match!.homeTeamLogo,
+                          teamName: _nextMatch!.homeTeam,
+                          logoUrl: _nextMatch!.homeTeamLogo,
                           screenWidth: screenWidth,
                         ),
                       ),
@@ -74,7 +121,7 @@ class NextMatch extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _daysUntil(match!.matchDate),
+                              _daysUntil(_nextMatch!.matchDate),
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto,
                                 fontSize: screenWidth * 0.045,
@@ -84,7 +131,7 @@ class NextMatch extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${match!.matchDate.split('-').reversed.join('.')}. ${match!.matchTime}',
+                              '${_nextMatch!.matchDate.split('-').reversed.join('.')}. ${_nextMatch!.matchTime}',
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto,
                                 fontSize: screenWidth * 0.030,
@@ -100,8 +147,8 @@ class NextMatch extends StatelessWidget {
                       Expanded(
                         flex: 3,
                         child: _buildTeamColumn(
-                          teamName: match!.awayTeam,
-                          logoUrl: match!.awayTeamLogo,
+                          teamName: _nextMatch!.awayTeam,
+                          logoUrl: _nextMatch!.awayTeamLogo,
                           screenWidth: screenWidth,
                         ),
                       ),

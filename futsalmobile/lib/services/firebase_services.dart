@@ -102,6 +102,52 @@ class FirebaseService {
     }
   }
 
+  Future<MatchData?> getNextMatchByClub(
+    String leagueCode,
+    String? homeClub,
+  ) async {
+    if (homeClub == null) return null;
+
+    try {
+      final today = DateTime.now();
+      final todayStr =
+          '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      final baseQuery = _db
+          .collection('seasons')
+          .doc(_cachedSeason)
+          .collection('leagues')
+          .doc(leagueCode)
+          .collection('matches')
+          .where('status', isEqualTo: 'scheduled')
+          .where('matchDate', isGreaterThanOrEqualTo: todayStr)
+          .orderBy('matchDate', descending: false)
+          .orderBy('matchTime')
+          .limit(1);
+
+      final results = await Future.wait([
+        baseQuery.where('homeTeam', isEqualTo: homeClub).get(),
+        baseQuery.where('awayTeam', isEqualTo: homeClub).get(),
+      ]);
+
+      final allDocs = [...results[0].docs, ...results[1].docs];
+
+      if (allDocs.isEmpty) return null;
+
+      // sort and pick the closest match
+      allDocs.sort((a, b) {
+        final dateA = a.data()['matchDate'] as String;
+        final dateB = b.data()['matchDate'] as String;
+        return dateA.compareTo(dateB);
+      });
+
+      final doc = allDocs.first;
+      return MatchData.fromFirestore(doc.data(), doc.id);
+    } catch (e) {
+      throw Exception('Greska pri dohvatu sljedece utakmice: $e');
+    }
+  }
+
   // ============================================================
   // IGRACI I MECEVI
   // ============================================================
