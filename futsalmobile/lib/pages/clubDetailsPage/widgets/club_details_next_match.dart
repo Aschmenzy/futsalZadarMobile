@@ -39,7 +39,8 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
 
       if (!mounted) return;
       setState(() {
-        _nextMatch = results[1];
+        _nextMatch = results[0];
+        _loading = false;
       });
     } catch (e) {
       debugPrint('FIREBASE ERROR: $e');

@@ -132,9 +132,10 @@ class FirebaseService {
 
       final allDocs = [...results[0].docs, ...results[1].docs];
 
-      if (allDocs.isEmpty) return null;
+      if (allDocs.isEmpty) {
+        return null;
+      }
 
-      // sort and pick the closest match
       allDocs.sort((a, b) {
         final dateA = a.data()['matchDate'] as String;
         final dateB = b.data()['matchDate'] as String;
@@ -142,12 +143,12 @@ class FirebaseService {
       });
 
       final doc = allDocs.first;
+
       return MatchData.fromFirestore(doc.data(), doc.id);
     } catch (e) {
       throw Exception('Greska pri dohvatu sljedece utakmice: $e');
     }
   }
-
   // ============================================================
   // IGRACI I MECEVI
   // ============================================================

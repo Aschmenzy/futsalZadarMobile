@@ -65,180 +65,185 @@ class _DetailsTabState extends State<DetailsTab> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
-      child: Container(
-        decoration: BoxDecoration(color: AppColors.background),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, top: 16, right: 16.0),
-          child: Column(
-            children: [
-              SponsorsBanner(),
-              SizedBox(height: screenHeight * 0.02),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: screenHeight),
+        child: ColoredBox(
+          color: AppColors.background,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16.0, top: 16, right: 16.0),
+            child: Column(
+              children: [
+                SponsorsBanner(),
+                SizedBox(height: screenHeight * 0.02),
 
-              // LIGA PROGRESS CARD
-              Card(
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.ternary,
+                // LIGA PROGRESS CARD
+                Card(
+                  elevation: 0.5,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/logo.png',
-                        width: 44,
-                        height: 44,
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${widget.league.name}, Runda: $_currentRound',
-                              style: TextStyle(
-                                fontFamily: AppFonts.roboto,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value: _currentRound / 22,
-                                minHeight: 8,
-                                backgroundColor: Colors.grey.shade300,
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Colors.blue,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  dateFormat.format(LeagueData.startDate),
-                                  style: TextStyle(
-                                    fontFamily: AppFonts.roboto,
-                                    fontSize: 12,
-                                    color: AppColors.ternaryGray,
-                                  ),
-                                ),
-                                Text(
-                                  dateFormat.format(LeagueData.endDate),
-                                  style: TextStyle(
-                                    fontFamily: AppFonts.roboto,
-                                    fontSize: 12,
-                                    color: AppColors.ternaryGray,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.ternary,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 44,
+                          height: 44,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: screenHeight * 0.01),
-
-              // SLJEDECA UTAKMICA CARD
-              _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : NextMatch(match: _nextMatch),
-
-              SizedBox(height: screenHeight * 0.01),
-
-              // BROJ EKIPA CARD
-              Card(
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  height: screenHeight * 0.08,
-                  decoration: BoxDecoration(
-                    color: AppColors.ternary,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: _loading
-                      ? const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                        SizedBox(width: screenWidth * 0.03),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${widget.league.name}, Runda: $_currentRound',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: _currentRound / 22,
+                                  minHeight: 8,
+                                  backgroundColor: Colors.grey.shade300,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.blue,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    dateFormat.format(LeagueData.startDate),
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.roboto,
+                                      fontSize: 12,
+                                      color: AppColors.ternaryGray,
+                                    ),
+                                  ),
+                                  Text(
+                                    dateFormat.format(LeagueData.endDate),
+                                    style: TextStyle(
+                                      fontFamily: AppFonts.roboto,
+                                      fontSize: 12,
+                                      color: AppColors.ternaryGray,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Broj ekipa',
-                              style: TextStyle(
-                                fontFamily: AppFonts.roboto,
-                                color: AppColors.ternaryGray,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                            Text(
-                              '${_clubs.length}',
-                              style: TextStyle(
-                                fontFamily: AppFonts.roboto,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
                         ),
-                ),
-              ),
-
-              SizedBox(height: screenHeight * 0.01),
-
-              // VISA LIGA
-              if (widget.league.higherLeagueName != null)
-                _buildRelatedLeagueCard(
-                  screenWidth: screenWidth,
-                  screenHeight: screenHeight,
-                  label: 'Visa liga',
-                  leagueName: widget.league.higherLeagueName!,
-                ),
-
-              // NIZA LIGA
-              if (widget.league.lowerLeagueName != null)
-                _buildRelatedLeagueCard(
-                  screenWidth: screenWidth,
-                  screenHeight: screenHeight,
-                  label: 'Niza liga',
-                  leagueName: widget.league.lowerLeagueName!,
-                ),
-
-              SizedBox(height: screenHeight * 0.01),
-
-              // ERROR PORUKA
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ],
+                    ),
                   ),
                 ),
-            ],
+
+                SizedBox(height: screenHeight * 0.01),
+
+                // SLJEDECA UTAKMICA CARD
+                _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : NextMatch(match: _nextMatch),
+
+                SizedBox(height: screenHeight * 0.01),
+
+                // BROJ EKIPA CARD
+                Card(
+                  elevation: 0.5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    height: screenHeight * 0.08,
+                    decoration: BoxDecoration(
+                      color: AppColors.ternary,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: _loading
+                        ? const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Broj ekipa',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto,
+                                  color: AppColors.ternaryGray,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                              Text(
+                                '${_clubs.length}',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+
+                SizedBox(height: screenHeight * 0.01),
+
+                // VISA LIGA
+                if (widget.league.higherLeagueName != null)
+                  _buildRelatedLeagueCard(
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                    label: 'Visa liga',
+                    leagueName: widget.league.higherLeagueName!,
+                  ),
+
+                // NIZA LIGA
+                if (widget.league.lowerLeagueName != null)
+                  _buildRelatedLeagueCard(
+                    screenWidth: screenWidth,
+                    screenHeight: screenHeight,
+                    label: 'Niza liga',
+                    leagueName: widget.league.lowerLeagueName!,
+                  ),
+
+                SizedBox(height: screenHeight * 0.01),
+
+                // ERROR PORUKA
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
