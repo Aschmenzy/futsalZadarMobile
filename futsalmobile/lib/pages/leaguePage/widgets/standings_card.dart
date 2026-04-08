@@ -65,6 +65,7 @@ class _StandingsCardState extends State<StandingsCard> {
           clubName: club.clubName,
           clubLogo: club.clubLogo,
           leagueName: widget.leagueName,
+          season: widget.leaugeSeason,
         ),
       ),
     );

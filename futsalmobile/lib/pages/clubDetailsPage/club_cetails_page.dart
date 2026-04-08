@@ -13,6 +13,7 @@ class ClubCetailsPage extends StatefulWidget {
   final String leagueId;
   final String clubLogo;
   final String leagueName;
+  final String season;
 
   const ClubCetailsPage({
     super.key,
@@ -21,6 +22,7 @@ class ClubCetailsPage extends StatefulWidget {
     required this.clubLogo,
     required this.leagueName,
     required this.leagueId,
+    required this.season,
   });
 
   @override
@@ -94,7 +96,11 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
         controller: _tabController,
         children: [
           ClubDetailsTab(clubData: _clubData!, leagueId: widget.leagueId),
-          ClubMatchesTab(clubData: _clubData!),
+          ClubMatchesTab(
+            clubData: _clubData!,
+            leagueId: widget.leagueId,
+            season: widget.season,
+          ),
           ClubTableTab(clubData: _clubData!),
           ClubTeamTab(clubData: _clubData!),
         ],

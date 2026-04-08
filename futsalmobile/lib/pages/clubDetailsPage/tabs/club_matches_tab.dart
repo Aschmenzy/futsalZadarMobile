@@ -1,38 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/widgets/matches_list_widget.dart';
 
 class ClubMatchesTab extends StatelessWidget {
   final ClubData clubData;
+  final String leagueId;
+  final String season;
 
-  const ClubMatchesTab({super.key, required this.clubData});
+  const ClubMatchesTab({
+    super.key,
+    required this.clubData,
+    required this.leagueId,
+    required this.season,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    return Scaffold(
-      body: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: screenHeight),
-        child: ColoredBox(
-          color: AppColors.background,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 32, right: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: screenHeight * 0.6,
-                    color: AppColors.ternaryGray,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return MatchesListWidget(
+      leagueId: leagueId,
+      season: season,
+      clubFilter: clubData.clubName,
     );
   }
 }

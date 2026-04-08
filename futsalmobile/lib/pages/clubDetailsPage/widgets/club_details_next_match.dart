@@ -73,7 +73,8 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    'Nema zakazanih utakmica ${widget.leaugeId} ${widget.clubName}',
+                    'Nema zakazanih utakmica ${widget.clubName}',
+                    style: TextStyle(fontFamily: AppFonts.roboto, fontSize: 16),
                   ),
                 ),
               )
@@ -94,7 +95,7 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
                       const Spacer(),
                       const Icon(
                         Icons.chevron_right,
-                        color: Colors.blue,
+                        color: AppColors.secondary,
                         size: 24,
                       ),
                     ],
