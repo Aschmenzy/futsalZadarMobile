@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/league_data.dart';
-import 'package:futsalmobile/pages/leaguePage/widgets/standings_card.dart';
+import 'package:futsalmobile/widgets/standings_card.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 
 class TableTab extends StatelessWidget {

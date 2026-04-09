@@ -31,25 +31,17 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   Future<void> _loadData() async {
     try {
-      final scorers = await _service.getLeadingPlayersByGoals(
-        widget.league.id,
-        season: widget.season,
-      );
-      final redCards = await _service.getLeadingPlayersByRedCards(
-        widget.league.id,
-        season: widget.season,
-      );
-      final activeYellows = await _service.getPlayersByActiveYellows(
+      final stats = await _service.getAllLeaguePlayerStats(
         widget.league.id,
         season: widget.season,
       );
 
       if (!mounted) return;
       setState(() {
-        _topScorers = scorers;
-        _topRedCards = redCards;
-        _oneYellow = activeYellows['oneYellow']!;
-        _twoYellows = activeYellows['twoYellows']!;
+        _topScorers = stats['topScorers']!;
+        _topRedCards = stats['topRedCards']!;
+        _oneYellow = stats['oneYellow']!;
+        _twoYellows = stats['twoYellows']!;
         _loading = false;
       });
     } catch (e) {

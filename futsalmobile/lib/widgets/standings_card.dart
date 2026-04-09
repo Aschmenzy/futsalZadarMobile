@@ -10,12 +10,14 @@ class StandingsCard extends StatefulWidget {
   final String leagueCode;
   final String leagueName;
   final String leaugeSeason;
+  final String? highlightedClubId;
 
   const StandingsCard({
     super.key,
     required this.leagueCode,
     required this.leagueName,
     required this.leaugeSeason,
+    this.highlightedClubId,
   });
 
   @override
@@ -333,55 +335,74 @@ class _StandingsCardState extends State<StandingsCard> {
       color: AppColors.primary,
     );
 
+    final isHighlighted =
+        club != null &&
+        widget.highlightedClubId != null &&
+        club.clubId == widget.highlightedClubId;
+
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 32,
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  fontFamily: AppFonts.roboto,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppColors.primary,
+      child: DecoratedBox(
+        decoration: isHighlighted
+            ? BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: AppColors.secondary, width: 3),
+                ),
+              )
+            : const BoxDecoration(),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: isHighlighted ? 11 : 14,
+            right: 14,
+            top: 10,
+            bottom: 10,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '$rank',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  _clubLogo(club),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      club?.clubName ?? '',
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: AppColors.primary,
+              Expanded(
+                child: Row(
+                  children: [
+                    _clubLogo(club),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        club?.clubName ?? '',
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            _dataCell('${club?.matchesPlayed ?? ''}', dataStyle),
-            _dataCell('${club?.wins ?? ''}', dataStyle),
-            _dataCell('${club?.draws ?? ''}', dataStyle),
-            _dataCell('${club?.losses ?? ''}', dataStyle),
-            _dataCell(_diffText(club?.goalDifference), dataStyle, width: 48),
-            _dataCell(
-              '${club?.points ?? ''}',
-              dataStyle.copyWith(fontWeight: FontWeight.w700),
-              width: 40,
-            ),
-          ],
+              _dataCell('${club?.matchesPlayed ?? ''}', dataStyle),
+              _dataCell('${club?.wins ?? ''}', dataStyle),
+              _dataCell('${club?.draws ?? ''}', dataStyle),
+              _dataCell('${club?.losses ?? ''}', dataStyle),
+              _dataCell(_diffText(club?.goalDifference), dataStyle, width: 48),
+              _dataCell(
+                '${club?.points ?? ''}',
+                dataStyle.copyWith(fontWeight: FontWeight.w700),
+                width: 40,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -397,52 +418,71 @@ class _StandingsCardState extends State<StandingsCard> {
       color: AppColors.primary,
     );
 
+    final isHighlighted =
+        club != null &&
+        widget.highlightedClubId != null &&
+        club.clubId == widget.highlightedClubId;
+
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 32,
-              child: Text(
-                '$rank',
-                style: TextStyle(
-                  fontFamily: AppFonts.roboto,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: AppColors.primary,
+      child: DecoratedBox(
+        decoration: isHighlighted
+            ? const BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: AppColors.secondary, width: 3),
+                ),
+              )
+            : const BoxDecoration(),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: isHighlighted ? 11 : 14,
+            right: 14,
+            top: 10,
+            bottom: 10,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '$rank',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  _clubLogo(club),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      club?.clubName ?? '',
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: AppColors.primary,
+              Expanded(
+                child: Row(
+                  children: [
+                    _clubLogo(club),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        club?.clubName ?? '',
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            _dataCell('${club?.matchesPlayed ?? ''}', dataStyle, width: 40),
-            _dataCell(_diffText(club?.goalDifference), dataStyle, width: 52),
-            _dataCell(
-              '${club?.points ?? ''}',
-              dataStyle.copyWith(fontWeight: FontWeight.w700),
-              width: 40,
-            ),
-          ],
+              _dataCell('${club?.matchesPlayed ?? ''}', dataStyle, width: 40),
+              _dataCell(_diffText(club?.goalDifference), dataStyle, width: 52),
+              _dataCell(
+                '${club?.points ?? ''}',
+                dataStyle.copyWith(fontWeight: FontWeight.w700),
+                width: 40,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -476,7 +516,7 @@ class _StandingsCardState extends State<StandingsCard> {
       width: 22,
       height: 22,
       decoration: const BoxDecoration(
-        color: Color(0xFFEEEEEE),
+        color: AppColors.background,
         shape: BoxShape.circle,
       ),
     );

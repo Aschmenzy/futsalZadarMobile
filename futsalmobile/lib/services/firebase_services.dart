@@ -461,7 +461,7 @@ class FirebaseService {
   // STATISTIKE
   // ============================================================
 
-  Future<List<PlayerStatsData>> getLeadingPlayersByGoals(
+  Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(
     String leagueCode, {
     String? season,
   }) async {
@@ -478,122 +478,52 @@ class FirebaseService {
           .collection('playerStats')
           .get();
 
-      if (snapshot.docs.isEmpty) return [];
+      if (snapshot.docs.isEmpty) {
+        return {
+          'topScorers': [],
+          'topRedCards': [],
+          'topYellowCards': [],
+          'oneYellow': [],
+          'twoYellows': [],
+        };
+      }
 
       final players = snapshot.docs
           .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
           .toList();
 
-      players.sort((a, b) {
-        final totalA = a.goals + a.goals10m + a.goals6m;
-        final totalB = b.goals + b.goals10m + b.goals6m;
-        return totalB.compareTo(totalA);
-      });
+      final scorers = [...players]
+        ..sort((a, b) {
+          final totalA = a.goals + a.goals10m + a.goals6m;
+          final totalB = b.goals + b.goals10m + b.goals6m;
+          return totalB.compareTo(totalA);
+        });
 
-      return players.take(5).toList();
-    } catch (e) {
-      throw Exception(
-        'Greska pri dohvatu najboljih igraca po broju golova: $e',
-      );
-    }
-  }
+      final redCards = [...players]
+        ..sort((a, b) => b.redCards.compareTo(a.redCards));
 
-  Future<List<PlayerStatsData>> getLeadingPlayersByRedCards(
-    String leagueCode, {
-    String? season,
-  }) async {
-    try {
-      final seasonId = (season != null && season.isNotEmpty)
-          ? season
-          : _cachedSeason;
+      final yellowCards = [...players]
+        ..sort((a, b) => b.yellowCards.compareTo(a.yellowCards));
 
-      final snapshot = await _db
-          .collection('seasons')
-          .doc(seasonId)
-          .collection('leagues')
-          .doc(leagueCode)
-          .collection('playerStats')
-          .orderBy('redCards', descending: true)
-          .limit(5)
-          .get();
-
-      if (snapshot.docs.isEmpty) return [];
-
-      return snapshot.docs
-          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      throw Exception(
-        'Greska pri dohvatu najboljih igraca po broju crvenih kartona: $e',
-      );
-    }
-  }
-
-  Future<List<PlayerStatsData>> getLeadingPlayersByYellowCards(
-    String leagueCode, {
-    String? season,
-  }) async {
-    try {
-      final seasonId = (season != null && season.isNotEmpty)
-          ? season
-          : _cachedSeason;
-
-      final snapshot = await _db
-          .collection('seasons')
-          .doc(seasonId)
-          .collection('leagues')
-          .doc(leagueCode)
-          .collection('playerStats')
-          .orderBy('yellowCards', descending: true)
-          .limit(5)
-          .get();
-
-      if (snapshot.docs.isEmpty) return [];
-
-      return snapshot.docs
-          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
-          .toList();
-    } catch (e) {
-      throw Exception('Greska pri dohvatu igraca po broju zutih kartona: $e');
-    }
-  }
-
-  Future<Map<String, List<PlayerStatsData>>> getPlayersByActiveYellows(
-    String leagueCode, {
-    String? season,
-  }) async {
-    try {
-      final seasonId = (season != null && season.isNotEmpty)
-          ? season
-          : _cachedSeason;
-
-      final snapshot = await _db
-          .collection('seasons')
-          .doc(seasonId)
-          .collection('leagues')
-          .doc(leagueCode)
-          .collection('playerStats')
-          .where('activeYellows', isGreaterThan: 0)
-          .get();
-
-      if (snapshot.docs.isEmpty) return {'oneYellow': [], 'twoYellows': []};
-
-      final players = snapshot.docs
-          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+      final activeYellowPlayers = players
+          .where((p) => p.activeYellows > 0)
           .toList();
 
       return {
-        'oneYellow': players
+        'topScorers': scorers.take(5).toList(),
+        'topRedCards': redCards.take(5).toList(),
+        'topYellowCards': yellowCards.take(5).toList(),
+        'oneYellow': activeYellowPlayers
             .where((p) => p.activeYellows == 1)
             .take(5)
             .toList(),
-        'twoYellows': players
+        'twoYellows': activeYellowPlayers
             .where((p) => p.activeYellows == 2)
             .take(5)
             .toList(),
       };
     } catch (e) {
-      throw Exception('Greska pri dohvatu igraca po zutim kartonima: $e');
+      throw Exception('Greska pri dohvatu statistika igraca: $e');
     }
   }
 

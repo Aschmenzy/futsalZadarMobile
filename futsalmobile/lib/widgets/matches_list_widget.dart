@@ -184,15 +184,22 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
       builder: (_) => ListView(
         shrinkWrap: true,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               'Filtriraj po kolu',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontFamily: AppFonts.roboto,
+              ),
             ),
           ),
           ListTile(
-            title: const Text('Sva kola'),
+            title: Text(
+              'Sva kola',
+              style: TextStyle(fontFamily: AppFonts.roboto),
+            ),
             trailing: _selectedRound == null
                 ? const Icon(Icons.check, color: AppColors.secondary)
                 : null,
@@ -203,7 +210,10 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
           ),
           ..._allRounds.map(
             (r) => ListTile(
-              title: Text('$r. kolo'),
+              title: Text(
+                '$r. kolo',
+                style: TextStyle(fontFamily: AppFonts.roboto),
+              ),
               trailing: _selectedRound == r
                   ? const Icon(Icons.check, color: AppColors.secondary)
                   : null,
@@ -227,15 +237,22 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
       builder: (_) => ListView(
         shrinkWrap: true,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               'Filtriraj po klubu',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontFamily: AppFonts.roboto,
+              ),
             ),
           ),
           ListTile(
-            title: const Text('Svi klubovi'),
+            title: Text(
+              'Svi klubovi',
+              style: TextStyle(fontFamily: AppFonts.roboto),
+            ),
             trailing: _selectedClub == null
                 ? const Icon(Icons.check, color: AppColors.secondary)
                 : null,
@@ -315,7 +332,12 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
                     ),
                   )
                 : _matches.isEmpty
-                ? const Center(child: Text('Nema utakmica'))
+                ? Center(
+                    child: Text(
+                      'Nema utakmica',
+                      style: TextStyle(fontFamily: AppFonts.roboto),
+                    ),
+                  )
                 : ListView.builder(
                     padding: const EdgeInsets.all(8),
                     itemCount: sortedEntries.fold<int>(

@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/widgets/standings_card.dart';
 
 class ClubTableTab extends StatelessWidget {
   final ClubData clubData;
+  final String leagueId;
+  final String leagueName;
+  final String season;
 
-  const ClubTableTab({super.key, required this.clubData});
+  const ClubTableTab({
+    super.key,
+    required this.clubData,
+    required this.leagueId,
+    required this.leagueName,
+    required this.season,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    return Scaffold(
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: screenHeight),
-          child: ColoredBox(
-            color: AppColors.primary,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 32, right: 32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: screenHeight * 0.6,
-                    color: AppColors.ternaryGray,
-                  ),
-                ],
-              ),
+    return Container(
+      color: AppColors.background,
+      child: SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: StandingsCard(
+              leagueCode: leagueId,
+              leagueName: leagueName,
+              leaugeSeason: season,
+              highlightedClubId: clubData.id,
             ),
           ),
         ),
