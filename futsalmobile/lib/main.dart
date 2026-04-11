@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:futsalmobile/pages/favoritesPage/favorites_page.dart';
@@ -5,15 +6,42 @@ import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsPage/news_page.dart';
+import 'package:futsalmobile/services/cache_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/services/search_service.dart';
 import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await FirebaseService().getActiveSeason();
+  // Enable Firestore disk persistence (free cache for all previously-fetched docs)
+  FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'main',
+  ).settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  // Hive cache
+  await CacheService.init();
+
+  // Check config/app from the server. If the admin bumped lastUpdated,
+  // all Hive caches are wiped here before anything else runs.
+  final didUpdate = await FirebaseService().checkForUpdates();
+
+  // Get active season (now guaranteed to be in Hive after checkForUpdates)
+  final season = await FirebaseService().getActiveSeason();
+
+  // If the admin triggered an update, invalidate the in-memory search index too
+  if (didUpdate) SearchService().invalidate();
+
+  // Build search index in the background — warms Hive cache for clubs + players
+  SearchService().ensureIndexLoaded(season).catchError((_) {});
 
   runApp(const MyApp());
 }

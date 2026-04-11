@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
+import 'package:futsalmobile/pages/playerDetailsPage/widgets/player_details_app_bar.dart';
+import 'package:futsalmobile/pages/playerDetailsPage/widgets/stats_card.dart';
+import 'package:futsalmobile/services/firebase_services.dart';
+
+class PlayerDetailsPage extends StatefulWidget {
+  final PlayerData player;
+  final String leagueId;
+  final String leaugeName;
+  final ClubData clubData;
+
+  const PlayerDetailsPage({
+    super.key,
+    required this.player,
+    required this.leagueId,
+    required this.clubData,
+    required this.leaugeName,
+  });
+
+  @override
+  State<PlayerDetailsPage> createState() => _PlayerDetailsPageState();
+}
+
+class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
+  final _service = FirebaseService();
+  PlayerStatsData? _stats;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await _service.getPlayerStatsByPlayerId(
+        widget.leagueId,
+        widget.player.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _stats = stats;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: PlayerDetailsAppBar(
+        clubLogo: widget.clubData.clubProfileImg,
+        leagueName: widget.leaugeName,
+        clubName: widget.clubData.clubName,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16.0, right: 16, top: 32),
+          child: Column(
+            children: [
+              _buildPlayerHeader(),
+              const SizedBox(height: 16),
+              _buildInfoRow(),
+              const SizedBox(height: 16),
+              StatsCard(statsData: _stats, isLoading: _loading),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerHeader() {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          _buildAvatar(),
+          const SizedBox(height: 12),
+          Text(
+            widget.player.fullName,
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _formatDate(widget.player.dateOfBirth),
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              fontSize: 13,
+              color: AppColors.ternaryGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    if (widget.player.profilePicture.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          widget.player.profilePicture,
+          width: 90,
+          height: 90,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _initialsAvatar(),
+        ),
+      );
+    }
+    return _initialsAvatar();
+  }
+
+  Widget _initialsAvatar() {
+    final initials =
+        '${widget.player.firstName.isNotEmpty ? widget.player.firstName[0] : ''}'
+        '${widget.player.lastName.isNotEmpty ? widget.player.lastName[0] : ''}';
+    return Container(
+      width: 90,
+      height: 90,
+      decoration: const BoxDecoration(
+        color: Color(0xFFE8F0F8),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials.toUpperCase(),
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            fontWeight: FontWeight.w700,
+            fontSize: 28,
+            color: AppColors.secondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE4E4E4)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Trenutni klub:',
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontSize: 12,
+                        color: AppColors.ternaryGray,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (widget.clubData.clubProfileImg.isNotEmpty)
+                      ClipOval(
+                        child: Image.network(
+                          widget.clubData.clubProfileImg,
+                          width: 28,
+                          height: 28,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.clubData.clubName,
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 48,
+            color: const Color(0xFFE4E4E4),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Sezona:',
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontSize: 12,
+                        color: AppColors.ternaryGray,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.player.season,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}.${date.month}.${date.year}.';
+  }
+}

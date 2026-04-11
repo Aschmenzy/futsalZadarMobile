@@ -107,7 +107,11 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
             leagueName: widget.leagueName,
             season: widget.season,
           ),
-          ClubTeamTab(clubData: _clubData!, leagueId: widget.leagueId),
+          ClubTeamTab(
+            clubData: _clubData!,
+            leagueId: widget.leagueId,
+            leaugeName: widget.leagueName,
+          ),
         ],
       ),
     );

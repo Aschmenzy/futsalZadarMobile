@@ -19,6 +19,28 @@ class MatchEvent {
     required this.timestamp,
   });
 
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'team': team,
+    'period': period,
+    'playerId': playerId,
+    'playerName': playerName,
+    'shirtNumber': shirtNumber,
+    'timeInMatch': timeInMatch,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory MatchEvent.fromJson(Map<String, dynamic> map) => MatchEvent(
+    type: map['type'] as String,
+    team: map['team'] as String,
+    period: map['period'] as String,
+    playerId: map['playerId'] as String,
+    playerName: map['playerName'] as String,
+    shirtNumber: map['shirtNumber'] as String,
+    timeInMatch: map['timeInMatch'] as int,
+    timestamp: DateTime.parse(map['timestamp'] as String),
+  );
+
   factory MatchEvent.fromFirestore(Map<String, dynamic> map) {
     return MatchEvent(
       type: map['type'] ?? '',

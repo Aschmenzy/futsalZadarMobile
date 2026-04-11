@@ -51,6 +51,38 @@ class ClubStanding {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'clubId': clubId,
+    'clubLogo': clubLogo,
+    'clubName': clubName,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'draws': draws,
+    'goalDifference': goalDifference,
+    'goalsAgainst': goalsAgainst,
+    'goalsFor': goalsFor,
+    'losses': losses,
+    'matchesPlayed': matchesPlayed,
+    'points': points,
+    'wins': wins,
+  };
+
+  factory ClubStanding.fromJson(Map<String, dynamic> map) => ClubStanding(
+    clubId: map['clubId'] as String,
+    clubLogo: map['clubLogo'] as String,
+    clubName: map['clubName'] as String,
+    createdAt: DateTime.parse(map['createdAt'] as String),
+    updatedAt: DateTime.parse(map['updatedAt'] as String),
+    draws: map['draws'] as int,
+    goalDifference: map['goalDifference'] as int,
+    goalsAgainst: map['goalsAgainst'] as int,
+    goalsFor: map['goalsFor'] as int,
+    losses: map['losses'] as int,
+    matchesPlayed: map['matchesPlayed'] as int,
+    points: map['points'] as int,
+    wins: map['wins'] as int,
+  );
+
   Map<String, dynamic> toMap() {
     return {
       'clubId': clubId,

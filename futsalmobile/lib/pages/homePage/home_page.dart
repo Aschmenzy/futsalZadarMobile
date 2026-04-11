@@ -5,6 +5,7 @@ import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/pages/newsDetails/news_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/news_container.dart';
+import 'package:futsalmobile/widgets/search_bar_widget.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/widgets/utakmica_container.dart';
@@ -47,7 +48,9 @@ class _HomePageState extends State<HomePage> {
                   Center(
                     child: Image.asset('assets/images/logo.png', scale: 0.7),
                   ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 16),
+                  const AppSearchBar(),
+                  SizedBox(height: 16),
                   SponsorsBanner(),
                   SizedBox(height: 20),
                   Row(
@@ -242,7 +245,7 @@ class _HomePageState extends State<HomePage> {
       // Return "2.4.2026" format
       return "${date.day}.${date.month}.${date.year}";
     } catch (e) {
-      print('Error formatting date: $e');
+      debugPrint('Error formatting date: $e');
       return dateString;
     }
   }

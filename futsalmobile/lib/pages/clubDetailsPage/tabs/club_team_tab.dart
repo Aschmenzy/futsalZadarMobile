@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
+import 'package:futsalmobile/pages/clubDetailsPage/widgets/teamLead_container.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dart';
+import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class ClubTeamTab extends StatefulWidget {
   final ClubData clubData;
   final String leagueId;
+  final String leaugeName;
 
   const ClubTeamTab({
     super.key,
     required this.clubData,
     required this.leagueId,
+    required this.leaugeName,
   });
 
   @override
@@ -24,7 +28,7 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
   List<PlayerData> _players = [];
   bool _loading = true;
   String? _error;
-  final Set<String> _notifiedPlayers = {};
+  final Set<String> _favoritePlayers = {};
 
   @override
   void initState() {
@@ -71,6 +75,13 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
                   TrainerContainer(
                     screenHeight: screenHeight,
                     trainer: widget.clubData.trainer,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TeamleadContainer(
+                    screenHeight: screenHeight,
+                    teamLead: widget.clubData.teamLead,
                   ),
 
                   const SizedBox(height: 10),
@@ -144,50 +155,63 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
   }
 
   Widget _buildPlayerRow(PlayerData player) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          _buildAvatar(player),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  player.fullName,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppColors.primary,
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PlayerDetailsPage(
+            player: player,
+            leaugeName: widget.leaugeName,
+            leagueId: widget.leagueId,
+            clubData: widget.clubData,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            _buildAvatar(player),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player.fullName,
+                    style: TextStyle(
+                      fontFamily: AppFonts.roboto,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                if (_notifiedPlayers.contains(player.id)) {
-                  _notifiedPlayers.remove(player.id);
-                } else {
-                  _notifiedPlayers.add(player.id);
-                }
-              });
-            },
-            child: Icon(
-              _notifiedPlayers.contains(player.id)
-                  ? Icons.notifications_active
-                  : Icons.notifications_none,
-              color: _notifiedPlayers.contains(player.id)
-                  ? AppColors.secondary
-                  : AppColors.ternaryGray,
-              size: 32,
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (_favoritePlayers.contains(player.id)) {
+                    _favoritePlayers.remove(player.id);
+                  } else {
+                    _favoritePlayers.add(player.id);
+                  }
+                });
+              },
+              child: Icon(
+                _favoritePlayers.contains(player.id)
+                    ? Icons.star
+                    : Icons.star_border,
+                color: _favoritePlayers.contains(player.id)
+                    ? AppColors.secondary
+                    : AppColors.ternaryGray,
+                size: 32,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

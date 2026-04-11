@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
-import 'package:flutter/foundation.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
+import 'package:futsalmobile/services/cache_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 class FirebaseService {
@@ -16,36 +19,41 @@ class FirebaseService {
     databaseId: 'main',
   );
 
-  // Singleton pattern - jedna instanca kroz cijelu aplikaciju
+  final _cache = CacheService();
+
+  // Singleton
   static final FirebaseService _instance = FirebaseService._internal();
   factory FirebaseService() => _instance;
   FirebaseService._internal();
+
   // ============================================================
-  // DOHVACANJE TRENUTE SEZONE
+  // ACTIVE SEASON
   // ============================================================
 
   String? _cachedSeason;
 
-  /// Dohvati aktivnu sezonu — cachira rezultat
+  /// Returns the active season, checking Hive cache (24 h TTL) before Firestore.
   Future<String> getActiveSeason({bool forceRefresh = false}) async {
     if (_cachedSeason != null && !forceRefresh) return _cachedSeason!;
 
+    // Check Hive cache
+    if (!forceRefresh && _cache.isValid('season')) {
+      _cachedSeason = _cache.getRaw('season') as String;
+      return _cachedSeason!;
+    }
+
     try {
       final doc = await _db.collection('config').doc('app').get();
-
-      if (!doc.exists) {
-        throw Exception('Config dokument ne postoji');
-      }
+      if (!doc.exists) throw Exception('Config dokument ne postoji');
 
       _cachedSeason = doc.data()?['activeSeason'] ?? '';
-
+      await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
       return _cachedSeason!;
     } catch (e) {
       throw Exception('Greska pri dohvatu aktivne sezone: $e');
     }
   }
 
-  //dohvati sve sezone
   Future<List<String>> getSeasons() async {
     try {
       final snapshot = await _db.collection('seasons').get();
@@ -57,34 +65,105 @@ class FirebaseService {
     }
   }
 
-  /// Resetiraj cache (npr. kod pull-to-refresh)
   void clearCache() {
     _cachedSeason = null;
+    _cache.clearAll();
+  }
+
+  /// Fetches [config/app] directly from the Firestore server (not from local cache)
+  /// and compares [lastUpdated] to the locally stored sync timestamp.
+  ///
+  /// Returns [true] if the server was ahead of the local cache — meaning all
+  /// Hive caches have been wiped and the caller should re-warm the search index.
+  /// Returns [false] if everything is already up to date (or if offline).
+  ///
+  /// The admin only needs to update the [lastUpdated] field in [config/app]
+  /// (any Timestamp value) to trigger a full cache refresh on all clients.
+  Future<bool> checkForUpdates() async {
+    try {
+      // Force a real network read so we always see the latest admin change.
+      final doc = await _db
+          .collection('config')
+          .doc('app')
+          .get(const GetOptions(source: Source.server));
+
+      if (!doc.exists) return false;
+
+      final data = doc.data()!;
+
+      // Always keep the season in sync
+      _cachedSeason = data['activeSeason'] as String? ?? _cachedSeason ?? '';
+      await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
+
+      // Check lastUpdated
+      final lastUpdatedRaw = data['lastUpdated'];
+      if (lastUpdatedRaw == null) return false;
+
+      final lastUpdated = (lastUpdatedRaw as Timestamp).toDate();
+      final lastSynced = _cache.getLastSyncedAt();
+
+      if (lastSynced == null || lastUpdated.isAfter(lastSynced)) {
+        // Server data is newer — wipe Hive and record the new sync time
+        await _cache.clearAll();
+        await _cache.setLastSyncedAt(lastUpdated);
+        // Re-store the season so getActiveSeason() still works immediately
+        await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
+        debugPrint('[Cache] Server updated at $lastUpdated — caches cleared.');
+        return true;
+      }
+
+      return false;
+    } catch (_) {
+      // Offline or Firestore error — keep existing caches, proceed normally
+      return false;
+    }
   }
 
   // ============================================================
-  // KLUBOVI
+  // CLUBS
   // ============================================================
 
-  /// Dohvati sve klubove iz odredene lige
-  /// [leagueId] - "liga1", "liga2", "liga3", "liga4"
+  /// Fetches clubs for [leagueId], using Hive cache (7-day TTL).
   Future<List<ClubData>> getClubsByLeague(String leagueId) async {
+    final key = 'clubs_$leagueId';
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => ClubData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
     try {
       final snapshot = await _db.collection(leagueId).get();
+      final clubs = snapshot.docs
+          .map((doc) => ClubData.fromFirestore(doc.data(), doc.id))
+          .toList();
 
-      return snapshot.docs.map((doc) {
-        return ClubData.fromFirestore(doc.data(), doc.id);
-      }).toList();
+      await _cache.setRaw(
+        key,
+        clubs.map((c) => c.toJson()).toList(),
+        CacheService.clubsTTL,
+      );
+
+      return clubs;
     } catch (e) {
       throw Exception('Greska pri dohvatu klubova: $e');
     }
   }
 
-  /// Dohvati jedan klub po ID-u
+  /// Fetches a single club by ID. Tries the league cache first.
   Future<ClubData?> getClubById(String leagueId, String clubId) async {
+    // Try to find it in the already-cached league list first
+    if (_cache.isValid('clubs_$leagueId')) {
+      final clubs = await getClubsByLeague(leagueId);
+      try {
+        return clubs.firstWhere((c) => c.id == clubId);
+      } catch (_) {}
+    }
+
     try {
       final doc = await _db.collection(leagueId).doc(clubId).get();
-
       if (!doc.exists) return null;
       return ClubData.fromFirestore(doc.data()!, doc.id);
     } catch (e) {
@@ -92,7 +171,6 @@ class FirebaseService {
     }
   }
 
-  /// Dohvati samo broj klubova u ligi
   Future<int> getClubCount(String leagueId) async {
     try {
       final snapshot = await _db.collection(leagueId).count().get();
@@ -131,35 +209,39 @@ class FirebaseService {
       ]);
 
       final allDocs = [...results[0].docs, ...results[1].docs];
+      if (allDocs.isEmpty) return null;
 
-      if (allDocs.isEmpty) {
-        return null;
-      }
-
-      allDocs.sort((a, b) {
-        final dateA = a.data()['matchDate'] as String;
-        final dateB = b.data()['matchDate'] as String;
-        return dateA.compareTo(dateB);
-      });
+      allDocs.sort(
+        (a, b) => (a.data()['matchDate'] as String).compareTo(
+          b.data()['matchDate'] as String,
+        ),
+      );
 
       final doc = allDocs.first;
-
       return MatchData.fromFirestore(doc.data(), doc.id);
     } catch (e) {
       throw Exception('Greska pri dohvatu sljedece utakmice: $e');
     }
   }
+
   // ============================================================
-  // IGRACI I MECEVI
+  // PLAYERS
   // ============================================================
 
-  /// Dohvati sve igrace jednog kluba
-  /// [leagueId] - "liga1", "liga2", itd.
-  /// [clubId] - document ID kluba
+  /// Fetches players for one club, using Hive cache (24-hour TTL).
   Future<List<PlayerData>> getPlayersByClub(
     String leagueId,
     String clubId,
   ) async {
+    final key = 'players_${leagueId}_$clubId';
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => PlayerData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
     try {
       final snapshot = await _db
           .collection(leagueId)
@@ -167,37 +249,37 @@ class FirebaseService {
           .collection('players')
           .get();
 
-      return snapshot.docs.map((doc) {
-        return PlayerData.fromFirestore(doc.data(), doc.id);
-      }).toList();
+      final players = snapshot.docs
+          .map((doc) => PlayerData.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      await _cache.setRaw(
+        key,
+        players.map((p) => p.toJson()).toList(),
+        CacheService.playersTTL,
+      );
+
+      return players;
     } catch (e) {
       throw Exception('Greska pri dohvatu igraca: $e');
     }
   }
 
-  /// Dohvati klub zajedno s igracima (sve u jednom pozivu)
   Future<ClubData> getClubWithPlayers(String leagueId, String clubId) async {
     final club = await getClubById(leagueId, clubId);
-    if (club == null) {
-      throw Exception('Klub $clubId ne postoji u $leagueId');
-    }
-
+    if (club == null) throw Exception('Klub $clubId ne postoji u $leagueId');
     final players = await getPlayersByClub(leagueId, clubId);
     return club.copyWithPlayers(players);
   }
 
-  /// Dohvati sve klubove s igracima za cijelu ligu
   Future<List<ClubData>> getLeagueWithAllPlayers(String leagueId) async {
     final clubs = await getClubsByLeague(leagueId);
-
-    final clubsWithPlayers = await Future.wait(
+    return Future.wait(
       clubs.map((club) async {
         final players = await getPlayersByClub(leagueId, club.id);
         return club.copyWithPlayers(players);
       }),
     );
-
-    return clubsWithPlayers;
   }
 
   Future<int> getCurrentRound(String leagueCode, {String? season}) async {
@@ -205,7 +287,6 @@ class FirebaseService {
       final seasonId = (season != null && season.isNotEmpty)
           ? season
           : _cachedSeason;
-
       final snapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -229,7 +310,6 @@ class FirebaseService {
       final seasonId = (season != null && season.isNotEmpty)
           ? season
           : _cachedSeason;
-
       final today = DateTime.now();
       final todayStr =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -248,7 +328,6 @@ class FirebaseService {
           .get();
 
       if (snapshot.docs.isEmpty) return null;
-
       final doc = snapshot.docs.first;
       debugPrint('${doc.data()}');
       return MatchData.fromFirestore(doc.data(), doc.id);
@@ -257,15 +336,28 @@ class FirebaseService {
     }
   }
 
+  // ============================================================
+  // MATCHES
+  // ============================================================
+
+  /// Fetches all matches for a league, using Hive cache (30-minute TTL).
   Future<List<MatchData>> getAllMatches(
     String leagueCode, {
     String? season,
   }) async {
-    try {
-      final seasonId = (season != null && season.isNotEmpty)
-          ? season
-          : _cachedSeason;
+    final seasonId = (season != null && season.isNotEmpty)
+        ? season
+        : _cachedSeason!;
+    final key = 'matches_${leagueCode}_$seasonId';
 
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
+    try {
       final snapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -276,13 +368,17 @@ class FirebaseService {
           .orderBy('matchTime')
           .get();
 
-      return snapshot.docs.map((doc) {
-        try {
-          return MatchData.fromFirestore(doc.data(), doc.id);
-        } catch (e) {
-          rethrow;
-        }
+      final matches = snapshot.docs.map((doc) {
+        return MatchData.fromFirestore(doc.data(), doc.id);
       }).toList();
+
+      await _cache.setRaw(
+        key,
+        matches.map((m) => m.toJson()).toList(),
+        CacheService.matchesTTL,
+      );
+
+      return matches;
     } catch (e) {
       throw Exception('Greska pri dohvatu utakmica: $e');
     }
@@ -296,10 +392,8 @@ class FirebaseService {
       final seasonId = (season != null && season.isNotEmpty)
           ? season
           : _cachedSeason;
-
       targetDate ??= DateTime.now();
 
-      // Step 1: Search in leagues
       final leaguesSnapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -317,18 +411,15 @@ class FirebaseService {
             .get();
 
         for (final matchDoc in matchesSnapshot.docs) {
-          final match = MatchData.fromFirestore(matchDoc.data(), matchDoc.id);
-          allMatches.add(match);
+          allMatches.add(MatchData.fromFirestore(matchDoc.data(), matchDoc.id));
         }
       }
 
-      // Step 2: Return closest league match if found
       if (allMatches.isNotEmpty) {
         allMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
         return allMatches.first;
       }
 
-      // Step 3: Search in playoffs if no league matches found
       final playoffsSnapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -346,12 +437,12 @@ class FirebaseService {
             .get();
 
         for (final matchDoc in matchesSnapshot.docs) {
-          final match = MatchData.fromFirestore(matchDoc.data(), matchDoc.id);
-          playoffMatches.add(match);
+          playoffMatches.add(
+            MatchData.fromFirestore(matchDoc.data(), matchDoc.id),
+          );
         }
       }
 
-      // Step 4: Return closest playoff match if found
       if (playoffMatches.isNotEmpty) {
         playoffMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
         return playoffMatches.first;
@@ -363,16 +454,25 @@ class FirebaseService {
     }
   }
 
-  // Add this FIXED version to your FirebaseService class
+  // ── Upcoming matches stream ────────────────────────────────────────────────
 
   BehaviorSubject<List<MatchData>>? _matchesSubject;
+  StreamSubscription? _pollSubscription;
 
-  /// Stream of upcoming matches with real-time updates (cached across navigation)
+  /// Returns the poll interval: 30 s on match evenings, 5 min otherwise.
+  Duration get _smartPollInterval {
+    final now = DateTime.now();
+    final isMatchTime =
+        now.weekday >= DateTime.friday && now.hour >= 14 && now.hour <= 23;
+    return isMatchTime
+        ? const Duration(seconds: 30)
+        : const Duration(minutes: 5);
+  }
+
   Stream<List<MatchData>> getUpcomingMatchesStream({
     DateTime? targetDate,
     String? season,
   }) {
-    // If we already have an active stream, return it
     if (_matchesSubject != null && !_matchesSubject!.isClosed) {
       return _matchesSubject!.stream;
     }
@@ -380,45 +480,59 @@ class FirebaseService {
     final seasonId = (season != null && season.isNotEmpty)
         ? season
         : _cachedSeason;
-
     targetDate ??= DateTime.now();
     final dateString =
-        "${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}";
+        '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
-    // Create a BehaviorSubject to cache and replay the last value
     _matchesSubject = BehaviorSubject<List<MatchData>>();
 
-    // Fetch immediately on first call
-    getUpcomingMatches(seasonId!, dateString)
-        .then((matches) {
-          if (!_matchesSubject!.isClosed) {
-            _matchesSubject!.add(matches);
-          }
-        })
-        .catchError((error) {
-          if (!_matchesSubject!.isClosed) {
-            _matchesSubject!.addError(error);
-          }
-        });
+    // Serve from Hive cache immediately for instant display
+    final cachedKey = 'upcoming_matches_$seasonId';
+    final cachedRaw = _cache.getRaw(cachedKey);
+    if (cachedRaw != null) {
+      final cached = (cachedRaw as List)
+          .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      _matchesSubject!.add(cached);
+    }
 
-    // Fetch matches periodically (every 5 seconds)
-    Stream.periodic(Duration(seconds: 5))
-        .asyncMap((_) {
-          return getUpcomingMatches(seasonId, dateString);
-        })
-        .listen((matches) {
-          if (!_matchesSubject!.isClosed) {
-            _matchesSubject!.add(matches);
-          }
-        })
-        .onError((error) {
-          if (!_matchesSubject!.isClosed) {}
-        });
+    // Fetch from Firestore immediately
+    _fetchAndCacheUpcoming(seasonId!, dateString, cachedKey);
+
+    // Adaptive polling
+    _pollSubscription = Stream.periodic(_smartPollInterval).listen((_) {
+      _fetchAndCacheUpcoming(seasonId, dateString, cachedKey);
+    });
 
     return _matchesSubject!.stream;
   }
 
+  Future<void> _fetchAndCacheUpcoming(
+    String seasonId,
+    String dateString,
+    String cacheKey,
+  ) async {
+    try {
+      final matches = await getUpcomingMatches(seasonId, dateString);
+      await _cache.setRaw(
+        cacheKey,
+        matches.map((m) => m.toJson()).toList(),
+        _smartPollInterval,
+      ); // TTL = poll interval
+
+      if (_matchesSubject != null && !_matchesSubject!.isClosed) {
+        _matchesSubject!.add(matches);
+      }
+    } catch (error) {
+      if (_matchesSubject != null && !_matchesSubject!.isClosed) {
+        _matchesSubject!.addError(error);
+      }
+    }
+  }
+
   void disposeMatchesStream() {
+    _pollSubscription?.cancel();
+    _pollSubscription = null;
     _matchesSubject?.close();
     _matchesSubject = null;
   }
@@ -428,8 +542,6 @@ class FirebaseService {
     String dateString,
   ) async {
     try {
-      final List<MatchData> allMatches = [];
-
       final allMatchesSnapshot = await _db
           .collectionGroup('matches')
           .where('season', isEqualTo: seasonId)
@@ -437,20 +549,11 @@ class FirebaseService {
           .orderBy('matchDate')
           .get();
 
-      for (final matchDoc in allMatchesSnapshot.docs) {
-        try {
-          final data = matchDoc.data();
+      final allMatches = allMatchesSnapshot.docs.map((doc) {
+        return MatchData.fromFirestore(doc.data(), doc.id);
+      }).toList();
 
-          final match = MatchData.fromFirestore(data, matchDoc.id);
-          allMatches.add(match);
-        } catch (e) {
-          throw Exception('Greška pri dohvatu utakmica: $e');
-        }
-      }
-
-      // Sort by date
       allMatches.sort((a, b) => a.matchDate.compareTo(b.matchDate));
-
       return allMatches;
     } catch (e) {
       throw Exception('Greška pri dohvatu utakmica: $e');
@@ -458,73 +561,122 @@ class FirebaseService {
   }
 
   // ============================================================
-  // STATISTIKE
+  // STATISTICS
   // ============================================================
 
-  Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(
-    String leagueCode, {
+  Future<PlayerStatsData?> getPlayerStatsByPlayerId(
+    String leagueCode,
+    String playerId, {
     String? season,
   }) async {
     try {
       final seasonId = (season != null && season.isNotEmpty)
           ? season
           : _cachedSeason;
-
       final snapshot = await _db
           .collection('seasons')
           .doc(seasonId)
           .collection('leagues')
           .doc(leagueCode)
           .collection('playerStats')
+          .where('odFCplayerId', isEqualTo: playerId)
+          .limit(1)
           .get();
 
-      if (snapshot.docs.isEmpty) {
-        return {
-          'topScorers': [],
-          'topRedCards': [],
-          'topYellowCards': [],
-          'oneYellow': [],
-          'twoYellows': [],
-        };
-      }
-
-      final players = snapshot.docs
-          .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
-          .toList();
-
-      final scorers = [...players]
-        ..sort((a, b) {
-          final totalA = a.goals + a.goals10m + a.goals6m;
-          final totalB = b.goals + b.goals10m + b.goals6m;
-          return totalB.compareTo(totalA);
-        });
-
-      final redCards = [...players]
-        ..sort((a, b) => b.redCards.compareTo(a.redCards));
-
-      final yellowCards = [...players]
-        ..sort((a, b) => b.yellowCards.compareTo(a.yellowCards));
-
-      final activeYellowPlayers = players
-          .where((p) => p.activeYellows > 0)
-          .toList();
-
-      return {
-        'topScorers': scorers.take(5).toList(),
-        'topRedCards': redCards.take(5).toList(),
-        'topYellowCards': yellowCards.take(5).toList(),
-        'oneYellow': activeYellowPlayers
-            .where((p) => p.activeYellows == 1)
-            .take(5)
-            .toList(),
-        'twoYellows': activeYellowPlayers
-            .where((p) => p.activeYellows == 2)
-            .take(5)
-            .toList(),
-      };
+      if (snapshot.docs.isEmpty) return null;
+      final doc = snapshot.docs.first;
+      return PlayerStatsData.fromFirestore(doc.data(), doc.id);
     } catch (e) {
       throw Exception('Greska pri dohvatu statistika igraca: $e');
     }
+  }
+
+  /// Fetches all league player stats, using Hive cache (1-hour TTL).
+  /// The raw list is cached; sorting happens locally on every call (negligible).
+  Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(
+    String leagueCode, {
+    String? season,
+  }) async {
+    final seasonId = (season != null && season.isNotEmpty)
+        ? season
+        : _cachedSeason!;
+    final key = 'stats_${leagueCode}_$seasonId';
+
+    List<PlayerStatsData> players;
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      players = (cached as List)
+          .map(
+            (e) =>
+                PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+    } else {
+      try {
+        final snapshot = await _db
+            .collection('seasons')
+            .doc(seasonId)
+            .collection('leagues')
+            .doc(leagueCode)
+            .collection('playerStats')
+            .get();
+
+        if (snapshot.docs.isEmpty) {
+          return {
+            'topScorers': [],
+            'topRedCards': [],
+            'topYellowCards': [],
+            'oneYellow': [],
+            'twoYellows': [],
+          };
+        }
+
+        players = snapshot.docs
+            .map((doc) => PlayerStatsData.fromFirestore(doc.data(), doc.id))
+            .toList();
+
+        await _cache.setRaw(
+          key,
+          players.map((p) => p.toJson()).toList(),
+          CacheService.statsTTL,
+        );
+      } catch (e) {
+        throw Exception('Greska pri dohvatu statistika igraca: $e');
+      }
+    }
+
+    // Sort locally (fast, no Firestore reads)
+    final scorers = [...players]
+      ..sort(
+        (a, b) => (b.goals + b.goals10m + b.goals6m).compareTo(
+          a.goals + a.goals10m + a.goals6m,
+        ),
+      );
+
+    final redCards = [...players]
+      ..sort((a, b) => b.redCards.compareTo(a.redCards));
+
+    final yellowCards = [...players]
+      ..sort((a, b) => b.yellowCards.compareTo(a.yellowCards));
+
+    final activeYellowPlayers = players
+        .where((p) => p.activeYellows > 0)
+        .toList();
+
+    return {
+      'topScorers': scorers.take(5).toList(),
+      'topRedCards': redCards.take(5).toList(),
+      'topYellowCards': yellowCards.take(5).toList(),
+      'oneYellow': activeYellowPlayers
+          .where((p) => p.activeYellows == 1)
+          .take(5)
+          .toList(),
+      'twoYellows': activeYellowPlayers
+          .where((p) => p.activeYellows == 2)
+          .take(5)
+          .toList(),
+    };
   }
 
   Future<ClubStanding?> getBestClubInLeague(String leagueCode) async {
@@ -540,9 +692,6 @@ class FirebaseService {
           .get();
 
       if (snapshot.docs.isEmpty) return null;
-
-      print("leaugeCode : $leagueCode, sezona je $_cachedSeason");
-
       final doc = snapshot.docs.first;
       return ClubStanding.fromFirestore(doc.data(), doc.id);
     } catch (e) {
@@ -551,17 +700,29 @@ class FirebaseService {
   }
 
   // ============================================================
-  // TABLICE
+  // STANDINGS
   // ============================================================
+
+  /// Fetches league standings, using Hive cache (1-hour TTL).
   Future<List<ClubStanding>> getAllClubsInLeague(
     String leagueCode, {
     String? season,
   }) async {
-    try {
-      final seasonId = (season != null && season.isNotEmpty)
-          ? season
-          : _cachedSeason;
+    final seasonId = (season != null && season.isNotEmpty)
+        ? season
+        : _cachedSeason!;
+    final key = 'standings_${leagueCode}_$seasonId';
 
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return (cached as List)
+          .map(
+            (e) => ClubStanding.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+    }
+
+    try {
       final snapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -573,20 +734,22 @@ class FirebaseService {
 
       if (snapshot.docs.isEmpty) return [];
 
-      print("leagueCode: $leagueCode, sezona je $_cachedSeason");
-
-      return snapshot.docs
+      final standings = snapshot.docs
           .map((doc) => ClubStanding.fromFirestore(doc.data(), doc.id))
           .toList();
+
+      await _cache.setRaw(
+        key,
+        standings.map((s) => s.toJson()).toList(),
+        CacheService.standingsTTL,
+      );
+
+      return standings;
     } catch (e) {
       throw Exception('Greška pri dohvaćanju klubova u ligi: $e');
     }
   }
 
-  //funkcija za dohvacanje zadnjih stanja zadnjih 5 meceva
-  //prvo treba otic u collection liga[1,2,3,4] te ic po svakom dokumentu i gledati club name
-  //onda treba ici u seasons/[seasonID]/leauges/liga[1,2,3,4]/matches pa po svakom dokumentu gledati
-  //je li clubName == awayTeam ili clubName == homeTeam
   Future<Map<String, List<MatchData>>> getLastFiveMatchScores(
     String leagueCode, {
     String? season,
@@ -596,7 +759,6 @@ class FirebaseService {
           ? season
           : _cachedSeason;
 
-      // 1. Dohvati klubove sortirane po bodovima iz standings kolekcije
       final standingsSnapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -608,22 +770,9 @@ class FirebaseService {
 
       if (standingsSnapshot.docs.isEmpty) return {};
 
-      // 2. Dohvati sve mečeve jednom
-      final matchesSnapshot = await _db
-          .collection('seasons')
-          .doc(seasonId)
-          .collection('leagues')
-          .doc(leagueCode)
-          .collection('matches')
-          .orderBy('matchDate', descending: true)
-          .get();
+      // Reuse cached getAllMatches to avoid an extra Firestore read
+      final allMatches = await getAllMatches(leagueCode, season: seasonId);
 
-      // 3. Pretvori sve mečeve u listu jednom
-      final allMatches = matchesSnapshot.docs
-          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
-          .toList();
-
-      // 4. Za svaki klub (već sortiran po bodovima) filtriraj zadnjih 5 mečeva
       final Map<String, List<MatchData>> result = {};
 
       for (final standingDoc in standingsSnapshot.docs) {
@@ -631,10 +780,7 @@ class FirebaseService {
         if (clubName == null) continue;
 
         result[clubName] = allMatches
-            .where(
-              (match) =>
-                  match.homeTeam == clubName || match.awayTeam == clubName,
-            )
+            .where((m) => m.homeTeam == clubName || m.awayTeam == clubName)
             .take(5)
             .toList();
       }
@@ -646,10 +792,9 @@ class FirebaseService {
   }
 
   // ============================================================
-  // VIJESTI
+  // NEWS
   // ============================================================
 
-  // Vijesti, funkcija vraca vijesti 5 po 5
   Future<NewsPaginated> getNewsPaginated({
     int limit = 5,
     DocumentSnapshot? lastDocument,
@@ -686,7 +831,15 @@ class FirebaseService {
     }
   }
 
+  /// Returns the latest news article, using Hive cache (30-minute TTL).
   Future<NewsData?> getLatestNews() async {
+    final key = 'latest_news_$_cachedSeason';
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return NewsData.fromJson(Map<String, dynamic>.from(cached as Map));
+    }
+
     try {
       final snapshot = await _db
           .collection('seasons')
@@ -698,10 +851,12 @@ class FirebaseService {
 
       if (snapshot.docs.isEmpty) return null;
 
-      return NewsData.fromFirestore(
+      final news = NewsData.fromFirestore(
         snapshot.docs.first.data(),
         snapshot.docs.first.id,
       );
+      await _cache.setRaw(key, news.toJson(), CacheService.newsTTL);
+      return news;
     } catch (e) {
       throw Exception('Greska pri dohvatu vijesti: $e');
     }

@@ -62,6 +62,76 @@ class MatchData {
 
   String get score => '$homeTeamGoals : $awayTeamGoals';
 
+  Map<String, dynamic> toJson() => {
+    'matchId': matchId,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+    'league': league,
+    'leagueCode': leagueCode,
+    'season': season,
+    'round': round,
+    'matchDate': matchDate,
+    'matchTime': matchTime,
+    'status': status,
+    'homeTeam': homeTeam,
+    'homeTeamLogo': homeTeamLogo,
+    'homeTeamGoals': homeTeamGoals,
+    'awayTeam': awayTeam,
+    'awayTeamLogo': awayTeamLogo,
+    'awayTeamGoals': awayTeamGoals,
+    'delegate': delegate,
+    'referee1': referee1,
+    'referee2': referee2,
+    'matchState': matchState?.toJson(),
+    'originalHomeScore': originalHomeScore,
+    'originalAwayScore': originalAwayScore,
+    'originalPlayerStats': originalPlayerStats?.map((k, v) => MapEntry(k, v.toJson())),
+    'statsProcessed': statsProcessed,
+    'statsProcessedAt': statsProcessedAt?.toIso8601String(),
+  };
+
+  factory MatchData.fromJson(Map<String, dynamic> map) {
+    Map<String, PlayerStats>? originalStats;
+    if (map['originalPlayerStats'] != null) {
+      originalStats = {};
+      (map['originalPlayerStats'] as Map).forEach((k, v) {
+        originalStats![k.toString()] =
+            PlayerStats.fromJson(Map<String, dynamic>.from(v as Map));
+      });
+    }
+    return MatchData(
+      matchId: map['matchId'] as String,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      league: map['league'] as String? ?? '',
+      leagueCode: map['leagueCode'] as String? ?? '',
+      season: map['season'] as String? ?? '',
+      round: map['round'] as int? ?? 0,
+      matchDate: map['matchDate'] as String? ?? '',
+      matchTime: map['matchTime'] as String? ?? '',
+      status: map['status'] as String? ?? '',
+      homeTeam: map['homeTeam'] as String? ?? '',
+      homeTeamLogo: map['homeTeamLogo'] as String? ?? '',
+      homeTeamGoals: map['homeTeamGoals'] as int? ?? 0,
+      awayTeam: map['awayTeam'] as String? ?? '',
+      awayTeamLogo: map['awayTeamLogo'] as String? ?? '',
+      awayTeamGoals: map['awayTeamGoals'] as int? ?? 0,
+      delegate: map['delegate'] as String? ?? '',
+      referee1: map['referee1'] as String?,
+      referee2: map['referee2'] as String?,
+      matchState: map['matchState'] != null
+          ? MatchState.fromJson(Map<String, dynamic>.from(map['matchState'] as Map))
+          : null,
+      originalHomeScore: map['originalHomeScore'] as int?,
+      originalAwayScore: map['originalAwayScore'] as int?,
+      originalPlayerStats: originalStats,
+      statsProcessed: map['statsProcessed'] as bool?,
+      statsProcessedAt: map['statsProcessedAt'] != null
+          ? DateTime.parse(map['statsProcessedAt'] as String)
+          : null,
+    );
+  }
+
   bool get isScheduled => status == 'scheduled';
   bool get isLive => status == 'ongoing';
   bool get isFinished => status == 'finished';

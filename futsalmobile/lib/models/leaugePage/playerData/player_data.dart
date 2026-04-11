@@ -29,6 +29,36 @@ class PlayerData {
 
   String get fullName => '$firstName $lastName';
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'clubName': clubName,
+    'dateOfBirth': dateOfBirth.toIso8601String(),
+    'firstName': firstName,
+    'lastName': lastName,
+    'firstRegistrationDate': firstRegistrationDate.toIso8601String(),
+    'idCardNumber': idCardNumber,
+    'liga': liga,
+    'perArticle': perArticle,
+    'season': season,
+    'thisYearRegistrationDate': thisYearRegistrationDate.toIso8601String(),
+    'profilePicture': profilePicture,
+  };
+
+  factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
+    id: map['id'] as String,
+    clubName: map['clubName'] as String,
+    dateOfBirth: DateTime.parse(map['dateOfBirth'] as String),
+    firstName: map['firstName'] as String,
+    lastName: map['lastName'] as String,
+    firstRegistrationDate: DateTime.parse(map['firstRegistrationDate'] as String),
+    idCardNumber: map['idCardNumber'] as String,
+    liga: map['liga'] as String,
+    perArticle: map['perArticle'] as String,
+    season: map['season'] as String,
+    thisYearRegistrationDate: DateTime.parse(map['thisYearRegistrationDate'] as String),
+    profilePicture: map['profilePicture'] as String? ?? '',
+  );
+
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime(1970);
     if (value is String) {

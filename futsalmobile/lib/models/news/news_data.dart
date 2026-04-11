@@ -13,6 +13,22 @@ class NewsData {
     required this.body,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'imageUrl': imageUrl,
+    'createdAt': createdAt.toIso8601String(),
+    'header': header,
+    'body': body,
+  };
+
+  factory NewsData.fromJson(Map<String, dynamic> map) => NewsData(
+    id: map['id'] as String,
+    imageUrl: map['imageUrl'] as String,
+    createdAt: DateTime.parse(map['createdAt'] as String),
+    header: map['header'] as String,
+    body: map['body'] as String,
+  );
+
   factory NewsData.fromFirestore(Map<String, dynamic> map, String docId) {
     return NewsData(
       id: docId,

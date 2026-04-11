@@ -48,6 +48,34 @@ class ClubData {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'clubName': clubName,
+    'clubProfileImg': clubProfileImg,
+    'contact': contact,
+    'contactPerson': contactPerson,
+    'createdAt': createdAt.toIso8601String(),
+    'dresDomaci': dresDomaci,
+    'dresGostujuci': dresGostujuci,
+    'email': email,
+    'teamLead': teamLead,
+    'trainer': trainer,
+  };
+
+  factory ClubData.fromJson(Map<String, dynamic> map) => ClubData(
+    id: map['id'] as String,
+    clubName: map['clubName'] as String,
+    clubProfileImg: map['clubProfileImg'] as String,
+    contact: map['contact'] as String,
+    contactPerson: map['contactPerson'] as String,
+    createdAt: DateTime.parse(map['createdAt'] as String),
+    dresDomaci: map['dresDomaci'] as String,
+    dresGostujuci: map['dresGostujuci'] as String,
+    email: map['email'] as String,
+    teamLead: map['teamLead'] as String,
+    trainer: map['trainer'] as String,
+  );
+
   /// Returns a copy with players populated
   ClubData copyWithPlayers(List<PlayerData> players) {
     return ClubData(

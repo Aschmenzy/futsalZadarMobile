@@ -33,6 +33,40 @@ class PlayerStatsData {
 
   num get totalGoals => goals + goals10m + goals6m;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'clubName': clubName,
+    'fouls': fouls,
+    'goals': goals,
+    'goals10m': goals10m,
+    'goals6m': goals6m,
+    'matchesPlayed': matchesPlayed,
+    'playerId': playerId,
+    'ownGoals': ownGoals,
+    'playerFullName': playerFullName,
+    'redCards': redCards,
+    'yellowCards': yellowCards,
+    'activeYellows': activeYellows,
+    'suspendedUntilRound': suspendedUntilRound,
+  };
+
+  factory PlayerStatsData.fromJson(Map<String, dynamic> map) => PlayerStatsData(
+    id: map['id'] as String,
+    clubName: map['clubName'] as String,
+    fouls: map['fouls'] as num,
+    goals: map['goals'] as num,
+    goals10m: map['goals10m'] as num,
+    goals6m: map['goals6m'] as num,
+    matchesPlayed: map['matchesPlayed'] as num,
+    playerId: map['playerId'] as String,
+    ownGoals: map['ownGoals'] as num,
+    playerFullName: map['playerFullName'] as String,
+    redCards: map['redCards'] as num,
+    yellowCards: map['yellowCards'] as num,
+    activeYellows: map['activeYellows'] as num,
+    suspendedUntilRound: map['suspendedUntilRound'] as num,
+  );
+
   factory PlayerStatsData.fromFirestore(
     Map<String, dynamic> map,
     String docId,

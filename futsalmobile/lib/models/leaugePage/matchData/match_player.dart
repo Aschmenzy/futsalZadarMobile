@@ -7,6 +7,11 @@ class MatchPlayer {
     required this.name,
   });
 
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  factory MatchPlayer.fromJson(Map<String, dynamic> map) =>
+      MatchPlayer(id: map['id'] as String, name: map['name'] as String);
+
   factory MatchPlayer.fromFirestore(Map<String, dynamic> map) {
     return MatchPlayer(
       id: map['id'] ?? '',
@@ -33,6 +38,26 @@ class PlayerStats {
     this.yellowCards = 0,
     this.redCards = 0,
   });
+
+  Map<String, dynamic> toJson() => {
+    'goals': goals,
+    'goals6m': goals6m,
+    'goals10m': goals10m,
+    'ownGoals': ownGoals,
+    'fouls': fouls,
+    'yellowCards': yellowCards,
+    'redCards': redCards,
+  };
+
+  factory PlayerStats.fromJson(Map<String, dynamic> map) => PlayerStats(
+    goals: map['goals'] as int? ?? 0,
+    goals6m: map['goals6m'] as int? ?? 0,
+    goals10m: map['goals10m'] as int? ?? 0,
+    ownGoals: map['ownGoals'] as int? ?? 0,
+    fouls: map['fouls'] as int? ?? 0,
+    yellowCards: map['yellowCards'] as int? ?? 0,
+    redCards: map['redCards'] as int? ?? 0,
+  );
 
   factory PlayerStats.fromFirestore(Map<String, dynamic> map) {
     return PlayerStats(
