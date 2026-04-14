@@ -9,6 +9,8 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onNotification;
   final VoidCallback? onStar;
   final String? clubLogo;
+  final bool isStarred;
+  final bool isNotificationEnabled;
 
   const ClubDetailsAppBar({
     super.key,
@@ -19,6 +21,8 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onStar,
     this.clubLogo,
     this.clubName,
+    this.isStarred = false,
+    this.isNotificationEnabled = false,
   });
 
   @override
@@ -59,17 +63,23 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
                   const Spacer(),
                   IconButton(
                     onPressed: onNotification,
-                    icon: const Icon(
-                      Icons.notifications_none,
+                    icon: Icon(
+                      isNotificationEnabled
+                          ? Icons.notifications
+                          : Icons.notifications_none,
                       size: 32,
-                      color: AppColors.ternary,
+                      color: isNotificationEnabled
+                          ? AppColors.accentYellow
+                          : AppColors.ternary,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.star_border,
+                    icon: Icon(
+                      isStarred ? Icons.star : Icons.star_border,
                       size: 32,
-                      color: AppColors.ternary,
+                      color: isStarred
+                          ? AppColors.accentYellow
+                          : AppColors.ternary,
                     ),
                     onPressed: onStar,
                   ),

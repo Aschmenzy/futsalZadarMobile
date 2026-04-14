@@ -6,6 +6,7 @@ import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsPage/news_page.dart';
+import 'package:futsalmobile/services/auth_service.dart';
 import 'package:futsalmobile/services/cache_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/services/search_service.dart';
@@ -27,6 +28,9 @@ void main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
+  // Anonymous auth — gives every user a stable UID for favorites
+  await AuthService.signInAnonymously();
+
   // Hive cache
   await CacheService.init();
 
@@ -39,6 +43,9 @@ void main() async {
 
   // If the admin triggered an update, invalidate the in-memory search index too
   if (didUpdate) SearchService().invalidate();
+
+  // Start real-time config watcher — detects admin changes while app is open
+  FirebaseService().startConfigWatcher();
 
   // Build search index in the background — warms Hive cache for clubs + players
   SearchService().ensureIndexLoaded(season).catchError((_) {});
@@ -83,6 +90,7 @@ class _MainPageState extends State<MainPage> {
   @override
   void dispose() {
     FirebaseService().disposeMatchesStream();
+    FirebaseService().stopConfigWatcher();
     super.dispose();
   }
 

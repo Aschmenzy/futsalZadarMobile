@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/match_row_widget.dart';
 
@@ -35,17 +39,38 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
   List<String> _allClubs = [];
   List<int> _allRounds = [];
 
+  StreamSubscription? _invalidationSub;
+  // Set to true whenever cache is invalidated — next _loadData() bypasses Hive
+  bool _forceRefresh = false;
+
   @override
   void initState() {
     super.initState();
+    // If the cache was invalidated while this widget wasn't mounted yet,
+    // the broadcast event was lost — check the dirty flag to catch it.
+    _forceRefresh = _service.consumeMatchCacheDirty();
     _loadData();
+    // Re-fetch whenever the admin bumps lastUpdated while the app is open.
+    _invalidationSub = _service.onCacheInvalidated.listen((_) {
+      _forceRefresh = true;
+      _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _invalidationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
+    final forceRefresh = _forceRefresh;
+    _forceRefresh = false;
     try {
       final allMatches = await _service.getAllMatches(
         widget.leagueId,
         season: widget.season,
+        forceRefresh: forceRefresh,
       );
 
       if (!mounted) return;
@@ -168,11 +193,8 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
         ),
       );
     }
-    return Icon(
-      Icons.notifications_none,
-      color: Colors.grey.shade400,
-      size: 32,
-    );
+    // Scheduled match — show live, tappable notification bell
+    return _MatchNotificationBell(match: match);
   }
 
   void _showRoundPicker() {
@@ -434,6 +456,44 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
           Expanded(child: Divider(color: AppColors.ternaryGray)),
         ],
       ),
+    );
+  }
+}
+
+/// Live, tappable notification bell for a single scheduled match.
+/// Uses StreamBuilder so the icon updates instantly across the app.
+class _MatchNotificationBell extends StatelessWidget {
+  final MatchData match;
+  const _MatchNotificationBell({required this.match});
+
+  @override
+  Widget build(BuildContext context) {
+    final favService = FavoritesService();
+    return StreamBuilder<FavoriteItem?>(
+      stream: favService.watchEntity(match.matchId),
+      builder: (context, snap) {
+        final isNotif = snap.data?.notificationsEnabled ?? false;
+        return GestureDetector(
+          onTap: () => favService.toggleNotification(
+            FavoriteItem(
+              entityId: match.matchId,
+              type: 'match',
+              name: '${match.homeTeam} vs ${match.awayTeam}',
+              imageUrl: '',
+              leagueId: match.leagueCode,
+              leagueName: match.leagueCode,
+              starred: snap.data?.starred ?? false,
+              notificationsEnabled: isNotif,
+              createdAt: DateTime.now(),
+            ),
+          ),
+          child: Icon(
+            isNotif ? Icons.notifications : Icons.notifications_none,
+            color: isNotif ? AppColors.accentYellow : Colors.grey.shade400,
+            size: 28,
+          ),
+        );
+      },
     );
   }
 }

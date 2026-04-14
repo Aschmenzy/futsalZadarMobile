@@ -150,6 +150,7 @@ class _HomePageState extends State<HomePage> {
                         child: NewsContainer(
                           header: news.header,
                           body: news.body,
+                          imageUrl: news.imageUrl,
                         ),
                       );
                     },

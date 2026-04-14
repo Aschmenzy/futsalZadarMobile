@@ -26,6 +26,57 @@ class FirebaseService {
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
+  // ── Cache invalidation signal ──────────────────────────────────────────────
+  // Pages listen to this and re-fetch when the admin bumps lastUpdated.
+  final _cacheInvalidated = StreamController<void>.broadcast();
+  Stream<void> get onCacheInvalidated => _cacheInvalidated.stream;
+
+  // True after a cache clear — widgets that mount AFTER the event can still
+  // detect that a force-refresh is needed (cleared when they consume it).
+  bool _matchCacheDirty = false;
+  bool consumeMatchCacheDirty() {
+    final dirty = _matchCacheDirty;
+    _matchCacheDirty = false;
+    return dirty;
+  }
+
+  // Real-time listener on config/app — detects admin changes while app is open.
+  StreamSubscription? _configWatcher;
+
+  /// Call once after Firebase is initialised. Keeps listening to config/app
+  /// for the lifetime of the app and triggers cache clear whenever lastUpdated
+  /// advances, even if the user never restarts the app.
+  void startConfigWatcher() {
+    _configWatcher?.cancel();
+    _configWatcher = _db
+        .collection('config')
+        .doc('app')
+        .snapshots()
+        .listen((snap) async {
+      if (!snap.exists) return;
+      final lastUpdatedRaw = snap.data()?['lastUpdated'];
+      if (lastUpdatedRaw == null) return;
+
+      final lastUpdated = (lastUpdatedRaw as Timestamp).toDate();
+      final lastSynced = _cache.getLastSyncedAt();
+
+      if (lastSynced == null || lastUpdated.isAfter(lastSynced)) {
+        _cachedSeason = snap.data()?['activeSeason'] as String? ?? _cachedSeason ?? '';
+        await _cache.clearAll();
+        await _cache.setLastSyncedAt(lastUpdated);
+        await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
+        _matchCacheDirty = true;
+        _cacheInvalidated.add(null); // notify all listening pages
+        debugPrint('[Cache] Real-time update detected at $lastUpdated — caches cleared.');
+      }
+    });
+  }
+
+  void stopConfigWatcher() {
+    _configWatcher?.cancel();
+    _configWatcher = null;
+  }
+
   // ============================================================
   // ACTIVE SEASON
   // ============================================================
@@ -341,23 +392,31 @@ class FirebaseService {
   // ============================================================
 
   /// Fetches all matches for a league, using Hive cache (30-minute TTL).
+  ///
+  /// Pass [forceRefresh: true] to bypass both Hive and Firestore disk cache
+  /// and always fetch directly from the server. Used after cache invalidation.
   Future<List<MatchData>> getAllMatches(
     String leagueCode, {
     String? season,
+    bool forceRefresh = false,
   }) async {
     final seasonId = (season != null && season.isNotEmpty)
         ? season
         : _cachedSeason!;
     final key = 'matches_${leagueCode}_$seasonId';
 
-    final cached = _cache.getRaw(key);
-    if (cached != null) {
-      return (cached as List)
-          .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
+    if (!forceRefresh) {
+      final cached = _cache.getRaw(key);
+      if (cached != null) {
+        return (cached as List)
+            .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
     }
 
     try {
+      // Source.server bypasses Firestore's own disk cache — guarantees we see
+      // any match the admin just added, even if Firestore cached the old list.
       final snapshot = await _db
           .collection('seasons')
           .doc(seasonId)
@@ -366,11 +425,11 @@ class FirebaseService {
           .collection('matches')
           .orderBy('matchDate', descending: true)
           .orderBy('matchTime')
-          .get();
+          .get(const GetOptions(source: Source.server));
 
-      final matches = snapshot.docs.map((doc) {
-        return MatchData.fromFirestore(doc.data(), doc.id);
-      }).toList();
+      final matches = snapshot.docs
+          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+          .toList();
 
       await _cache.setRaw(
         key,
@@ -380,7 +439,24 @@ class FirebaseService {
 
       return matches;
     } catch (e) {
-      throw Exception('Greska pri dohvatu utakmica: $e');
+      // If server fetch fails (offline), fall back to Firestore disk cache
+      try {
+        final snapshot = await _db
+            .collection('seasons')
+            .doc(seasonId)
+            .collection('leagues')
+            .doc(leagueCode)
+            .collection('matches')
+            .orderBy('matchDate', descending: true)
+            .orderBy('matchTime')
+            .get(const GetOptions(source: Source.cache));
+
+        return snapshot.docs
+            .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+            .toList();
+      } catch (_) {
+        throw Exception('Greska pri dohvatu utakmica: $e');
+      }
     }
   }
 

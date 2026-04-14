@@ -43,17 +43,26 @@ dependencies:
   rxdart: ^0.27.7
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  firebase_auth: ^6.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.6
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo_withBg.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/images/logo_withBg.png
+  android: true
+  ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

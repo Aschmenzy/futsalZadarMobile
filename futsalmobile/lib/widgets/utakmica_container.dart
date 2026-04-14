@@ -11,6 +11,8 @@ class UtakmicaContainer extends StatelessWidget {
   final int team2Score;
   final String matchTime;
   final String matchDate;
+  final VoidCallback? onNotification;
+  final bool isNotificationEnabled;
 
   const UtakmicaContainer({
     super.key,
@@ -23,6 +25,8 @@ class UtakmicaContainer extends StatelessWidget {
     this.team2Score = 0,
     this.matchTime = "25:14",
     this.matchDate = "1.1.2000",
+    this.onNotification,
+    this.isNotificationEnabled = false,
   });
 
   @override
@@ -48,7 +52,22 @@ class UtakmicaContainer extends StatelessWidget {
                 // Status and time row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [_buildStatusBadge(screenWidth)],
+                  children: [
+                    _buildStatusBadge(screenWidth),
+                    if (matchStatus == 'scheduled' && onNotification != null)
+                      GestureDetector(
+                        onTap: onNotification,
+                        child: Icon(
+                          isNotificationEnabled
+                              ? Icons.notifications
+                              : Icons.notifications_none,
+                          size: screenWidth * 0.06,
+                          color: isNotificationEnabled
+                              ? AppColors.accentYellow
+                              : AppColors.ternaryGray,
+                        ),
+                      ),
+                  ],
                 ),
                 SizedBox(height: screenHeight * 0.005),
                 // Team 1 row

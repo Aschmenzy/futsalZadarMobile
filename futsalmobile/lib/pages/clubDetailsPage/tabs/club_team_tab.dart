@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/teamLead_container.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
+import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class ClubTeamTab extends StatefulWidget {
@@ -28,7 +30,6 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
   List<PlayerData> _players = [];
   bool _loading = true;
   String? _error;
-  final Set<String> _favoritePlayers = {};
 
   @override
   void initState() {
@@ -190,25 +191,11 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (_favoritePlayers.contains(player.id)) {
-                    _favoritePlayers.remove(player.id);
-                  } else {
-                    _favoritePlayers.add(player.id);
-                  }
-                });
-              },
-              child: Icon(
-                _favoritePlayers.contains(player.id)
-                    ? Icons.star
-                    : Icons.star_border,
-                color: _favoritePlayers.contains(player.id)
-                    ? AppColors.secondary
-                    : AppColors.ternaryGray,
-                size: 32,
-              ),
+            _PlayerStarButton(
+              player: player,
+              leagueId: widget.leagueId,
+              leagueName: widget.leaugeName,
+              clubData: widget.clubData,
             ),
           ],
         ),
@@ -254,6 +241,65 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PlayerStarButton extends StatelessWidget {
+  final PlayerData player;
+  final String leagueId;
+  final String leagueName;
+  final ClubData clubData;
+
+  const _PlayerStarButton({
+    required this.player,
+    required this.leagueId,
+    required this.leagueName,
+    required this.clubData,
+  });
+
+  FavoriteItem _buildItem({required bool starred, bool notif = false}) =>
+      FavoriteItem(
+        entityId: player.id,
+        type: 'player',
+        name: player.fullName,
+        imageUrl: player.profilePicture,
+        leagueId: leagueId,
+        leagueName: leagueName,
+        starred: starred,
+        notificationsEnabled: notif,
+        createdAt: DateTime.now(),
+        clubId: clubData.id,
+        clubName: clubData.clubName,
+        clubImageUrl: clubData.clubProfileImg,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final favService = FavoritesService();
+    return StreamBuilder<FavoriteItem?>(
+      stream: favService.watchEntity(player.id),
+      builder: (context, snap) {
+        final isStarred = snap.data?.starred ?? false;
+        final isNotif = snap.data?.notificationsEnabled ?? false;
+        return GestureDetector(
+          onTap: () async {
+            final err = await favService.toggleStar(
+              _buildItem(starred: isStarred, notif: isNotif),
+            );
+            if (err != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(err), backgroundColor: Colors.red),
+              );
+            }
+          },
+          child: Icon(
+            isStarred ? Icons.star : Icons.star_border,
+            color: isStarred ? AppColors.accentYellow : AppColors.ternaryGray,
+            size: 28,
+          ),
+        );
+      },
     );
   }
 }

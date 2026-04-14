@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
+import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/widgets/player_details_app_bar.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/widgets/stats_card.dart';
+import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class PlayerDetailsPage extends StatefulWidget {
@@ -27,6 +29,7 @@ class PlayerDetailsPage extends StatefulWidget {
 
 class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   final _service = FirebaseService();
+  final _favService = FavoritesService();
   PlayerStatsData? _stats;
   bool _loading = true;
 
@@ -53,30 +56,77 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
     }
   }
 
+  FavoriteItem _buildFavoriteItem({bool starred = false, bool notif = false}) =>
+      FavoriteItem(
+        entityId: widget.player.id,
+        type: 'player',
+        name: widget.player.fullName,
+        imageUrl: widget.player.profilePicture,
+        leagueId: widget.leagueId,
+        leagueName: widget.leaugeName,
+        starred: starred,
+        notificationsEnabled: notif,
+        createdAt: DateTime.now(),
+        clubId: widget.clubData.id,
+        clubName: widget.clubData.clubName,
+        clubImageUrl: widget.clubData.clubProfileImg,
+      );
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: PlayerDetailsAppBar(
-        clubLogo: widget.clubData.clubProfileImg,
-        leagueName: widget.leaugeName,
-        clubName: widget.clubData.clubName,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, right: 16, top: 32),
-          child: Column(
-            children: [
-              _buildPlayerHeader(),
-              const SizedBox(height: 16),
-              _buildInfoRow(),
-              const SizedBox(height: 16),
-              StatsCard(statsData: _stats, isLoading: _loading),
-              const SizedBox(height: 24),
-            ],
+    return StreamBuilder<FavoriteItem?>(
+      stream: _favService.watchEntity(widget.player.id),
+      builder: (context, snap) {
+        final fav = snap.data;
+        final isStarred = fav?.starred ?? false;
+        final isNotif = fav?.notificationsEnabled ?? false;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: PlayerDetailsAppBar(
+            clubLogo: widget.clubData.clubProfileImg,
+            leagueName: widget.leaugeName,
+            clubName: widget.clubData.clubName,
+            isStarred: isStarred,
+            isNotificationEnabled: isNotif,
+            onStar: () async {
+              final err = await _favService.toggleStar(
+                _buildFavoriteItem(starred: isStarred, notif: isNotif),
+              );
+              if (err != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(err), backgroundColor: Colors.red),
+                );
+              }
+            },
+            onNotification: () async {
+              final err = await _favService.toggleNotification(
+                _buildFavoriteItem(starred: isStarred, notif: isNotif),
+              );
+              if (err != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(err), backgroundColor: Colors.red),
+                );
+              }
+            },
           ),
-        ),
-      ),
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 16, top: 32),
+              child: Column(
+                children: [
+                  _buildPlayerHeader(),
+                  const SizedBox(height: 16),
+                  _buildInfoRow(),
+                  const SizedBox(height: 16),
+                  StatsCard(statsData: _stats, isLoading: _loading),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

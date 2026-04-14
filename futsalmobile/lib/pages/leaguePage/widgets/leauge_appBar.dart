@@ -11,6 +11,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onStar;
   final ValueChanged<String>? onSeasonChanged;
   final Widget? clubLogo;
+  final bool isStarred;
 
   const LeagueAppBar({
     super.key,
@@ -23,6 +24,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.clubLogo,
     required this.seasons,
     this.onSeasonChanged,
+    this.isStarred = false,
   });
 
   @override
@@ -62,9 +64,11 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(
-                      Icons.star_border,
-                      color: AppColors.ternary,
+                    icon: Icon(
+                      isStarred ? Icons.star : Icons.star_border,
+                      color: isStarred
+                          ? AppColors.accentYellow
+                          : AppColors.ternary,
                     ),
                     onPressed: onStar,
                   ),

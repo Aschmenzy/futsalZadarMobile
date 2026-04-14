@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/pages/matchesPage/widgets/calendar_container.dart';
+import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
@@ -16,6 +18,7 @@ class MatchPage extends StatefulWidget {
 
 class _MatchPageState extends State<MatchPage> {
   final _service = FirebaseService();
+  final _favService = FavoritesService();
 
   late Stream<List<MatchData>> _matchesStream;
   List<MatchData>? _cachedMatches;
@@ -131,60 +134,96 @@ class _MatchPageState extends State<MatchPage> {
       ),
     );
   }
-}
 
-Widget _buildMatchesList(List<MatchData> matches, DateTime _selectedDate) {
-  final filtered = _filterMatchesByDate(matches, _selectedDate);
+  Widget _buildMatchesList(List<MatchData> matches, DateTime selectedDate) {
+    final filtered = _filterMatchesByDate(matches, selectedDate);
 
-  if (filtered.isEmpty) {
-    return Center(
-      child: Text(
-        'Nema utakmica za ovaj datum',
-        style: TextStyle(
-          fontFamily: AppFonts.roboto,
-          color: AppColors.secondary,
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'Nema utakmica za ovaj datum',
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            color: AppColors.secondary,
+          ),
         ),
-      ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: filtered.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final match = filtered[i];
+        if (match.status != 'scheduled') {
+          return UtakmicaContainer(
+            matchStatus: match.status,
+            team1Name: match.homeTeam,
+            team2Name: match.awayTeam,
+            team1Logo: match.homeTeamLogo,
+            team2Logo: match.awayTeamLogo,
+            team1Score: match.homeTeamGoals,
+            team2Score: match.awayTeamGoals,
+            matchTime: _formatMatchTime(match.matchTime),
+          );
+        }
+        // Scheduled matches get notification bell via StreamBuilder
+        return StreamBuilder<FavoriteItem?>(
+          stream: _favService.watchEntity(match.matchId),
+          builder: (context, snap) {
+            final isNotif = snap.data?.notificationsEnabled ?? false;
+            return UtakmicaContainer(
+              matchStatus: match.status,
+              team1Name: match.homeTeam,
+              team2Name: match.awayTeam,
+              team1Logo: match.homeTeamLogo,
+              team2Logo: match.awayTeamLogo,
+              team1Score: match.homeTeamGoals,
+              team2Score: match.awayTeamGoals,
+              matchTime: _formatMatchTime(match.matchTime),
+              isNotificationEnabled: isNotif,
+              onNotification: () => _favService.toggleNotification(
+                FavoriteItem(
+                  entityId: match.matchId,
+                  type: 'match',
+                  name: '${match.homeTeam} vs ${match.awayTeam}',
+                  imageUrl: '',
+                  leagueId: match.leagueCode,
+                  leagueName: match.leagueCode,
+                  starred: snap.data?.starred ?? false,
+                  notificationsEnabled: isNotif,
+                  createdAt: DateTime.now(),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  return ListView.separated(
-    itemCount: filtered.length,
-    separatorBuilder: (_, _) => SizedBox(height: 10),
-    itemBuilder: (context, i) => UtakmicaContainer(
-      matchStatus: filtered[i].status,
-      team1Name: filtered[i].homeTeam,
-      team2Name: filtered[i].awayTeam,
-      team1Logo: filtered[i].homeTeamLogo,
-      team2Logo: filtered[i].awayTeamLogo,
-      team1Score: filtered[i].homeTeamGoals,
-      team2Score: filtered[i].awayTeamGoals,
-      matchTime: _formatMatchDate(filtered[i].matchTime),
-    ),
-  );
-}
+  List<MatchData> _filterMatchesByDate(List<MatchData> matches, DateTime date) {
+    return matches.where((match) {
+      if (match.matchDate.isEmpty) return false;
+      try {
+        final matchDate = DateTime.parse(match.matchDate);
+        return _isSameDay(matchDate, date);
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+  }
 
-List<MatchData> _filterMatchesByDate(List<MatchData> matches, DateTime date) {
-  return matches.where((match) {
-    if (match.matchDate.isEmpty) return false;
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  String _formatMatchTime(String dateString) {
     try {
-      final matchDate = DateTime.parse(match.matchDate);
-      return _isSameDay(matchDate, date);
+      final date = DateTime.parse(dateString);
+      return "${date.day}.${date.month}.${date.year}";
     } catch (_) {
-      return false;
+      return dateString;
     }
-  }).toList();
-}
-
-bool _isSameDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}
-
-String _formatMatchDate(String dateString) {
-  try {
-    final date = DateTime.parse(dateString);
-    return "${date.day}.${date.month}.${date.year}";
-  } catch (_) {
-    return dateString;
   }
 }
