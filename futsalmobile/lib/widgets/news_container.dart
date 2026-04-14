@@ -15,57 +15,66 @@ class NewsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
       children: [
         Container(
           width: double.infinity,
-          height: screenHeight * 0.2,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                imageUrl != null && imageUrl!.isNotEmpty
-                    ? Image.network(imageUrl!, fit: BoxFit.cover)
-                    : Image.asset('assets/images/newsImage.png', scale: 0.7),
-                Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 4),
-                  child: Text(
-                    header,
-                    style: TextStyle(
-                      fontFamily: AppFonts.roboto,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    softWrap: true,
-                    overflow: TextOverflow.fade,
-                    maxLines: 1,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(10),
                 ),
-                const SizedBox(height: 2),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text(
-                      body,
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        color: Color.fromRGBO(167, 167, 167, 1),
+                child: imageUrl != null && imageUrl!.isNotEmpty
+                    ? Image.network(
+                        imageUrl!,
+                        width: double.infinity,
+                        height: screenHeight * 0.2,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.asset(
+                        'assets/images/newsImage.png',
+                        width: double.infinity,
+                        height: screenHeight * 0.2,
+                        fit: BoxFit.cover,
                       ),
-                      softWrap: true,
-                      overflow: TextOverflow.fade,
-                      maxLines: 100,
-                    ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, top: 8, right: 12),
+                child: Text(
+                  header,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w800,
                   ),
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                child: Text(
+                  body,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    color: Color.fromRGBO(167, 167, 167, 1),
+                  ),
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(height: screenHeight * 0.03),
