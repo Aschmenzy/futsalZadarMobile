@@ -20,8 +20,8 @@ class _StatsCardState extends State<StatsCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.ternary,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE4E4E4)),
       ),
       padding: const EdgeInsets.all(16),
@@ -56,19 +56,19 @@ class _StatsCardState extends State<StatsCard> {
                 _buildStatBox(
                   value: widget.statsData?.totalGoals.toInt().toString() ?? '0',
                   label: 'Golova',
-                  color: const Color(0xFF4ECDC4),
+                  color: AppColors.gameWon,
                 ),
                 const SizedBox(width: 12),
                 _buildStatBox(
                   value:
                       widget.statsData?.matchesPlayed.toInt().toString() ?? '0',
-                  label: 'Utakmica',
-                  color: const Color(0xFFFAD65E),
+                  label: 'Utakmice',
+                  color: AppColors.gameDraw,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Divider(color: AppColors.ternary, height: 1),
+            const Divider(color: AppColors.ternaryGray, height: 1),
             const SizedBox(height: 12),
             _buildCardRow(
               label: 'Žuti kartoni',
@@ -78,6 +78,25 @@ class _StatsCardState extends State<StatsCard> {
             _buildCardRow(
               label: 'Crveni kartoni',
               value: widget.statsData?.redCards.toInt() ?? 0,
+            ),
+            const SizedBox(height: 8),
+
+            _buildCardRow(
+              label: 'Golovi s 10m',
+              value: widget.statsData?.goals10m.toInt() ?? 0,
+            ),
+
+            const SizedBox(height: 8),
+
+            _buildCardRow(
+              label: 'Golovi s 6m',
+              value: widget.statsData?.goals6m.toInt() ?? 0,
+            ),
+            const SizedBox(height: 8),
+
+            _buildCardRow(
+              label: 'Fauli',
+              value: widget.statsData?.fouls.toInt() ?? 0,
             ),
             const SizedBox(height: 8),
           ],
@@ -133,7 +152,7 @@ Widget _buildCardRow({required String label, required int value}) {
         label,
         style: TextStyle(
           fontFamily: AppFonts.roboto,
-          fontSize: 14,
+          fontSize: 15,
           color: AppColors.primary,
         ),
       ),
@@ -141,7 +160,7 @@ Widget _buildCardRow({required String label, required int value}) {
         value.toString(),
         style: TextStyle(
           fontFamily: AppFonts.roboto,
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: AppColors.primary,
         ),

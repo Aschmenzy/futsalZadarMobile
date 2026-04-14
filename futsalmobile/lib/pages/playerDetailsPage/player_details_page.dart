@@ -117,8 +117,6 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                 children: [
                   _buildPlayerHeader(),
                   const SizedBox(height: 16),
-                  _buildInfoRow(),
-                  const SizedBox(height: 16),
                   StatsCard(statsData: _stats, isLoading: _loading),
                   const SizedBox(height: 24),
                 ],
@@ -131,33 +129,146 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   }
 
   Widget _buildPlayerHeader() {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          _buildAvatar(),
-          const SizedBox(height: 12),
-          Text(
-            widget.player.fullName,
-            style: TextStyle(
-              fontFamily: AppFonts.roboto,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+    return Card(
+      elevation: 1,
+      clipBehavior: Clip.antiAlias,
+      color: AppColors.ternary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24),
+
+        child: Column(
+          children: [
+            _buildAvatar(),
+            const SizedBox(height: 12),
+            Text(
+              widget.player.fullName,
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _formatDate(widget.player.dateOfBirth),
-            style: TextStyle(
-              fontFamily: AppFonts.roboto,
-              fontSize: 13,
-              color: AppColors.ternaryGray,
+            Text(
+              _formatDate(widget.player.dateOfBirth),
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                fontSize: 13,
+                color: AppColors.ternaryGray,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 20),
+
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 16,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Trenutni klub:',
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto,
+                                fontSize: 14,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (widget.clubData.clubProfileImg.isNotEmpty)
+                              ClipOval(
+                                child: Image.network(
+                                  widget.clubData.clubProfileImg,
+                                  width: 28,
+                                  height: 28,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.clubData.clubName,
+                                style: TextStyle(
+                                  fontFamily: AppFonts.roboto,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Spacer(),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Sezona:',
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto,
+                                fontSize: 14,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              widget.player.season,
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+
+                            const SizedBox(width: 16),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -198,114 +309,6 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
             color: AppColors.secondary,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE4E4E4)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.people_outline,
-                      size: 16,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Trenutni klub:',
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        fontSize: 12,
-                        color: AppColors.ternaryGray,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    if (widget.clubData.clubProfileImg.isNotEmpty)
-                      ClipOval(
-                        child: Image.network(
-                          widget.clubData.clubProfileImg,
-                          width: 28,
-                          height: 28,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.clubData.clubName,
-                        style: TextStyle(
-                          fontFamily: AppFonts.roboto,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 48,
-            color: const Color(0xFFE4E4E4),
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      size: 16,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Sezona:',
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        fontSize: 12,
-                        color: AppColors.ternaryGray,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.player.season,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

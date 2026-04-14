@@ -58,7 +58,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                     style: TextStyle(
                       fontFamily: AppFonts.roboto,
                       color: AppColors.ternary,
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -71,6 +71,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                           : AppColors.ternary,
                     ),
                     onPressed: onStar,
+                    iconSize: 35,
                   ),
                 ],
               ),

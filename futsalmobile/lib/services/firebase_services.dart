@@ -48,11 +48,9 @@ class FirebaseService {
   /// advances, even if the user never restarts the app.
   void startConfigWatcher() {
     _configWatcher?.cancel();
-    _configWatcher = _db
-        .collection('config')
-        .doc('app')
-        .snapshots()
-        .listen((snap) async {
+    _configWatcher = _db.collection('config').doc('app').snapshots().listen((
+      snap,
+    ) async {
       if (!snap.exists) return;
       final lastUpdatedRaw = snap.data()?['lastUpdated'];
       if (lastUpdatedRaw == null) return;
@@ -61,13 +59,16 @@ class FirebaseService {
       final lastSynced = _cache.getLastSyncedAt();
 
       if (lastSynced == null || lastUpdated.isAfter(lastSynced)) {
-        _cachedSeason = snap.data()?['activeSeason'] as String? ?? _cachedSeason ?? '';
+        _cachedSeason =
+            snap.data()?['activeSeason'] as String? ?? _cachedSeason ?? '';
         await _cache.clearAll();
         await _cache.setLastSyncedAt(lastUpdated);
         await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
         _matchCacheDirty = true;
         _cacheInvalidated.add(null); // notify all listening pages
-        debugPrint('[Cache] Real-time update detected at $lastUpdated — caches cleared.');
+        debugPrint(
+          '[Cache] Real-time update detected at $lastUpdated — caches cleared.',
+        );
       }
     });
   }
@@ -937,4 +938,7 @@ class FirebaseService {
       throw Exception('Greska pri dohvatu vijesti: $e');
     }
   }
+  // ============================================================
+  // SPONSORS
+  // ============================================================
 }

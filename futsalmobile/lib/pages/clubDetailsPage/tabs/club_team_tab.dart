@@ -296,7 +296,7 @@ class _PlayerStarButton extends StatelessWidget {
           child: Icon(
             isStarred ? Icons.star : Icons.star_border,
             color: isStarred ? AppColors.accentYellow : AppColors.ternaryGray,
-            size: 28,
+            size: 32,
           ),
         );
       },

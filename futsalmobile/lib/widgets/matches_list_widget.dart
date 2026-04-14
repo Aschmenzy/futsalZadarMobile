@@ -490,7 +490,7 @@ class _MatchNotificationBell extends StatelessWidget {
           child: Icon(
             isNotif ? Icons.notifications : Icons.notifications_none,
             color: isNotif ? AppColors.accentYellow : Colors.grey.shade400,
-            size: 28,
+            size: 36,
           ),
         );
       },
