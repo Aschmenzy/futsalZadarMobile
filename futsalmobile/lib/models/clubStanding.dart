@@ -12,6 +12,8 @@ class ClubStanding {
   final int matchesPlayed;
   final int points;
   final int wins;
+  /// Last N match results, e.g. ['W','L','D','L','W']
+  final List<String> form;
 
   const ClubStanding({
     required this.clubId,
@@ -27,6 +29,7 @@ class ClubStanding {
     required this.matchesPlayed,
     required this.points,
     required this.wins,
+    this.form = const [],
   });
 
   factory ClubStanding.fromFirestore(Map<String, dynamic> map, String docId) {

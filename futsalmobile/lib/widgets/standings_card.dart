@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/club_cetails_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
-enum StandingsView { detailed, simple }
+enum StandingsView { detailed, simple, form }
 
 class StandingsCard extends StatefulWidget {
   final String leagueCode;
@@ -27,6 +28,8 @@ class StandingsCard extends StatefulWidget {
 class _StandingsCardState extends State<StandingsCard> {
   final _service = FirebaseService();
   List<ClubStanding> _standings = [];
+  // clubName → last 5 results (newest first), e.g. ['W','L','D']
+  Map<String, List<String>> _form = {};
   bool _loading = true;
   String? _error;
   StandingsView _view = StandingsView.detailed;
@@ -39,13 +42,45 @@ class _StandingsCardState extends State<StandingsCard> {
 
   Future<void> _loadData() async {
     try {
-      final data = await _service.getAllClubsInLeague(
-        widget.leagueCode,
-        season: widget.leaugeSeason,
-      );
+      final results = await Future.wait([
+        _service.getAllClubsInLeague(
+          widget.leagueCode,
+          season: widget.leaugeSeason,
+        ),
+        _service.getAllMatches(widget.leagueCode, season: widget.leaugeSeason),
+      ]);
       if (!mounted) return;
+
+      final standings = results[0] as List<ClubStanding>;
+      final matches = results[1] as List<MatchData>;
+
+      // Keep only finished/awarded matches, newest first (already ordered by Firestore)
+      final finished = matches
+          .where((m) => m.isFinished || m.isAwarded)
+          .toList();
+
+      final form = <String, List<String>>{};
+      for (final club in standings) {
+        final clubMatches = finished
+            .where(
+              (m) => m.homeTeam == club.clubName || m.awayTeam == club.clubName,
+            )
+            .take(5)
+            .toList();
+
+        form[club.clubName] = clubMatches.map((m) {
+          final isHome = m.homeTeam == club.clubName;
+          final scored = isHome ? m.homeTeamGoals : m.awayTeamGoals;
+          final conceded = isHome ? m.awayTeamGoals : m.homeTeamGoals;
+          if (scored > conceded) return 'W';
+          if (scored < conceded) return 'L';
+          return 'D';
+        }).toList();
+      }
+
       setState(() {
-        _standings = data;
+        _standings = standings;
+        _form = form;
         _loading = false;
       });
     } catch (e) {
@@ -109,6 +144,12 @@ class _StandingsCardState extends State<StandingsCard> {
           label: 'Jednostavan prikaz',
           subtitle: '# Tim  P  DIFF  PTS',
           isSelected: _view == StandingsView.simple,
+        ),
+        _menuItem(
+          value: StandingsView.form,
+          label: 'Zadnje utakmice',
+          subtitle: '# Tim  Zadnje',
+          isSelected: _view == StandingsView.form,
         ),
       ],
     );
@@ -228,9 +269,11 @@ class _StandingsCardState extends State<StandingsCard> {
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
-      child: _view == StandingsView.detailed
-          ? _detailedLabels(labelStyle)
-          : _simpleLabels(labelStyle),
+      child: switch (_view) {
+        StandingsView.detailed => _detailedLabels(labelStyle),
+        StandingsView.simple => _simpleLabels(labelStyle),
+        StandingsView.form => _formLabels(labelStyle),
+      },
     );
   }
 
@@ -317,9 +360,12 @@ class _StandingsCardState extends State<StandingsCard> {
         ),
         itemBuilder: (context, index) {
           final hasData = index < _standings.length;
-          return _view == StandingsView.detailed
-              ? _buildDetailedRow(index + 1, hasData ? _standings[index] : null)
-              : _buildSimpleRow(index + 1, hasData ? _standings[index] : null);
+          final club = hasData ? _standings[index] : null;
+          return switch (_view) {
+            StandingsView.detailed => _buildDetailedRow(index + 1, club),
+            StandingsView.simple => _buildSimpleRow(index + 1, club),
+            StandingsView.form => _buildFormRow(index + 1, club),
+          };
         },
       ),
     );
@@ -485,6 +531,133 @@ class _StandingsCardState extends State<StandingsCard> {
           ),
         ),
       ),
+    );
+  }
+
+  // ── Form labels ───────────────────────────────────────────────────────────────
+
+  Widget _formLabels(TextStyle style) {
+    return Padding(
+      key: const ValueKey('form-labels'),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(width: 32, child: Text('#', style: style)),
+          Expanded(child: Text('Tim', style: style)),
+          Text('Zadnje', style: style),
+        ],
+      ),
+    );
+  }
+
+  // ── Form row ──────────────────────────────────────────────────────────────────
+
+  Widget _buildFormRow(int rank, ClubStanding? club) {
+    final isHighlighted =
+        club != null &&
+        widget.highlightedClubId != null &&
+        club.clubId == widget.highlightedClubId;
+
+    final results = club != null ? (_form[club.clubName] ?? []) : <String>[];
+
+    return GestureDetector(
+      onTap: club == null ? null : () => _onClubTap(club),
+      child: DecoratedBox(
+        decoration: isHighlighted
+            ? BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: AppColors.secondary, width: 3),
+                ),
+              )
+            : const BoxDecoration(),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: isHighlighted ? 11 : 14,
+            right: 14,
+            top: 10,
+            bottom: 10,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '$rank',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    _clubLogo(club),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        club?.clubName ?? '',
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final r in results) _formBadge(r),
+                  // fill remaining slots so layout is consistent
+                  for (int i = results.length; i < 5; i++) _formBadge(null),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _formBadge(String? result) {
+    Color bg;
+    switch (result) {
+      case 'W':
+        bg = AppColors.gameWon;
+      case 'D':
+        bg = AppColors.gameDraw;
+      case 'L':
+        bg = AppColors.gameLost;
+      default:
+        bg = AppColors.ternaryGray;
+    }
+
+    return Container(
+      width: 22,
+      height: 22,
+      margin: const EdgeInsets.only(left: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      alignment: Alignment.center,
+      child: result != null
+          ? Text(
+              result,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          : null,
     );
   }
 

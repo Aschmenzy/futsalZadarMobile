@@ -27,6 +27,16 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.isStarred = false,
   });
 
+  static String _formatSeason(String s) {
+    final parts = s.split('-');
+    if (parts.length == 2 && parts[0].length == 4 && parts[1].length == 4) {
+      return '${parts[0].substring(2)}/${parts[1].substring(2)}';
+    }
+    return s;
+  }
+
+  String get _displaySeason => _formatSeason(season);
+
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 120);
 
@@ -84,8 +94,8 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                   // Logo lige
                   clubLogo ??
                       Container(
-                        width: 50,
-                        height: 50,
+                        width: 60,
+                        height: 60,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -124,7 +134,7 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                                 (s) => PopupMenuItem<String>(
                                   value: s,
                                   child: Text(
-                                    s,
+                                    _formatSeason(s),
                                     style: TextStyle(
                                       fontFamily: AppFonts.roboto,
                                       color: Colors.white,
@@ -140,11 +150,11 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                season,
+                                _displaySeason,
                                 style: TextStyle(
                                   fontFamily: AppFonts.roboto,
                                   color: AppColors.ternary,
-                                  fontSize: 18,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
