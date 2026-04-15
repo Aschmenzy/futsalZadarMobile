@@ -15,6 +15,7 @@ class CacheService {
   static const Duration upcomingMatchesTTL = Duration(minutes: 2);
   static const Duration newsTTL = Duration(minutes: 30);
   static const Duration searchIndexTTL = Duration(hours: 24);
+  static const Duration sponsorsTTL = Duration(hours: 24);
 
   // ── Singleton ──────────────────────────────────────────────────────────────
   static final CacheService _instance = CacheService._internal();

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/sponsor_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
@@ -943,4 +944,38 @@ class FirebaseService {
   // ============================================================
   // SPONSORS
   // ============================================================
+
+  /// Fetches active sponsors ordered by [order], cached for 24 h.
+  /// Cleared automatically when the admin bumps [lastUpdated].
+  Future<List<SponsorData>> getSponsors() async {
+    const key = 'sponsors';
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => SponsorData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
+    try {
+      final snapshot = await _db.collection('sponsors').get();
+
+      final sponsors =
+          snapshot.docs
+              .map((doc) => SponsorData.fromFirestore(doc.data(), doc.id))
+              .where((s) => s.isActive)
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order));
+
+      await _cache.setRaw(
+        key,
+        sponsors.map((s) => s.toJson()).toList(),
+        CacheService.sponsorsTTL,
+      );
+
+      return sponsors;
+    } catch (e) {
+      throw Exception('Greška pri dohvatu sponzora: $e');
+    }
+  }
 }
