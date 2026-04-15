@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
+import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
 import 'package:futsalmobile/pages/newsDetails/news_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/news_container.dart';
@@ -174,15 +175,23 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         for (int i = 0; i < filtered.length && i < 4; i++) ...[
-          UtakmicaContainer(
-            matchStatus: filtered[i].status,
-            team1Name: filtered[i].homeTeam,
-            team2Name: filtered[i].awayTeam,
-            team1Logo: filtered[i].homeTeamLogo,
-            team2Logo: filtered[i].awayTeamLogo,
-            team1Score: filtered[i].homeTeamGoals,
-            team2Score: filtered[i].awayTeamGoals,
-            matchTime: _formatMatchDate(filtered[i].matchTime),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MatchDetailsPage(match: filtered[i]),
+              ),
+            ),
+            child: UtakmicaContainer(
+              matchStatus: filtered[i].status,
+              team1Name: filtered[i].homeTeam,
+              team2Name: filtered[i].awayTeam,
+              team1Logo: filtered[i].homeTeamLogo,
+              team2Logo: filtered[i].awayTeamLogo,
+              team1Score: filtered[i].homeTeamGoals,
+              team2Score: filtered[i].awayTeamGoals,
+              matchTime: _formatMatchDate(filtered[i].matchTime),
+            ),
           ),
           if (i < 3) SizedBox(height: 10),
         ],

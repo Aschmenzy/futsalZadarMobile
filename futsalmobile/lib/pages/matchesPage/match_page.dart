@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
 import 'package:futsalmobile/pages/matchesPage/widgets/calendar_container.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -156,23 +157,14 @@ class _MatchPageState extends State<MatchPage> {
       itemBuilder: (context, i) {
         final match = filtered[i];
         if (match.status != 'scheduled') {
-          return UtakmicaContainer(
-            matchStatus: match.status,
-            team1Name: match.homeTeam,
-            team2Name: match.awayTeam,
-            team1Logo: match.homeTeamLogo,
-            team2Logo: match.awayTeamLogo,
-            team1Score: match.homeTeamGoals,
-            team2Score: match.awayTeamGoals,
-            matchTime: _formatMatchTime(match.matchTime),
-          );
-        }
-        // Scheduled matches get notification bell via StreamBuilder
-        return StreamBuilder<FavoriteItem?>(
-          stream: _favService.watchEntity(match.matchId),
-          builder: (context, snap) {
-            final isNotif = snap.data?.notificationsEnabled ?? false;
-            return UtakmicaContainer(
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MatchDetailsPage(match: match),
+              ),
+            ),
+            child: UtakmicaContainer(
               matchStatus: match.status,
               team1Name: match.homeTeam,
               team2Name: match.awayTeam,
@@ -181,18 +173,43 @@ class _MatchPageState extends State<MatchPage> {
               team1Score: match.homeTeamGoals,
               team2Score: match.awayTeamGoals,
               matchTime: _formatMatchTime(match.matchTime),
-              isNotificationEnabled: isNotif,
-              onNotification: () => _favService.toggleNotification(
-                FavoriteItem(
-                  entityId: match.matchId,
-                  type: 'match',
-                  name: '${match.homeTeam} vs ${match.awayTeam}',
-                  imageUrl: '',
-                  leagueId: match.leagueCode,
-                  leagueName: match.leagueCode,
-                  starred: snap.data?.starred ?? false,
-                  notificationsEnabled: isNotif,
-                  createdAt: DateTime.now(),
+            ),
+          );
+        }
+        // Scheduled matches get notification bell via StreamBuilder
+        return StreamBuilder<FavoriteItem?>(
+          stream: _favService.watchEntity(match.matchId),
+          builder: (context, snap) {
+            final isNotif = snap.data?.notificationsEnabled ?? false;
+            return GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MatchDetailsPage(match: match),
+                ),
+              ),
+              child: UtakmicaContainer(
+                matchStatus: match.status,
+                team1Name: match.homeTeam,
+                team2Name: match.awayTeam,
+                team1Logo: match.homeTeamLogo,
+                team2Logo: match.awayTeamLogo,
+                team1Score: match.homeTeamGoals,
+                team2Score: match.awayTeamGoals,
+                matchTime: _formatMatchTime(match.matchTime),
+                isNotificationEnabled: isNotif,
+                onNotification: () => _favService.toggleNotification(
+                  FavoriteItem(
+                    entityId: match.matchId,
+                    type: 'match',
+                    name: '${match.homeTeam} vs ${match.awayTeam}',
+                    imageUrl: '',
+                    leagueId: match.leagueCode,
+                    leagueName: match.leagueCode,
+                    starred: snap.data?.starred ?? false,
+                    notificationsEnabled: isNotif,
+                    createdAt: DateTime.now(),
+                  ),
                 ),
               ),
             );

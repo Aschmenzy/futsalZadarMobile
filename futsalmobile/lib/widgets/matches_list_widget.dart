@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/match_row_widget.dart';
@@ -381,9 +382,18 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
                           final match = entry.value[matchIndex];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: MatchRowWidget(
-                              match: match,
-                              trailing: _trailing(match),
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      MatchDetailsPage(match: match),
+                                ),
+                              ),
+                              child: MatchRowWidget(
+                                match: match,
+                                trailing: _trailing(match),
+                              ),
                             ),
                           );
                         }

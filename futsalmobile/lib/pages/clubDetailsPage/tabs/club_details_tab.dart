@@ -18,14 +18,14 @@ class ClubDetailsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.only(left: 32.0, right: 32.0, top: 16),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.vertical,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: screenHeight),
-            child: ColoredBox(
-              color: AppColors.background,
+      body: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: screenHeight),
+        child: ColoredBox(
+          color: AppColors.background,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 32.0, right: 32.0, top: 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [

@@ -881,6 +881,7 @@ class FirebaseService {
           .doc(_cachedSeason)
           .collection('news')
           .orderBy('createdAt', descending: true)
+          .where('isActive', isEqualTo: true)
           .limit(limit);
 
       if (lastDocument != null) {
@@ -922,6 +923,7 @@ class FirebaseService {
           .doc(_cachedSeason)
           .collection('news')
           .orderBy('createdAt', descending: true)
+          .where('isActive', isEqualTo: true)
           .limit(1)
           .get();
 
