@@ -186,6 +186,108 @@ class UtakmicaContainer extends StatelessWidget {
           ],
         ),
       );
+    } else if (matchStatus == "awarded") {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.025,
+          vertical: screenWidth * 0.008,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.accentYellow,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.025,
+              height: screenWidth * 0.025,
+              decoration: BoxDecoration(
+                color: AppColors.ternary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              "DODJELJENJO",
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                color: AppColors.ternary,
+                fontSize: screenWidth * 0.03,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (matchStatus == "postponed") {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.025,
+          vertical: screenWidth * 0.008,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.secondary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.025,
+              height: screenWidth * 0.025,
+              decoration: BoxDecoration(
+                color: AppColors.ternary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              "ODGOĐENO",
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                color: AppColors.ternary,
+                fontSize: screenWidth * 0.03,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (matchStatus == "interrupted") {
+      return Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.025,
+          vertical: screenWidth * 0.008,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.gameInterrupted,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.025,
+              height: screenWidth * 0.025,
+              decoration: BoxDecoration(
+                color: AppColors.ternary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              "PREKINUTA",
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                color: AppColors.ternary,
+                fontSize: screenWidth * 0.03,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
     } else {
       // Scheduled status - clock icon
       return Row(

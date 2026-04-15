@@ -193,6 +193,9 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
         ),
       );
     }
+    if (match.isAwarded || match.isPostponed || match.isInterrupted) {
+      return const SizedBox.shrink();
+    }
     // Scheduled match — show live, tappable notification bell
     return _MatchNotificationBell(match: match);
   }

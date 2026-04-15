@@ -24,10 +24,17 @@ class MatchRowWidget extends StatelessWidget {
     return matchDateTime.isBefore(DateTime.now()) ? 'FT' : matchTime;
   }
 
+  String get _timeLabel {
+    if (match.isAwarded) return 'Dodjeljena';
+    if (match.isPostponed) return 'Odgođena';
+    if (match.isInterrupted) return 'Prekinuta';
+    return _formatTime(match.matchDate, match.matchTime);
+  }
+
   @override
   Widget build(BuildContext context) {
     final date = _formatDate(match.matchDate);
-    final time = _formatTime(match.matchDate, match.matchTime);
+    final time = _timeLabel;
 
     return IntrinsicHeight(
       child: Row(

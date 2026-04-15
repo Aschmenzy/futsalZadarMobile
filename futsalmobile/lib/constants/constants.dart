@@ -12,6 +12,7 @@ class AppColors {
   static const liveGame = Color.fromRGBO(241, 76, 168, 1);
   static const gameWon = Color.fromRGBO(40, 171, 217, 1);
   static const gameDraw = Color.fromRGBO(253, 202, 48, 1);
+  static const gameInterrupted = Color.fromRGBO(255, 0, 0, 1);
 
   AppColors._();
 }

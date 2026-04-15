@@ -85,7 +85,9 @@ class MatchData {
     'matchState': matchState?.toJson(),
     'originalHomeScore': originalHomeScore,
     'originalAwayScore': originalAwayScore,
-    'originalPlayerStats': originalPlayerStats?.map((k, v) => MapEntry(k, v.toJson())),
+    'originalPlayerStats': originalPlayerStats?.map(
+      (k, v) => MapEntry(k, v.toJson()),
+    ),
     'statsProcessed': statsProcessed,
     'statsProcessedAt': statsProcessedAt?.toIso8601String(),
   };
@@ -95,8 +97,9 @@ class MatchData {
     if (map['originalPlayerStats'] != null) {
       originalStats = {};
       (map['originalPlayerStats'] as Map).forEach((k, v) {
-        originalStats![k.toString()] =
-            PlayerStats.fromJson(Map<String, dynamic>.from(v as Map));
+        originalStats![k.toString()] = PlayerStats.fromJson(
+          Map<String, dynamic>.from(v as Map),
+        );
       });
     }
     return MatchData(
@@ -120,7 +123,9 @@ class MatchData {
       referee1: map['referee1'] as String?,
       referee2: map['referee2'] as String?,
       matchState: map['matchState'] != null
-          ? MatchState.fromJson(Map<String, dynamic>.from(map['matchState'] as Map))
+          ? MatchState.fromJson(
+              Map<String, dynamic>.from(map['matchState'] as Map),
+            )
           : null,
       originalHomeScore: map['originalHomeScore'] as int?,
       originalAwayScore: map['originalAwayScore'] as int?,
@@ -135,6 +140,9 @@ class MatchData {
   bool get isScheduled => status == 'scheduled';
   bool get isLive => status == 'ongoing';
   bool get isFinished => status == 'finished';
+  bool get isAwarded => status == 'awarded';
+  bool get isPostponed => status == 'postponed';
+  bool get isInterrupted => status == 'interrupted';
 
   factory MatchData.fromFirestore(Map<String, dynamic> map, String docId) {
     Map<String, PlayerStats>? originalStats;

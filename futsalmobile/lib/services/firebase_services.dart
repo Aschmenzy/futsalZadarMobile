@@ -166,7 +166,6 @@ class FirebaseService {
 
       return false;
     } catch (_) {
-      // Offline or Firestore error — keep existing caches, proceed normally
       return false;
     }
   }
@@ -938,6 +937,7 @@ class FirebaseService {
       throw Exception('Greska pri dohvatu vijesti: $e');
     }
   }
+
   // ============================================================
   // SPONSORS
   // ============================================================

@@ -202,7 +202,7 @@ class _HomePageState extends State<HomePage> {
     final referenceDateParsed = _parseMatchDate(referenceDate);
 
     for (final match in matches) {
-      if (match.status == 'onGoing') {
+      if (match.status == 'ongoing') {
         liveMatches.add(match);
       } else if (match.matchDate.isNotEmpty) {
         final matchDateTime = _parseMatchDate(match.matchDate);
