@@ -72,7 +72,7 @@ class PlayerData {
     'perArticle': perArticle,
     'season': season,
     'thisYearRegistrationDate': thisYearRegistrationDate.toIso8601String(),
-    'profilePhoto': profilePicture,
+    'profilePicture': profilePicture,
     'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
   };
 
@@ -92,7 +92,8 @@ class PlayerData {
     thisYearRegistrationDate: DateTime.parse(
       map['thisYearRegistrationDate'] as String,
     ),
-    profilePicture: (map['profilePhoto'] ?? map['profilePicture']) as String? ?? '',
+    profilePicture:
+        (map['profilePhoto'] ?? map['profilePicture']) as String? ?? '',
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
         .map(
           (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
@@ -103,7 +104,8 @@ class PlayerData {
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime(1970);
     if (value is String) {
-      final s = value.trim();
+      // Strip trailing dot ("18.8.2006." → "18.8.2006")
+      final s = value.trim().replaceAll(RegExp(r'\.$'), '');
       // "dd.MM.yyyy"
       final dotParts = s.split('.');
       if (dotParts.length == 3) {
