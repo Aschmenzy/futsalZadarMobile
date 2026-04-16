@@ -29,7 +29,9 @@ void main() async {
   );
 
   // Anonymous auth — gives every user a stable UID for favorites
-  await AuthService.signInAnonymously();
+  try {
+    await AuthService.signInAnonymously();
+  } catch (_) {}
 
   // Hive cache
   await CacheService.init();
@@ -38,8 +40,10 @@ void main() async {
   // all Hive caches are wiped here before anything else runs.
   final didUpdate = await FirebaseService().checkForUpdates();
 
-  // Get active season (now guaranteed to be in Hive after checkForUpdates)
-  final season = await FirebaseService().getActiveSeason();
+  // Warm the active season cache before the app renders
+  try {
+    await FirebaseService().getActiveSeason();
+  } catch (_) {}
 
   // If the admin triggered an update, invalidate the in-memory search index too
   if (didUpdate) SearchService().invalidate();
@@ -47,23 +51,9 @@ void main() async {
   // Start real-time config watcher — detects admin changes while app is open
   FirebaseService().startConfigWatcher();
 
-  // While the app is running: rebuild the search index whenever the admin
-  // bumps lastUpdatedPlayers or lastUpdatedClubs (both clear search_index_*).
-  FirebaseService().onCacheInvalidated.listen((_) {
-    SearchService().invalidate();
-    FirebaseService().getActiveSeason().then(
-      (s) => SearchService()
-          .ensureIndexLoaded(s, forceRefresh: true)
-          .catchError((_) {}),
-    );
-  });
-
-  // Build search index in the background — warms Hive cache for clubs + players.
-  // Pass forceRefresh when the admin bumped a timestamp so Firestore's own
-  // disk cache is bypassed and the index always includes the latest players.
-  SearchService()
-      .ensureIndexLoaded(season, forceRefresh: didUpdate)
-      .catchError((_) {});
+  // Build search index in the background.
+  // forceRefresh=true when admin bumped a timestamp so stale cache is bypassed.
+  SearchService().ensureIndexLoaded(forceRefresh: didUpdate).catchError((_) {});
 
   runApp(const MyApp());
 }

@@ -31,14 +31,14 @@ class MatchEvent {
   };
 
   factory MatchEvent.fromJson(Map<String, dynamic> map) => MatchEvent(
-    type: map['type'] as String,
-    team: map['team'] as String,
-    period: map['period'] as String,
-    playerId: map['playerId'] as String,
-    playerName: map['playerName'] as String,
-    shirtNumber: map['shirtNumber'] as String,
-    timeInMatch: map['timeInMatch'] as int,
-    timestamp: DateTime.parse(map['timestamp'] as String),
+    type: map['type']?.toString() ?? '',
+    team: map['team']?.toString() ?? '',
+    period: map['period']?.toString() ?? '',
+    playerId: map['playerId']?.toString() ?? '',
+    playerName: map['playerName']?.toString() ?? '',
+    shirtNumber: map['shirtNumber']?.toString() ?? '',
+    timeInMatch: (map['timeInMatch'] as num?)?.toInt() ?? 0,
+    timestamp: map['timestamp'] != null ? (DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now()) : DateTime.now(),
   );
 
   factory MatchEvent.fromFirestore(Map<String, dynamic> map) {

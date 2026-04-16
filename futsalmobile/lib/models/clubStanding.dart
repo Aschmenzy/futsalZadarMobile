@@ -71,19 +71,19 @@ class ClubStanding {
   };
 
   factory ClubStanding.fromJson(Map<String, dynamic> map) => ClubStanding(
-    clubId: map['clubId'] as String,
-    clubLogo: map['clubLogo'] as String,
-    clubName: map['clubName'] as String,
-    createdAt: DateTime.parse(map['createdAt'] as String),
-    updatedAt: DateTime.parse(map['updatedAt'] as String),
-    draws: map['draws'] as int,
-    goalDifference: map['goalDifference'] as int,
-    goalsAgainst: map['goalsAgainst'] as int,
-    goalsFor: map['goalsFor'] as int,
-    losses: map['losses'] as int,
-    matchesPlayed: map['matchesPlayed'] as int,
-    points: map['points'] as int,
-    wins: map['wins'] as int,
+    clubId: map['clubId']?.toString() ?? '',
+    clubLogo: map['clubLogo']?.toString() ?? '',
+    clubName: map['clubName']?.toString() ?? '',
+    createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime(1970) : DateTime(1970),
+    updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime(1970) : DateTime(1970),
+    draws: (map['draws'] as num?)?.toInt() ?? 0,
+    goalDifference: (map['goalDifference'] as num?)?.toInt() ?? 0,
+    goalsAgainst: (map['goalsAgainst'] as num?)?.toInt() ?? 0,
+    goalsFor: (map['goalsFor'] as num?)?.toInt() ?? 0,
+    losses: (map['losses'] as num?)?.toInt() ?? 0,
+    matchesPlayed: (map['matchesPlayed'] as num?)?.toInt() ?? 0,
+    points: (map['points'] as num?)?.toInt() ?? 0,
+    wins: (map['wins'] as num?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toMap() {

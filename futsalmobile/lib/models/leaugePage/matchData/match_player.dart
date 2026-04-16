@@ -10,7 +10,7 @@ class MatchPlayer {
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
 
   factory MatchPlayer.fromJson(Map<String, dynamic> map) =>
-      MatchPlayer(id: map['id'] as String, name: map['name'] as String);
+      MatchPlayer(id: map['id']?.toString() ?? '', name: map['name']?.toString() ?? '');
 
   factory MatchPlayer.fromFirestore(Map<String, dynamic> map) {
     return MatchPlayer(

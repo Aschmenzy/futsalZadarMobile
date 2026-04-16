@@ -95,13 +95,13 @@ class MatchState {
       currentPeriod: map['currentPeriod'] as String? ?? '',
       isConfirmed: map['isConfirmed'] as bool? ?? false,
       confirmedAt: map['confirmedAt'] != null
-          ? DateTime.parse(map['confirmedAt'] as String)
+          ? DateTime.tryParse(map['confirmedAt'].toString())
           : null,
       isPaused: map['isPaused'] as bool? ?? false,
-      timerDuration: map['timerDuration'] as int? ?? 0,
-      timerRemaining: map['timerRemaining'] as int? ?? 0,
-      timerStartedAt: DateTime.parse(map['timerStartedAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      timerDuration: (map['timerDuration'] as num?)?.toInt() ?? 0,
+      timerRemaining: (map['timerRemaining'] as num?)?.toInt() ?? 0,
+      timerStartedAt: map['timerStartedAt'] != null ? (DateTime.tryParse(map['timerStartedAt'].toString()) ?? DateTime.now()) : DateTime.now(),
+      updatedAt: map['updatedAt'] != null ? (DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now()) : DateTime.now(),
       homeTeamPlayers: (map['homeTeamPlayers'] as List? ?? [])
           .map((p) => MatchPlayer.fromJson(Map<String, dynamic>.from(p as Map)))
           .toList(),

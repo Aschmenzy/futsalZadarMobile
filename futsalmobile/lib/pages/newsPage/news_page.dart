@@ -41,11 +41,11 @@ class _NewsPageState extends State<NewsPage> {
     try {
       final result = await _service.getNewsPaginated(
         limit: 5,
-        lastDocument: _paginated.lastDocument,
+        offset: _paginated.offset,
       );
       setState(() {
         _paginated.items.addAll(result.items);
-        _paginated.lastDocument = result.lastDocument;
+        _paginated.offset = result.offset;
         _paginated.hasMore = result.hasMore;
         _isLoading = false;
       });

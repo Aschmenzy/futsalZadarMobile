@@ -63,17 +63,17 @@ class ClubData {
   };
 
   factory ClubData.fromJson(Map<String, dynamic> map) => ClubData(
-    id: map['id'] as String,
-    clubName: map['clubName'] as String,
-    clubProfileImg: map['clubProfileImg'] as String,
-    contact: map['contact'] as String,
-    contactPerson: map['contactPerson'] as String,
-    createdAt: DateTime.parse(map['createdAt'] as String),
-    dresDomaci: map['dresDomaci'] as String,
-    dresGostujuci: map['dresGostujuci'] as String,
-    email: map['email'] as String,
-    teamLead: map['teamLead'] as String,
-    trainer: map['trainer'] as String,
+    id: map['id']?.toString() ?? '',
+    clubName: map['clubName']?.toString() ?? '',
+    clubProfileImg: map['clubProfileImg']?.toString() ?? '',
+    contact: map['contact']?.toString() ?? '',
+    contactPerson: map['contactPerson']?.toString() ?? '',
+    createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime(1970) : DateTime(1970),
+    dresDomaci: map['dresDomaci']?.toString() ?? '',
+    dresGostujuci: map['dresGostujuci']?.toString() ?? '',
+    email: map['email']?.toString() ?? '',
+    teamLead: map['teamLead']?.toString() ?? '',
+    trainer: map['trainer']?.toString() ?? '',
   );
 
   /// Returns a copy with players populated

@@ -50,6 +50,15 @@ class CacheService {
     return jsonDecode(encoded);
   }
 
+  /// Like [getRaw] but ignores TTL — returns last-known value even if expired.
+  dynamic getRawStale(String key) {
+    final entry = _b.get(key);
+    if (entry == null) return null;
+    final encoded = (entry as Map)['data'] as String?;
+    if (encoded == null) return null;
+    return jsonDecode(encoded);
+  }
+
   /// Stores [data] (must be JSON-encodable) under [key] with [ttl].
   Future<void> setRaw(String key, dynamic data, Duration ttl) async {
     await _b.put(key, {

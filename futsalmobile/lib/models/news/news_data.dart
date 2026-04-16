@@ -22,11 +22,11 @@ class NewsData {
   };
 
   factory NewsData.fromJson(Map<String, dynamic> map) => NewsData(
-    id: map['id'] as String,
-    imageUrl: map['imageUrl'] as String,
-    createdAt: DateTime.parse(map['createdAt'] as String),
-    header: map['header'] as String,
-    body: map['body'] as String,
+    id: map['id']?.toString() ?? '',
+    imageUrl: map['imageUrl']?.toString() ?? '',
+    createdAt: map['createdAt'] != null ? (DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()) : DateTime.now(),
+    header: map['header']?.toString() ?? '',
+    body: map['body']?.toString() ?? '',
   );
 
   factory NewsData.fromFirestore(Map<String, dynamic> map, String docId) {

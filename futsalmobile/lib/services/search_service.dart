@@ -1,152 +1,167 @@
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:futsalmobile/models/search_entry.dart';
-import 'package:futsalmobile/services/cache_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
+import 'package:http/http.dart' as http;
 import 'package:futsalmobile/services/firebase_services.dart';
+
+class PlayerSearchResult {
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String fullName;
+  final String? photoUrl;
+  final String league;
+  final String clubId;
+  final String clubName;
+  final String? position;
+
+  const PlayerSearchResult({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.fullName,
+    this.photoUrl,
+    required this.league,
+    required this.clubId,
+    required this.clubName,
+    this.position,
+  });
+
+  factory PlayerSearchResult.fromMap(Map<String, dynamic> m) {
+    final first = (m['firstName']?.toString() ?? '').trim();
+    final last = (m['lastName']?.toString() ?? '').trim();
+    return PlayerSearchResult(
+      id: m['id']?.toString() ?? m['_id']?.toString() ?? '',
+      firstName: first,
+      lastName: last,
+      fullName: '$first $last',
+      photoUrl: m['profilePhoto']?.toString() ?? m['profilePicture']?.toString(),
+      league: m['_league']?.toString() ?? '',
+      clubId: m['_clubId']?.toString() ?? '',
+      clubName: m['clubName']?.toString() ?? '',
+      position: m['position']?.toString(),
+    );
+  }
+}
+
+class _IndexEntry {
+  final String searchKey;
+  final PlayerSearchResult result;
+  const _IndexEntry(this.searchKey, this.result);
+}
 
 class SearchService {
   static final SearchService _instance = SearchService._internal();
   factory SearchService() => _instance;
-  SearchService._internal();
 
-  final _cache = CacheService();
-  final _firebase = FirebaseService();
-
-  List<SearchEntry> _index = [];
-  bool _indexLoaded = false;
-
-  // Fires whenever the index finishes loading (initial load, cache hit, or
-  // forced rebuild). Listeners can re-run their search to pick up new players.
-  final _indexUpdated = StreamController<void>.broadcast();
-  Stream<void> get onIndexUpdated => _indexUpdated.stream;
-
-  static const _leagues = ['liga1', 'liga2', 'liga3', 'liga4'];
-  static const _leagueNames = {
-    'liga1': 'Liga 1',
-    'liga2': 'Liga 2',
-    'liga3': 'Liga 3',
-    'liga4': 'Liga 4',
-  };
-
-  // ── Public API ─────────────────────────────────────────────────────────────
-
-  /// Call this once (e.g. in main) after Hive is ready.
-  /// Loads from cache if valid, otherwise fetches from Firestore.
-  ///
-  /// Pass [forceRefresh: true] after cache invalidation so Firestore's own
-  /// disk persistence is bypassed and fresh data is always fetched from server.
-  Future<void> ensureIndexLoaded(
-    String seasonId, {
-    bool forceRefresh = false,
-  }) async {
-    // _indexLoaded means the in-memory list is populated AND the Hive entry
-    // is still valid. If the Hive entry was wiped (e.g. by invalidateByPrefixes)
-    // while _indexLoaded is still true, we need to rebuild.
-    final cacheKey = 'search_index_$seasonId';
-    if (!forceRefresh && _indexLoaded && _cache.isValid(cacheKey)) return;
-
-    if (!forceRefresh) {
-      final cached = _cache.getRaw(cacheKey);
-      if (cached != null) {
-        _index = (cached as List)
-            .map(
-              (e) => SearchEntry.fromJson(Map<String, dynamic>.from(e as Map)),
-            )
-            .toList();
-        _indexLoaded = true;
-        _indexUpdated.add(null);
-        return;
-      }
-    }
-
-    await _buildIndex(seasonId, forceRefresh: forceRefresh);
+  SearchService._internal() {
+    _invalidationSub = FirebaseService().onCacheInvalidated.listen((_) {
+      invalidate();
+    });
   }
 
-  /// Filters the local index by [query]. Returns up to 25 results.
-  /// Returns empty list if the index isn't loaded yet or query is blank.
-  List<SearchEntry> search(String query) {
-    final q = query.trim().toLowerCase();
-    if (q.isEmpty || !_indexLoaded) return [];
+  static const _cacheBoxName = 'search_cache';
+  static const _cacheKey = 'players_index_raw';
+  static const _cacheTtlMs = 24 * 60 * 60 * 1000;
 
-    return _index
-        .where(
-          (e) =>
-              e.displayName.toLowerCase().contains(q) ||
-              e.subtitle.toLowerCase().contains(q),
-        )
-        .take(25)
+  List<_IndexEntry>? _index;
+  bool _loading = false;
+  final List<Completer<void>> _waiters = [];
+  StreamSubscription<void>? _invalidationSub;
+
+  Future<void> ensureIndexLoaded({
+    String? season,
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) invalidate();
+    if (_index != null) return;
+
+    if (_loading) {
+      final c = Completer<void>();
+      _waiters.add(c);
+      await c.future;
+      return;
+    }
+
+    _loading = true;
+    try {
+      final raw = await _loadPlayers();
+      final entries = <_IndexEntry>[];
+      for (final m in raw) {
+        try {
+          final map = Map<String, dynamic>.from(m as Map);
+          final r = PlayerSearchResult.fromMap(map);
+          if (r.firstName.isNotEmpty || r.lastName.isNotEmpty) {
+            entries.add(_IndexEntry(r.fullName.toLowerCase(), r));
+          }
+        } catch (_) {}
+      }
+      _index = entries;
+      debugPrint('[SearchService] index built: ${_index!.length} entries');
+    } catch (e) {
+      debugPrint('[SearchService] index build failed: $e');
+      // Leave _index as null so the next search attempt retries.
+    } finally {
+      _loading = false;
+      for (final c in _waiters) {
+        c.complete();
+      }
+      _waiters.clear();
+    }
+  }
+
+  Future<List<PlayerSearchResult>> search(String query) async {
+    await ensureIndexLoaded();
+    if (query.trim().isEmpty) return [];
+    final q = query.toLowerCase().trim();
+    return (_index ?? [])
+        .where((e) => e.searchKey.contains(q))
+        .map((e) => e.result)
         .toList();
   }
 
-  /// Clears in-memory index so next call to [ensureIndexLoaded] rebuilds it.
   void invalidate() {
-    _indexLoaded = false;
-    _index = [];
+    _index = null;
+    _evictHiveCache();
   }
 
-  // ── Private ────────────────────────────────────────────────────────────────
+  void dispose() {
+    _invalidationSub?.cancel();
+    _invalidationSub = null;
+  }
 
-  Future<void> _buildIndex(String seasonId, {bool forceRefresh = false}) async {
-    final entries = <SearchEntry>[];
+  Future<List<dynamic>> _loadPlayers() async {
+    final box = await Hive.openBox(_cacheBoxName);
+    final raw = box.get(_cacheKey) as List?;
+    final tsMs = box.get('${_cacheKey}_ts') as int?;
 
-    for (final leagueId in _leagues) {
-      final leagueName = _leagueNames[leagueId]!;
-
-      // Clubs — getClubsByLeague will write to Hive cache if not already there
-      final clubs = await _firebase.getClubsByLeague(leagueId);
-
-      for (final club in clubs) {
-        entries.add(
-          SearchEntry(
-            id: club.id,
-            displayName: club.clubName,
-            subtitle: leagueName,
-            type: 'club',
-            leagueId: leagueId,
-            leagueName: leagueName,
-            clubId: club.id,
-            imageUrl: club.clubProfileImg.isNotEmpty
-                ? club.clubProfileImg
-                : null,
-          ),
-        );
-
-        // Players — forceRefresh bypasses Firestore's own disk cache so newly
-        // added players are always included after an admin update.
-        final players = await _firebase.getPlayersByClub(
-          leagueId,
-          club.id,
-          forceRefresh: forceRefresh,
-        );
-
-        for (final player in players) {
-          entries.add(
-            SearchEntry(
-              id: player.id,
-              displayName: player.fullName,
-              subtitle: club.clubName,
-              type: 'player',
-              leagueId: leagueId,
-              leagueName: leagueName,
-              clubId: club.id,
-              imageUrl: player.profilePicture.isNotEmpty
-                  ? player.profilePicture
-                  : null,
-            ),
-          );
-        }
-      }
+    if (raw != null && tsMs != null) {
+      final age = DateTime.now().millisecondsSinceEpoch - tsMs;
+      if (age < _cacheTtlMs) return raw;
     }
 
-    // Persist to Hive
-    await _cache.setRaw(
-      'search_index_$seasonId',
-      entries.map((e) => e.toJson()).toList(),
-      CacheService.searchIndexTTL,
-    );
+    final uri = Uri.parse('$kApiBaseUrl/api/public/players');
+    final res = await http
+        .get(uri, headers: {'Accept': 'application/json'})
+        .timeout(const Duration(seconds: 60));
 
-    _index = entries;
-    _indexLoaded = true;
-    _indexUpdated.add(null);
+    if (res.statusCode != 200) {
+      throw Exception('[SearchService] API ${res.statusCode}: ${res.body}');
+    }
+
+    final decoded = jsonDecode(res.body) as List<dynamic>;
+    await box.put(_cacheKey, decoded);
+    await box.put('${_cacheKey}_ts', DateTime.now().millisecondsSinceEpoch);
+    return decoded;
+  }
+
+  Future<void> _evictHiveCache() async {
+    try {
+      final box = await Hive.openBox(_cacheBoxName);
+      await box.delete(_cacheKey);
+      await box.delete('${_cacheKey}_ts');
+    } catch (_) {}
   }
 }

@@ -36,11 +36,11 @@ class SponsorData {
   };
 
   factory SponsorData.fromJson(Map<String, dynamic> map) => SponsorData(
-    id: map['id'] as String,
-    name: map['name'] as String,
-    imageUrl: map['imageUrl'] as String,
-    linkUrl: map['linkUrl'] as String,
-    isActive: map['isActive'] as bool,
-    order: map['order'] as int,
+    id: map['id']?.toString() ?? '',
+    name: map['name']?.toString() ?? '',
+    imageUrl: map['imageUrl']?.toString() ?? '',
+    linkUrl: map['linkUrl']?.toString() ?? '',
+    isActive: map['isActive'] as bool? ?? false,
+    order: (map['order'] as num?)?.toInt() ?? 0,
   );
 }

@@ -51,20 +51,20 @@ class PlayerStatsData {
   };
 
   factory PlayerStatsData.fromJson(Map<String, dynamic> map) => PlayerStatsData(
-    id: map['id'] as String,
-    clubName: map['clubName'] as String,
-    fouls: map['fouls'] as num,
-    goals: map['goals'] as num,
-    goals10m: map['goals10m'] as num,
-    goals6m: map['goals6m'] as num,
-    matchesPlayed: map['matchesPlayed'] as num,
-    playerId: map['playerId'] as String,
-    ownGoals: map['ownGoals'] as num,
-    playerFullName: map['playerFullName'] as String,
-    redCards: map['redCards'] as num,
-    yellowCards: map['yellowCards'] as num,
-    activeYellows: map['activeYellows'] as num,
-    suspendedUntilRound: map['suspendedUntilRound'] as num,
+    id: map['id']?.toString() ?? '',
+    clubName: map['clubName']?.toString() ?? '',
+    fouls: (map['fouls'] as num?) ?? 0,
+    goals: (map['goals'] as num?) ?? 0,
+    goals10m: (map['goals10m'] as num?) ?? 0,
+    goals6m: (map['goals6m'] as num?) ?? 0,
+    matchesPlayed: (map['matchesPlayed'] as num?) ?? 0,
+    playerId: map['playerId']?.toString() ?? map['odFCplayerId']?.toString() ?? '',
+    ownGoals: (map['ownGoals'] as num?) ?? 0,
+    playerFullName: map['playerFullName']?.toString() ?? map['playerName']?.toString() ?? '',
+    redCards: (map['redCards'] as num?) ?? 0,
+    yellowCards: (map['yellowCards'] as num?) ?? 0,
+    activeYellows: (map['activeYellows'] as num?) ?? 0,
+    suspendedUntilRound: (map['suspendedUntilRound'] as num?) ?? 0,
   );
 
   factory PlayerStatsData.fromFirestore(

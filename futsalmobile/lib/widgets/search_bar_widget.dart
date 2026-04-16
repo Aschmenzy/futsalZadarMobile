@@ -3,14 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
-import 'package:futsalmobile/models/search_entry.dart';
-import 'package:futsalmobile/pages/clubDetailsPage/club_cetails_page.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/services/search_service.dart';
 
-/// Search bar that queries the local SearchService index (zero Firestore reads
-/// per keystroke). Shows an overlay dropdown with club / player results.
 class AppSearchBar extends StatefulWidget {
   const AppSearchBar({super.key});
 
@@ -26,22 +22,18 @@ class _AppSearchBarState extends State<AppSearchBar> {
   final _layerLink = LayerLink();
 
   OverlayEntry? _overlayEntry;
-  List<SearchEntry> _results = [];
+  List<PlayerSearchResult> _results = [];
   bool _navigating = false;
-  StreamSubscription? _indexSub;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    // Re-run the current query whenever the search index finishes rebuilding
-    // so newly added players appear without the user having to retype.
-    _indexSub = _search.onIndexUpdated.listen((_) => _refreshResults());
+    _search.ensureIndexLoaded();
   }
 
   @override
   void dispose() {
-    _indexSub?.cancel();
     _removeOverlay();
     _controller.dispose();
     _focusNode.removeListener(_onFocusChange);
@@ -49,26 +41,13 @@ class _AppSearchBarState extends State<AppSearchBar> {
     super.dispose();
   }
 
-  // Re-runs the search with the current query text and updates the overlay.
-  // Called when the search index is rebuilt (e.g. after an admin player add).
-  void _refreshResults() {
-    final query = _controller.text;
-    if (query.trim().isEmpty) return;
-    final results = _search.search(query);
-    setState(() => _results = results);
-    if (_overlayEntry != null) {
-      _overlayEntry!.markNeedsBuild();
-    }
-  }
-
   void _onFocusChange() {
-    if (!_focusNode.hasFocus) {
-      _removeOverlay();
-    }
+    if (!_focusNode.hasFocus) _removeOverlay();
   }
 
-  void _onChanged(String query) {
-    final results = _search.search(query);
+  Future<void> _onChanged(String query) async {
+    final results = await _search.search(query);
+    if (!mounted) return;
     setState(() => _results = results);
 
     if (query.trim().isEmpty) {
@@ -84,7 +63,6 @@ class _AppSearchBarState extends State<AppSearchBar> {
   }
 
   void _showOverlay() {
-    // Capture width now (RenderBox is resolved at interaction time, not build time)
     final renderBox = context.findRenderObject() as RenderBox?;
     final width = renderBox?.size.width ?? 300.0;
     final overlay = Overlay.of(context);
@@ -104,73 +82,61 @@ class _AppSearchBarState extends State<AppSearchBar> {
     _focusNode.unfocus();
   }
 
-  Future<void> _onResultTap(SearchEntry entry) async {
+  Future<void> _onResultTap(PlayerSearchResult entry) async {
     if (_navigating) return;
     _navigating = true;
     _clearSearch();
-
-    final season = await _firebase.getActiveSeason();
 
     if (!mounted) {
       _navigating = false;
       return;
     }
 
-    if (entry.type == 'club') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ClubCetailsPage(
-            clubId: entry.id,
-            clubName: entry.displayName,
-            leagueId: entry.leagueId,
-            clubLogo: entry.imageUrl ?? '',
-            leagueName: entry.leagueName,
-            season: season,
-          ),
-        ),
-      );
-    } else {
-      // Player — fetch ClubData and PlayerData from cache (fast Hive reads)
-      final clubs = await _firebase.getClubsByLeague(entry.leagueId);
-      ClubData? clubData;
-      try {
-        clubData = clubs.firstWhere((c) => c.id == entry.clubId);
-      } catch (_) {}
+    final clubs = await _firebase.getClubsByLeague(entry.league);
+    ClubData? clubData;
+    try {
+      clubData = clubs.firstWhere((c) => c.id == entry.clubId);
+    } catch (_) {}
 
-      if (!mounted) {
-        _navigating = false;
-        return;
-      }
-
-      if (clubData == null) {
-        _navigating = false;
-        return;
-      }
-
-      final players =
-          await _firebase.getPlayersByClub(entry.leagueId, entry.clubId!);
-      final player = players.where((p) => p.id == entry.id).firstOrNull;
-
-      if (!mounted || player == null) {
-        _navigating = false;
-        return;
-      }
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PlayerDetailsPage(
-            player: player,
-            leagueId: entry.leagueId,
-            clubData: clubData!,
-            leaugeName: entry.leagueName,
-          ),
-        ),
-      );
+    if (!mounted || clubData == null) {
+      _navigating = false;
+      return;
     }
 
+    final players = await _firebase.getPlayersByClub(
+      entry.league,
+      entry.clubId,
+    );
+    final player = players.where((p) => p.id == entry.id).firstOrNull;
+
+    if (!mounted || player == null) {
+      _navigating = false;
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlayerDetailsPage(
+          player: player,
+          leagueId: entry.league,
+          clubData: clubData!,
+          leaugeName: _leagueName(entry.league),
+        ),
+      ),
+    );
+
     _navigating = false;
+  }
+
+  String _leagueName(String leagueId) {
+    const names = {
+      'liga1': 'Liga 1',
+      'liga2': 'Liga 2',
+      'liga3': 'Liga 3',
+      'liga4': 'Liga 4',
+    };
+    return names[leagueId] ?? leagueId;
   }
 
   @override
@@ -207,7 +173,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                   color: AppColors.primary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Pretraži igrače, klubove...',
+                  hintText: 'Pretraži igrače...',
                   hintStyle: TextStyle(
                     fontFamily: AppFonts.roboto,
                     fontSize: 14,
@@ -224,7 +190,11 @@ class _AppSearchBarState extends State<AppSearchBar> {
                 onTap: _clearSearch,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Icon(Icons.close, size: 18, color: AppColors.ternaryGray),
+                  child: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.ternaryGray,
+                  ),
                 ),
               ),
           ],
@@ -291,15 +261,13 @@ class _AppSearchBarState extends State<AppSearchBar> {
 }
 
 class _ResultTile extends StatelessWidget {
-  final SearchEntry entry;
+  final PlayerSearchResult entry;
   final VoidCallback onTap;
 
   const _ResultTile({required this.entry, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final isPlayer = entry.type == 'player';
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -307,35 +275,31 @@ class _ResultTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Avatar
             Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEEEEE),
+              decoration: const BoxDecoration(
+                color: Color(0xFFEEEEEE),
                 shape: BoxShape.circle,
               ),
               child: ClipOval(
-                child: entry.imageUrl != null && entry.imageUrl!.isNotEmpty
+                child: entry.photoUrl != null && entry.photoUrl!.isNotEmpty
                     ? Image.network(
-                        entry.imageUrl!,
+                        entry.photoUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _fallbackIcon(isPlayer),
+                        errorBuilder: (_, _, _) => _fallbackIcon(),
                       )
-                    : _fallbackIcon(isPlayer),
+                    : _fallbackIcon(),
               ),
             ),
-
             const SizedBox(width: 10),
-
-            // Text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    entry.displayName,
+                    entry.fullName,
                     style: TextStyle(
                       fontFamily: AppFonts.roboto,
                       fontSize: 13,
@@ -346,7 +310,7 @@ class _ResultTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    entry.subtitle,
+                    entry.clubName,
                     style: TextStyle(
                       fontFamily: AppFonts.roboto,
                       fontSize: 11,
@@ -357,23 +321,19 @@ class _ResultTile extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Type badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: isPlayer
-                    ? AppColors.secondary.withAlpha(20)
-                    : AppColors.accentYellow.withAlpha(40),
+                color: AppColors.secondary.withAlpha(20),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                isPlayer ? 'Igrač' : 'Klub',
+                'Igrač',
                 style: TextStyle(
                   fontFamily: AppFonts.roboto,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: isPlayer ? AppColors.secondary : const Color(0xFF9B7800),
+                  color: AppColors.secondary,
                 ),
               ),
             ),
@@ -383,11 +343,7 @@ class _ResultTile extends StatelessWidget {
     );
   }
 
-  Widget _fallbackIcon(bool isPlayer) {
-    return Icon(
-      isPlayer ? Icons.person : Icons.sports_soccer,
-      size: 20,
-      color: AppColors.ternaryGray,
-    );
+  Widget _fallbackIcon() {
+    return Icon(Icons.person, size: 20, color: AppColors.ternaryGray);
   }
 }

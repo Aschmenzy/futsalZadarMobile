@@ -1,14 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'news_data.dart';
 
 class NewsPaginated {
   final List<NewsData> items;
-  DocumentSnapshot? lastDocument;
+  int offset;
   bool hasMore;
 
   NewsPaginated({
     this.items = const [],
-    this.lastDocument,
+    this.offset = 0,
     this.hasMore = true,
   });
 }

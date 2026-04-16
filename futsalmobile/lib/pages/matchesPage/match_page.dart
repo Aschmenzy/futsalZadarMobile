@@ -156,6 +156,33 @@ class _MatchPageState extends State<MatchPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final match = filtered[i];
+        if (match.isLive || match.status == 'paused') {
+          return StreamBuilder<MatchData>(
+            stream: _service.watchMatch(match),
+            initialData: match,
+            builder: (context, snap) {
+              final m = snap.data ?? match;
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MatchDetailsPage(match: m),
+                  ),
+                ),
+                child: UtakmicaContainer(
+                  matchStatus: m.status,
+                  team1Name: m.homeTeam,
+                  team2Name: m.awayTeam,
+                  team1Logo: m.homeTeamLogo,
+                  team2Logo: m.awayTeamLogo,
+                  team1Score: m.homeTeamGoals,
+                  team2Score: m.awayTeamGoals,
+                  matchTime: _formatMatchTime(m.matchTime),
+                ),
+              );
+            },
+          );
+        }
         if (match.status != 'scheduled') {
           return GestureDetector(
             onTap: () => Navigator.push(

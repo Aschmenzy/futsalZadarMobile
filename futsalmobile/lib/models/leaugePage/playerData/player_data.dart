@@ -77,23 +77,18 @@ class PlayerData {
   };
 
   factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
-    id: map['id'] as String,
-    clubName: map['clubName'] as String,
-    dateOfBirth: DateTime.parse(map['dateOfBirth'] as String),
-    firstName: map['firstName'] as String,
-    lastName: map['lastName'] as String,
-    firstRegistrationDate: DateTime.parse(
-      map['firstRegistrationDate'] as String,
-    ),
-    idCardNumber: map['idCardNumber'] as String,
-    liga: map['liga'] as String,
-    perArticle: map['perArticle'] as String,
-    season: map['season'] as String,
-    thisYearRegistrationDate: DateTime.parse(
-      map['thisYearRegistrationDate'] as String,
-    ),
-    profilePicture:
-        (map['profilePhoto'] ?? map['profilePicture']) as String? ?? '',
+    id: map['id']?.toString() ?? '',
+    clubName: map['clubName']?.toString() ?? '',
+    dateOfBirth: _parseDate(map['dateOfBirth']),
+    firstName: map['firstName']?.toString() ?? '',
+    lastName: map['lastName']?.toString() ?? '',
+    firstRegistrationDate: _parseDate(map['firstRegistrationDate']),
+    idCardNumber: map['idCardNumber']?.toString() ?? '',
+    liga: map['liga']?.toString() ?? '',
+    perArticle: map['perArticle']?.toString() ?? '',
+    season: map['season']?.toString() ?? '',
+    thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
+    profilePicture: map['profilePhoto']?.toString() ?? map['profilePicture']?.toString() ?? '',
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
         .map(
           (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),

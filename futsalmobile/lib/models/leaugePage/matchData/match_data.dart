@@ -103,25 +103,25 @@ class MatchData {
       });
     }
     return MatchData(
-      matchId: map['matchId'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
-      league: map['league'] as String? ?? '',
-      leagueCode: map['leagueCode'] as String? ?? '',
-      season: map['season'] as String? ?? '',
-      round: map['round'] as int? ?? 0,
-      matchDate: map['matchDate'] as String? ?? '',
-      matchTime: map['matchTime'] as String? ?? '',
-      status: map['status'] as String? ?? '',
-      homeTeam: map['homeTeam'] as String? ?? '',
-      homeTeamLogo: map['homeTeamLogo'] as String? ?? '',
-      homeTeamGoals: map['homeTeamGoals'] as int? ?? 0,
-      awayTeam: map['awayTeam'] as String? ?? '',
-      awayTeamLogo: map['awayTeamLogo'] as String? ?? '',
-      awayTeamGoals: map['awayTeamGoals'] as int? ?? 0,
-      delegate: map['delegate'] as String? ?? '',
-      referee1: map['referee1'] as String?,
-      referee2: map['referee2'] as String?,
+      matchId: map['matchId']?.toString() ?? map['id']?.toString() ?? '',
+      createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime(1970) : DateTime(1970),
+      updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime(1970) : DateTime(1970),
+      league: map['league']?.toString() ?? '',
+      leagueCode: map['leagueCode']?.toString() ?? '',
+      season: map['season']?.toString() ?? '',
+      round: (map['round'] as num?)?.toInt() ?? 0,
+      matchDate: map['matchDate']?.toString() ?? '',
+      matchTime: map['matchTime']?.toString() ?? '',
+      status: map['status']?.toString() ?? '',
+      homeTeam: map['homeTeam']?.toString() ?? '',
+      homeTeamLogo: map['homeTeamLogo']?.toString() ?? '',
+      homeTeamGoals: (map['homeTeamGoals'] as num?)?.toInt() ?? 0,
+      awayTeam: map['awayTeam']?.toString() ?? '',
+      awayTeamLogo: map['awayTeamLogo']?.toString() ?? '',
+      awayTeamGoals: (map['awayTeamGoals'] as num?)?.toInt() ?? 0,
+      delegate: map['delegate']?.toString() ?? '',
+      referee1: map['referee1']?.toString(),
+      referee2: map['referee2']?.toString(),
       matchState: map['matchState'] != null
           ? MatchState.fromJson(
               Map<String, dynamic>.from(map['matchState'] as Map),
@@ -132,7 +132,7 @@ class MatchData {
       originalPlayerStats: originalStats,
       statsProcessed: map['statsProcessed'] as bool?,
       statsProcessedAt: map['statsProcessedAt'] != null
-          ? DateTime.parse(map['statsProcessedAt'] as String)
+          ? DateTime.tryParse(map['statsProcessedAt'].toString())
           : null,
     );
   }

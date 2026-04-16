@@ -194,27 +194,54 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         for (int i = 0; i < filtered.length && i < 4; i++) ...[
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => MatchDetailsPage(match: filtered[i]),
-              ),
-            ),
-            child: UtakmicaContainer(
-              matchStatus: filtered[i].status,
-              team1Name: filtered[i].homeTeam,
-              team2Name: filtered[i].awayTeam,
-              team1Logo: filtered[i].homeTeamLogo,
-              team2Logo: filtered[i].awayTeamLogo,
-              team1Score: filtered[i].homeTeamGoals,
-              team2Score: filtered[i].awayTeamGoals,
-              matchTime: _formatMatchDate(filtered[i].matchTime),
-            ),
-          ),
+          _buildMatchTile(filtered[i]),
           if (i < 3) SizedBox(height: 10),
         ],
       ],
+    );
+  }
+
+  Widget _buildMatchTile(MatchData match) {
+    if (match.isLive || match.status == 'paused') {
+      return StreamBuilder<MatchData>(
+        stream: _service.watchMatch(match),
+        initialData: match,
+        builder: (context, snap) {
+          final m = snap.data ?? match;
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MatchDetailsPage(match: m)),
+            ),
+            child: UtakmicaContainer(
+              matchStatus: m.status,
+              team1Name: m.homeTeam,
+              team2Name: m.awayTeam,
+              team1Logo: m.homeTeamLogo,
+              team2Logo: m.awayTeamLogo,
+              team1Score: m.homeTeamGoals,
+              team2Score: m.awayTeamGoals,
+              matchTime: _formatMatchDate(m.matchTime),
+            ),
+          );
+        },
+      );
+    }
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MatchDetailsPage(match: match)),
+      ),
+      child: UtakmicaContainer(
+        matchStatus: match.status,
+        team1Name: match.homeTeam,
+        team2Name: match.awayTeam,
+        team1Logo: match.homeTeamLogo,
+        team2Logo: match.awayTeamLogo,
+        team1Score: match.homeTeamGoals,
+        team2Score: match.awayTeamGoals,
+        matchTime: _formatMatchDate(match.matchTime),
+      ),
     );
   }
 
