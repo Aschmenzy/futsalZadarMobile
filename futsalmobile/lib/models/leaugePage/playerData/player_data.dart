@@ -72,7 +72,7 @@ class PlayerData {
     'perArticle': perArticle,
     'season': season,
     'thisYearRegistrationDate': thisYearRegistrationDate.toIso8601String(),
-    'profilePicture': profilePicture,
+    'profilePhoto': profilePicture,
     'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
   };
 
@@ -82,15 +82,21 @@ class PlayerData {
     dateOfBirth: DateTime.parse(map['dateOfBirth'] as String),
     firstName: map['firstName'] as String,
     lastName: map['lastName'] as String,
-    firstRegistrationDate: DateTime.parse(map['firstRegistrationDate'] as String),
+    firstRegistrationDate: DateTime.parse(
+      map['firstRegistrationDate'] as String,
+    ),
     idCardNumber: map['idCardNumber'] as String,
     liga: map['liga'] as String,
     perArticle: map['perArticle'] as String,
     season: map['season'] as String,
-    thisYearRegistrationDate: DateTime.parse(map['thisYearRegistrationDate'] as String),
-    profilePicture: map['profilePicture'] as String? ?? '',
+    thisYearRegistrationDate: DateTime.parse(
+      map['thisYearRegistrationDate'] as String,
+    ),
+    profilePicture: (map['profilePhoto'] ?? map['profilePicture']) as String? ?? '',
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
-        .map((e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+        .map(
+          (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
         .toList(),
   );
 
@@ -144,9 +150,12 @@ class PlayerData {
       perArticle: map['perArticle']?.toString() ?? '',
       season: map['season']?.toString() ?? '',
       thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
-      profilePicture: map['profilePicture']?.toString() ?? '',
+      profilePicture: map['profilePhoto']?.toString() ?? '',
       clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
-          .map((e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList(),
     );
   }
