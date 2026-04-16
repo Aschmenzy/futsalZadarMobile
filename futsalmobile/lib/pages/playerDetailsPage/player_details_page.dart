@@ -9,6 +9,9 @@ import 'package:futsalmobile/pages/playerDetailsPage/widgets/stats_card.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
+// clubId → logo URL resolved from the cached clubs data
+typedef _LogoMap = Map<String, String>;
+
 class PlayerDetailsPage extends StatefulWidget {
   final PlayerData player;
   final String leagueId;
@@ -32,11 +35,13 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   final _favService = FavoritesService();
   PlayerStatsData? _stats;
   bool _loading = true;
+  _LogoMap _historyLogos = {};
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadHistoryLogos();
   }
 
   Future<void> _loadStats() async {
@@ -54,6 +59,27 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  // Resolves club logo URLs for each clubHistory entry from the cached clubs
+  // data. Uses the existing Hive cache so no extra network reads are needed.
+  Future<void> _loadHistoryLogos() async {
+    final history = widget.player.clubHistory;
+    if (history.isEmpty) return;
+
+    final logos = <String, String>{};
+    for (final entry in history) {
+      if (logos.containsKey(entry.clubId) || entry.league.isEmpty) continue;
+      try {
+        final clubs = await _service.getClubsByLeague(entry.league);
+        final club = clubs.where((c) => c.id == entry.clubId).firstOrNull;
+        if (club != null && club.clubProfileImg.isNotEmpty) {
+          logos[entry.clubId] = club.clubProfileImg;
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() => _historyLogos = logos);
   }
 
   FavoriteItem _buildFavoriteItem({bool starred = false, bool notif = false}) =>
@@ -118,6 +144,10 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                   _buildPlayerHeader(),
                   const SizedBox(height: 16),
                   StatsCard(statsData: _stats, isLoading: _loading),
+                  if (widget.player.clubHistory.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildClubHistory(),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),
@@ -269,6 +299,91 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildClubHistory() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE4E4E4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.people_alt_outlined,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Prošli klubovi',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+          ...widget.player.clubHistory.map(_buildClubHistoryRow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClubHistoryRow(ClubHistoryEntry entry) {
+    final logoUrl = _historyLogos[entry.clubId];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEEEEE),
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: logoUrl != null && logoUrl.isNotEmpty
+                  ? Image.network(
+                      logoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.sports_soccer,
+                        size: 20,
+                        color: AppColors.ternaryGray,
+                      ),
+                    )
+                  : Icon(
+                      Icons.sports_soccer,
+                      size: 20,
+                      color: AppColors.ternaryGray,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            entry.clubName,
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
       ),
     );
   }

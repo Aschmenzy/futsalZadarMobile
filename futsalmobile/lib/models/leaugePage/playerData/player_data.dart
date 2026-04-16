@@ -1,3 +1,32 @@
+class ClubHistoryEntry {
+  final String clubId;
+  final String clubName;
+  final String league;
+  final String transferredAt;
+
+  const ClubHistoryEntry({
+    required this.clubId,
+    required this.clubName,
+    required this.league,
+    required this.transferredAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'clubId': clubId,
+    'clubName': clubName,
+    'league': league,
+    'transferredAt': transferredAt,
+  };
+
+  factory ClubHistoryEntry.fromJson(Map<String, dynamic> map) =>
+      ClubHistoryEntry(
+        clubId: map['clubId']?.toString() ?? '',
+        clubName: map['clubName']?.toString() ?? '',
+        league: map['league']?.toString() ?? '',
+        transferredAt: map['transferredAt']?.toString() ?? '',
+      );
+}
+
 class PlayerData {
   final String id;
   final String clubName;
@@ -11,6 +40,7 @@ class PlayerData {
   final String season;
   final DateTime thisYearRegistrationDate;
   final String profilePicture;
+  final List<ClubHistoryEntry> clubHistory;
 
   const PlayerData({
     required this.id,
@@ -25,6 +55,7 @@ class PlayerData {
     required this.season,
     required this.thisYearRegistrationDate,
     this.profilePicture = '',
+    this.clubHistory = const [],
   });
 
   String get fullName => '$firstName $lastName';
@@ -42,6 +73,7 @@ class PlayerData {
     'season': season,
     'thisYearRegistrationDate': thisYearRegistrationDate.toIso8601String(),
     'profilePicture': profilePicture,
+    'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
   };
 
   factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
@@ -57,6 +89,9 @@ class PlayerData {
     season: map['season'] as String,
     thisYearRegistrationDate: DateTime.parse(map['thisYearRegistrationDate'] as String),
     profilePicture: map['profilePicture'] as String? ?? '',
+    clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
+        .map((e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
   );
 
   static DateTime _parseDate(dynamic value) {
@@ -110,6 +145,9 @@ class PlayerData {
       season: map['season']?.toString() ?? '',
       thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
       profilePicture: map['profilePicture']?.toString() ?? '',
+      clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
+          .map((e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
     );
   }
 }
