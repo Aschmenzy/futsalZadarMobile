@@ -66,16 +66,28 @@ class CacheService {
 
   // ── Server-driven invalidation ─────────────────────────────────────────────
 
-  static const String _lastSyncedKey = '__last_synced_at__';
+  String _syncKey(String category) => '__last_synced_${category}__';
 
-  /// Returns the timestamp of the last successful full sync, or null if never synced.
-  DateTime? getLastSyncedAt() {
-    final val = _b.get(_lastSyncedKey) as String?;
+  /// Returns the last sync timestamp for [category], or null if never synced.
+  /// Use distinct categories (e.g. 'matches', 'players') so each data type
+  /// can be invalidated independently without clearing unrelated caches.
+  DateTime? getLastSyncedAt({String category = 'global'}) {
+    final val = _b.get(_syncKey(category)) as String?;
     return val != null ? DateTime.tryParse(val) : null;
   }
 
-  /// Stores the timestamp of when the server's [lastUpdated] was matched.
-  Future<void> setLastSyncedAt(DateTime dt) async {
-    await _b.put(_lastSyncedKey, dt.toIso8601String());
+  /// Stores the sync timestamp for [category].
+  Future<void> setLastSyncedAt(DateTime dt, {String category = 'global'}) async {
+    await _b.put(_syncKey(category), dt.toIso8601String());
+  }
+
+  /// Deletes every cache entry whose key starts with any of [prefixes].
+  /// Used for selective invalidation — only wipes the affected data type.
+  Future<void> invalidateByPrefixes(List<String> prefixes) async {
+    final toDelete = _b.keys
+        .whereType<String>()
+        .where((k) => prefixes.any((p) => k.startsWith(p)))
+        .toList();
+    await _b.deleteAll(toDelete);
   }
 }

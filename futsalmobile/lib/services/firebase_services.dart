@@ -32,6 +32,21 @@ class FirebaseService {
   final _cacheInvalidated = StreamController<void>.broadcast();
   Stream<void> get onCacheInvalidated => _cacheInvalidated.stream;
 
+  // Maps each Firestore lastUpdated* field → Hive key prefixes to wipe.
+  // Only the affected category is cleared, leaving unrelated caches intact.
+  static const Map<String, List<String>> _categoryPrefixes = {
+    'lastUpdatedMatches': [
+      'matches_',
+      'standings_',
+      'stats_',
+      'upcoming_matches_',
+    ],
+    'lastUpdatedPlayers': ['players_', 'search_index_'],
+    'lastUpdatedNews': ['latest_news_'],
+    'lastUpdatedSponsors': ['sponsors'],
+    'lastUpdatedClubs': ['clubs_', 'search_index_'],
+  };
+
   // True after a cache clear — widgets that mount AFTER the event can still
   // detect that a force-refresh is needed (cleared when they consume it).
   bool _matchCacheDirty = false;
@@ -53,23 +68,32 @@ class FirebaseService {
       snap,
     ) async {
       if (!snap.exists) return;
-      final lastUpdatedRaw = snap.data()?['lastUpdated'];
-      if (lastUpdatedRaw == null) return;
+      final data = snap.data()!;
 
-      final lastUpdated = (lastUpdatedRaw as Timestamp).toDate();
-      final lastSynced = _cache.getLastSyncedAt();
+      _cachedSeason = data['activeSeason'] as String? ?? _cachedSeason ?? '';
+      await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
 
-      if (lastSynced == null || lastUpdated.isAfter(lastSynced)) {
-        _cachedSeason =
-            snap.data()?['activeSeason'] as String? ?? _cachedSeason ?? '';
-        await _cache.clearAll();
-        await _cache.setLastSyncedAt(lastUpdated);
-        await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
-        _matchCacheDirty = true;
-        _cacheInvalidated.add(null); // notify all listening pages
-        debugPrint(
-          '[Cache] Real-time update detected at $lastUpdated — caches cleared.',
-        );
+      bool anyInvalidated = false;
+      bool matchesInvalidated = false;
+
+      for (final entry in _categoryPrefixes.entries) {
+        final raw = data[entry.key];
+        if (raw == null) continue;
+        final serverTs = (raw as Timestamp).toDate();
+        final localTs = _cache.getLastSyncedAt(category: entry.key);
+
+        if (localTs == null || serverTs.isAfter(localTs)) {
+          await _cache.invalidateByPrefixes(entry.value);
+          await _cache.setLastSyncedAt(serverTs, category: entry.key);
+          anyInvalidated = true;
+          if (entry.key == 'lastUpdatedMatches') matchesInvalidated = true;
+          debugPrint('[Cache] ${entry.key} advanced → cleared ${entry.value}');
+        }
+      }
+
+      if (anyInvalidated) {
+        if (matchesInvalidated) _matchCacheDirty = true;
+        _cacheInvalidated.add(null);
       }
     });
   }
@@ -123,49 +147,44 @@ class FirebaseService {
     _cache.clearAll();
   }
 
-  /// Fetches [config/app] directly from the Firestore server (not from local cache)
-  /// and compares [lastUpdated] to the locally stored sync timestamp.
+  /// Fetches [config/app] from the server and performs selective cache
+  /// invalidation: only the categories whose [lastUpdated*] timestamp has
+  /// advanced since the last local sync are wiped. Unaffected categories
+  /// keep their cached data, reducing unnecessary Firestore reads.
   ///
-  /// Returns [true] if the server was ahead of the local cache — meaning all
-  /// Hive caches have been wiped and the caller should re-warm the search index.
-  /// Returns [false] if everything is already up to date (or if offline).
-  ///
-  /// The admin only needs to update the [lastUpdated] field in [config/app]
-  /// (any Timestamp value) to trigger a full cache refresh on all clients.
+  /// Returns [true] if at least one category was invalidated.
   Future<bool> checkForUpdates() async {
     try {
-      // Force a real network read so we always see the latest admin change.
       final doc = await _db
           .collection('config')
           .doc('app')
           .get(const GetOptions(source: Source.server));
 
       if (!doc.exists) return false;
-
       final data = doc.data()!;
 
-      // Always keep the season in sync
       _cachedSeason = data['activeSeason'] as String? ?? _cachedSeason ?? '';
       await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
 
-      // Check lastUpdated
-      final lastUpdatedRaw = data['lastUpdated'];
-      if (lastUpdatedRaw == null) return false;
+      bool anyInvalidated = false;
 
-      final lastUpdated = (lastUpdatedRaw as Timestamp).toDate();
-      final lastSynced = _cache.getLastSyncedAt();
+      for (final entry in _categoryPrefixes.entries) {
+        final raw = data[entry.key];
+        if (raw == null) continue;
+        final serverTs = (raw as Timestamp).toDate();
+        final localTs = _cache.getLastSyncedAt(category: entry.key);
 
-      if (lastSynced == null || lastUpdated.isAfter(lastSynced)) {
-        // Server data is newer — wipe Hive and record the new sync time
-        await _cache.clearAll();
-        await _cache.setLastSyncedAt(lastUpdated);
-        // Re-store the season so getActiveSeason() still works immediately
-        await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
-        debugPrint('[Cache] Server updated at $lastUpdated — caches cleared.');
-        return true;
+        if (localTs == null || serverTs.isAfter(localTs)) {
+          await _cache.invalidateByPrefixes(entry.value);
+          await _cache.setLastSyncedAt(serverTs, category: entry.key);
+          anyInvalidated = true;
+          debugPrint(
+            '[Cache] checkForUpdates: ${entry.key} advanced → cleared ${entry.value}',
+          );
+        }
       }
 
-      return false;
+      return anyInvalidated;
     } catch (_) {
       return false;
     }
@@ -281,17 +300,26 @@ class FirebaseService {
   // ============================================================
 
   /// Fetches players for one club, using Hive cache (24-hour TTL).
+  ///
+  /// Pass [forceRefresh: true] to bypass both Hive and Firestore's own disk
+  /// cache and always fetch directly from the server. Required after cache
+  /// invalidation so Firestore's persistence layer doesn't return stale data.
   Future<List<PlayerData>> getPlayersByClub(
     String leagueId,
-    String clubId,
-  ) async {
+    String clubId, {
+    bool forceRefresh = false,
+  }) async {
     final key = 'players_${leagueId}_$clubId';
 
-    final cached = _cache.getRaw(key);
-    if (cached != null) {
-      return (cached as List)
-          .map((e) => PlayerData.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
+    if (!forceRefresh) {
+      final cached = _cache.getRaw(key);
+      if (cached != null) {
+        return (cached as List)
+            .map(
+              (e) => PlayerData.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
+            .toList();
+      }
     }
 
     try {
@@ -299,7 +327,11 @@ class FirebaseService {
           .collection(leagueId)
           .doc(clubId)
           .collection('players')
-          .get();
+          .get(
+            forceRefresh
+                ? const GetOptions(source: Source.server)
+                : const GetOptions(source: Source.serverAndCache),
+          );
 
       final players = snapshot.docs
           .map((doc) => PlayerData.fromFirestore(doc.data(), doc.id))
@@ -531,21 +563,37 @@ class FirebaseService {
     }
   }
 
+  // ── Single match real-time stream ─────────────────────────────────────────
+
+  /// Listens to a single match document and emits every time it changes.
+  /// Used by [MatchDetailsPage] so scores and events update live.
+  Stream<MatchData> watchMatch(MatchData match) {
+    final seasonId = match.season.isNotEmpty
+        ? match.season
+        : (_cachedSeason ?? '');
+    return _db
+        .collection('seasons')
+        .doc(seasonId)
+        .collection('leagues')
+        .doc(match.leagueCode)
+        .collection('matches')
+        .doc(match.matchId)
+        .snapshots()
+        .where((snap) => snap.exists)
+        .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id));
+  }
+
   // ── Upcoming matches stream ────────────────────────────────────────────────
 
   BehaviorSubject<List<MatchData>>? _matchesSubject;
-  StreamSubscription? _pollSubscription;
+  StreamSubscription? _matchesListener;
 
-  /// Returns the poll interval: 30 s on match evenings, 5 min otherwise.
-  Duration get _smartPollInterval {
-    final now = DateTime.now();
-    final isMatchTime =
-        now.weekday >= DateTime.friday && now.hour >= 14 && now.hour <= 23;
-    return isMatchTime
-        ? const Duration(seconds: 30)
-        : const Duration(minutes: 5);
-  }
-
+  /// Returns a stream of upcoming matches that updates in real time.
+  ///
+  /// Firestore's [snapshots()] fires only when an actual document in the
+  /// result set changes — no polling, no unnecessary reads. The Hive cache
+  /// is updated on each emission so the UI can show data instantly on the
+  /// next mount without waiting for Firestore.
   Stream<List<MatchData>> getUpcomingMatchesStream({
     DateTime? targetDate,
     String? season,
@@ -556,60 +604,63 @@ class FirebaseService {
 
     final seasonId = (season != null && season.isNotEmpty)
         ? season
-        : _cachedSeason;
+        : _cachedSeason!;
     targetDate ??= DateTime.now();
     final dateString =
         '${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
 
     _matchesSubject = BehaviorSubject<List<MatchData>>();
 
-    // Serve from Hive cache immediately for instant display
+    // Serve Hive cache immediately so the UI has data before Firestore responds.
     final cachedKey = 'upcoming_matches_$seasonId';
     final cachedRaw = _cache.getRaw(cachedKey);
     if (cachedRaw != null) {
-      final cached = (cachedRaw as List)
-          .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      _matchesSubject!.add(cached);
+      _matchesSubject!.add(
+        (cachedRaw as List)
+            .map((e) => MatchData.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
+      );
     }
 
-    // Fetch from Firestore immediately
-    _fetchAndCacheUpcoming(seasonId!, dateString, cachedKey);
+    // Real-time listener — Firestore pushes a new snapshot only when a
+    // matching document is created, updated, or deleted.
+    _matchesListener = _db
+        .collectionGroup('matches')
+        .where('season', isEqualTo: seasonId)
+        .where('matchDate', isGreaterThanOrEqualTo: dateString)
+        .orderBy('matchDate')
+        .snapshots()
+        .listen(
+          (snapshot) async {
+            final matches =
+                snapshot.docs
+                    .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+                    .toList()
+                  ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
 
-    // Adaptive polling
-    _pollSubscription = Stream.periodic(_smartPollInterval).listen((_) {
-      _fetchAndCacheUpcoming(seasonId, dateString, cachedKey);
-    });
+            await _cache.setRaw(
+              cachedKey,
+              matches.map((m) => m.toJson()).toList(),
+              CacheService.upcomingMatchesTTL,
+            );
+
+            if (_matchesSubject != null && !_matchesSubject!.isClosed) {
+              _matchesSubject!.add(matches);
+            }
+          },
+          onError: (Object error) {
+            if (_matchesSubject != null && !_matchesSubject!.isClosed) {
+              _matchesSubject!.addError(error);
+            }
+          },
+        );
 
     return _matchesSubject!.stream;
   }
 
-  Future<void> _fetchAndCacheUpcoming(
-    String seasonId,
-    String dateString,
-    String cacheKey,
-  ) async {
-    try {
-      final matches = await getUpcomingMatches(seasonId, dateString);
-      await _cache.setRaw(
-        cacheKey,
-        matches.map((m) => m.toJson()).toList(),
-        _smartPollInterval,
-      ); // TTL = poll interval
-
-      if (_matchesSubject != null && !_matchesSubject!.isClosed) {
-        _matchesSubject!.add(matches);
-      }
-    } catch (error) {
-      if (_matchesSubject != null && !_matchesSubject!.isClosed) {
-        _matchesSubject!.addError(error);
-      }
-    }
-  }
-
   void disposeMatchesStream() {
-    _pollSubscription?.cancel();
-    _pollSubscription = null;
+    _matchesListener?.cancel();
+    _matchesListener = null;
     _matchesSubject?.close();
     _matchesSubject = null;
   }

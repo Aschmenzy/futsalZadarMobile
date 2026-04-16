@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
@@ -26,20 +28,37 @@ class _AppSearchBarState extends State<AppSearchBar> {
   OverlayEntry? _overlayEntry;
   List<SearchEntry> _results = [];
   bool _navigating = false;
+  StreamSubscription? _indexSub;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
+    // Re-run the current query whenever the search index finishes rebuilding
+    // so newly added players appear without the user having to retype.
+    _indexSub = _search.onIndexUpdated.listen((_) => _refreshResults());
   }
 
   @override
   void dispose() {
+    _indexSub?.cancel();
     _removeOverlay();
     _controller.dispose();
     _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     super.dispose();
+  }
+
+  // Re-runs the search with the current query text and updates the overlay.
+  // Called when the search index is rebuilt (e.g. after an admin player add).
+  void _refreshResults() {
+    final query = _controller.text;
+    if (query.trim().isEmpty) return;
+    final results = _search.search(query);
+    setState(() => _results = results);
+    if (_overlayEntry != null) {
+      _overlayEntry!.markNeedsBuild();
+    }
   }
 
   void _onFocusChange() {

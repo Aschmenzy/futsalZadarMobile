@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
@@ -21,15 +23,32 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _service = FirebaseService();
 
-  // Cache variables
   late Stream<List<MatchData>> _matchesStream;
   List<MatchData>? _cachedMatches;
+  StreamSubscription? _invalidationSub;
 
   @override
   void initState() {
     super.initState();
-    // Create the stream once, reuse it
     _matchesStream = _service.getUpcomingMatchesStream();
+
+    // When the admin bumps lastUpdatedMatches, dispose the existing Firestore
+    // listener and create a fresh one so new matches appear immediately.
+    _invalidationSub = _service.onCacheInvalidated.listen((_) {
+      _service.disposeMatchesStream();
+      if (mounted) {
+        setState(() {
+          _cachedMatches = null;
+          _matchesStream = _service.getUpcomingMatchesStream();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _invalidationSub?.cancel();
+    super.dispose();
   }
 
   @override

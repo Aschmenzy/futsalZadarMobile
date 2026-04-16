@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:futsalmobile/models/search_entry.dart';
 import 'package:futsalmobile/services/cache_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -13,6 +15,11 @@ class SearchService {
   List<SearchEntry> _index = [];
   bool _indexLoaded = false;
 
+  // Fires whenever the index finishes loading (initial load, cache hit, or
+  // forced rebuild). Listeners can re-run their search to pick up new players.
+  final _indexUpdated = StreamController<void>.broadcast();
+  Stream<void> get onIndexUpdated => _indexUpdated.stream;
+
   static const _leagues = ['liga1', 'liga2', 'liga3', 'liga4'];
   static const _leagueNames = {
     'liga1': 'Liga 1',
@@ -25,21 +32,34 @@ class SearchService {
 
   /// Call this once (e.g. in main) after Hive is ready.
   /// Loads from cache if valid, otherwise fetches from Firestore.
-  Future<void> ensureIndexLoaded(String seasonId) async {
-    if (_indexLoaded) return;
-
+  ///
+  /// Pass [forceRefresh: true] after cache invalidation so Firestore's own
+  /// disk persistence is bypassed and fresh data is always fetched from server.
+  Future<void> ensureIndexLoaded(
+    String seasonId, {
+    bool forceRefresh = false,
+  }) async {
+    // _indexLoaded means the in-memory list is populated AND the Hive entry
+    // is still valid. If the Hive entry was wiped (e.g. by invalidateByPrefixes)
+    // while _indexLoaded is still true, we need to rebuild.
     final cacheKey = 'search_index_$seasonId';
-    final cached = _cache.getRaw(cacheKey);
+    if (!forceRefresh && _indexLoaded && _cache.isValid(cacheKey)) return;
 
-    if (cached != null) {
-      _index = (cached as List)
-          .map((e) => SearchEntry.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      _indexLoaded = true;
-      return;
+    if (!forceRefresh) {
+      final cached = _cache.getRaw(cacheKey);
+      if (cached != null) {
+        _index = (cached as List)
+            .map(
+              (e) => SearchEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
+            .toList();
+        _indexLoaded = true;
+        _indexUpdated.add(null);
+        return;
+      }
     }
 
-    await _buildIndex(seasonId);
+    await _buildIndex(seasonId, forceRefresh: forceRefresh);
   }
 
   /// Filters the local index by [query]. Returns up to 25 results.
@@ -66,7 +86,7 @@ class SearchService {
 
   // ── Private ────────────────────────────────────────────────────────────────
 
-  Future<void> _buildIndex(String seasonId) async {
+  Future<void> _buildIndex(String seasonId, {bool forceRefresh = false}) async {
     final entries = <SearchEntry>[];
 
     for (final leagueId in _leagues) {
@@ -91,8 +111,13 @@ class SearchService {
           ),
         );
 
-        // Players — getPlayersByClub will also write to Hive cache
-        final players = await _firebase.getPlayersByClub(leagueId, club.id);
+        // Players — forceRefresh bypasses Firestore's own disk cache so newly
+        // added players are always included after an admin update.
+        final players = await _firebase.getPlayersByClub(
+          leagueId,
+          club.id,
+          forceRefresh: forceRefresh,
+        );
 
         for (final player in players) {
           entries.add(
@@ -122,5 +147,6 @@ class SearchService {
 
     _index = entries;
     _indexLoaded = true;
+    _indexUpdated.add(null);
   }
 }

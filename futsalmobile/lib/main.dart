@@ -47,8 +47,23 @@ void main() async {
   // Start real-time config watcher — detects admin changes while app is open
   FirebaseService().startConfigWatcher();
 
-  // Build search index in the background — warms Hive cache for clubs + players
-  SearchService().ensureIndexLoaded(season).catchError((_) {});
+  // While the app is running: rebuild the search index whenever the admin
+  // bumps lastUpdatedPlayers or lastUpdatedClubs (both clear search_index_*).
+  FirebaseService().onCacheInvalidated.listen((_) {
+    SearchService().invalidate();
+    FirebaseService().getActiveSeason().then(
+      (s) => SearchService()
+          .ensureIndexLoaded(s, forceRefresh: true)
+          .catchError((_) {}),
+    );
+  });
+
+  // Build search index in the background — warms Hive cache for clubs + players.
+  // Pass forceRefresh when the admin bumped a timestamp so Firestore's own
+  // disk cache is bypassed and the index always includes the latest players.
+  SearchService()
+      .ensureIndexLoaded(season, forceRefresh: didUpdate)
+      .catchError((_) {});
 
   runApp(const MyApp());
 }
