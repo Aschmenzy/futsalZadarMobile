@@ -46,6 +46,7 @@ dependencies:
   firebase_auth: ^6.1.4
   url_launcher: ^6.3.2
   http: ^1.2.0
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +78,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/images/
     - assets/images/clubLogo/
     - assets/icons/

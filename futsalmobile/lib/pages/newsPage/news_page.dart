@@ -68,72 +68,75 @@ class _NewsPageState extends State<NewsPage> {
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       body: SafeArea(
-        child: Container(
-          color: AppColors.background,
-          child: _paginated.items.isEmpty && _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : _error != null && _paginated.items.isEmpty
-              ? Center(child: Text(_error!))
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount:
-                      _paginated.items.length +
-                      (_paginated.hasMore ? 1 : 0) +
-                      1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 16.0),
-                        child: Column(
-                          children: [
-                            Center(
-                              child: Image.asset(
-                                'assets/images/logo.png',
-                                scale: 0.7,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: screenHeight),
+          child: ColoredBox(
+            color: AppColors.background,
+            child: _paginated.items.isEmpty && _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _error != null && _paginated.items.isEmpty
+                ? Center(child: Text(_error!))
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount:
+                        _paginated.items.length +
+                        (_paginated.hasMore ? 1 : 0) +
+                        1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: Column(
+                            children: [
+                              Center(
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  scale: 0.7,
+                                ),
                               ),
+
+                              SizedBox(height: screenHeight * 0.02),
+                            ],
+                          ),
+                        );
+                      }
+                      final newsIndex = index - 1;
+                      if (newsIndex >= _paginated.items.length) {
+                        return Padding(
+                          padding: EdgeInsets.only(left: 32, right: 32),
+                          child: Center(
+                            child: ShimmerLoading(
+                              width: double.infinity,
+                              height: screenHeight * 0.2,
                             ),
-                        
-                            SizedBox(height: screenHeight * 0.02),
-                          ],
-                        ),
-                      );
-                    }
-                    final newsIndex = index - 1;
-                    if (newsIndex >= _paginated.items.length) {
-                      return Padding(
-                        padding: EdgeInsets.only(left: 32, right: 32),
-                        child: Center(
-                          child: ShimmerLoading(
-                            width: double.infinity,
-                            height: screenHeight * 0.2,
+                          ),
+                        );
+                      }
+                      final item = _paginated.items[newsIndex];
+                      return GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NewsDetailsPage(
+                              header: item.header,
+                              body: item.body,
+                              imageUrl: item.imageUrl,
+                              date: item.createdAt,
+                            ),
                           ),
                         ),
-                      );
-                    }
-                    final item = _paginated.items[newsIndex];
-                    return GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NewsDetailsPage(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 32.0, right: 32),
+                          child: NewsContainer(
                             header: item.header,
                             body: item.body,
                             imageUrl: item.imageUrl,
-                            date: item.createdAt,
                           ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 32.0, right: 32),
-                        child: NewsContainer(
-                          header: item.header,
-                          body: item.body,
-                          imageUrl: item.imageUrl,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+          ),
         ),
       ),
     );

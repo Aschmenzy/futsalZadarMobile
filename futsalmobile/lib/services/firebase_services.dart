@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
@@ -16,11 +17,7 @@ import 'package:futsalmobile/services/cache_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 
-// ── Configure this to your Next.js deployment URL ─────────────────────────
-// Development:  'http://10.0.2.2:8081'  (Android emulator → localhost)
-//               'http://localhost:8081'  (iOS simulator)
-// Production:   'https://your-domain.com'
-const String kApiBaseUrl = 'http://10.212.9.20:8081';
+final String? kApiBaseUrl = dotenv.env['API_BASE_URL'];
 // ──────────────────────────────────────────────────────────────────────────
 
 class FirebaseService {
@@ -48,7 +45,7 @@ class FirebaseService {
       'upcoming_matches_',
     ],
     'lastUpdatedPlayers': ['players_', 'search_index_'],
-    'lastUpdatedNews': ['latest_news_', 'news_all_'],
+    'lastUpdatedNews': ['latest_news_', 'news_all'],
     'lastUpdatedSponsors': ['sponsors'],
     'lastUpdatedClubs': ['clubs_', 'search_index_'],
   };
@@ -646,14 +643,20 @@ class FirebaseService {
       final cached = _cache.getRaw(key);
       if (cached != null) {
         players = (cached as List)
-            .map((e) => PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) =>
+                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
             .toList();
       } else {
         final list = await _getList(
           '/api/public/stats?league=$leagueCode&season=$seasonId',
         );
         players = list
-            .map((e) => PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)))
+            .map(
+              (e) =>
+                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
             .toList();
         await _cache.setRaw(key, list, CacheService.statsTTL);
       }
@@ -808,8 +811,7 @@ class FirebaseService {
   // ============================================================
 
   Future<List<NewsData>> _loadAllNews() async {
-    final season = _cachedSeason ?? await getActiveSeason();
-    final key = 'news_all_$season';
+    const key = 'news_all';
 
     final cached = _cache.getRaw(key);
     if (cached != null) {
@@ -818,7 +820,8 @@ class FirebaseService {
           .toList();
     }
 
-    final list = await _getList('/api/public/news?season=$season');
+    final data = await _getMap('/api/public/news');
+    final list = data['items'] as List<dynamic>;
     await _cache.setRaw(key, list, CacheService.newsTTL);
     return list
         .map((e) => NewsData.fromJson(Map<String, dynamic>.from(e as Map)))
