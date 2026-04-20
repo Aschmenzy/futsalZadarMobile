@@ -7,8 +7,10 @@ import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsPage/news_page.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:futsalmobile/services/auth_service.dart';
 import 'package:futsalmobile/services/cache_service.dart';
+import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/services/search_service.dart';
 import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
@@ -34,6 +36,13 @@ void main() async {
   try {
     await AuthService.signInAnonymously();
   } catch (_) {}
+
+  // Request notification permission and initialize FCM
+  await FirebaseMessaging.instance.requestPermission();
+  await FirebaseMessaging.instance.getToken();
+
+  // Re-subscribe to FCM topics (lost on reinstall/clear)
+  FavoritesService().restoreSubscriptions().catchError((_) {});
 
   // Hive cache
   await CacheService.init();

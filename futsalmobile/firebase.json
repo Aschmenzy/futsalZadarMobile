@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"fucalzadar","appId":"1:723278264803:android:ddfe6ca12b783a205148d6","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"fucalzadar","configurations":{"android":"1:723278264803:android:ddfe6ca12b783a205148d6","ios":"1:723278264803:ios:1b948e4eeddcda365148d6"}}}}}}
+{
+  "functions": {
+    "source": "functions"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fucalzadar",
+          "appId": "1:723278264803:android:ddfe6ca12b783a205148d6",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fucalzadar",
+          "configurations": {
+            "android": "1:723278264803:android:ddfe6ca12b783a205148d6",
+            "ios": "1:723278264803:ios:1b948e4eeddcda365148d6"
+          }
+        }
+      }
+    }
+  }
+}
