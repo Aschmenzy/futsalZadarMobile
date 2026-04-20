@@ -12,6 +12,7 @@ class StandingsCard extends StatefulWidget {
   final String leagueName;
   final String leaugeSeason;
   final String? highlightedClubId;
+  final Set<String> highlightedTeamNames;
 
   const StandingsCard({
     super.key,
@@ -19,6 +20,7 @@ class StandingsCard extends StatefulWidget {
     required this.leagueName,
     required this.leaugeSeason,
     this.highlightedClubId,
+    this.highlightedTeamNames = const {},
   });
 
   @override
@@ -350,6 +352,7 @@ class _StandingsCardState extends State<StandingsCard> {
         key: ValueKey(_view),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
         itemCount: rowCount,
         separatorBuilder: (_, _) => const Divider(
           height: 1,
@@ -383,8 +386,8 @@ class _StandingsCardState extends State<StandingsCard> {
 
     final isHighlighted =
         club != null &&
-        widget.highlightedClubId != null &&
-        club.clubId == widget.highlightedClubId;
+        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
+         widget.highlightedTeamNames.contains(club.clubName));
 
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
@@ -466,8 +469,8 @@ class _StandingsCardState extends State<StandingsCard> {
 
     final isHighlighted =
         club != null &&
-        widget.highlightedClubId != null &&
-        club.clubId == widget.highlightedClubId;
+        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
+         widget.highlightedTeamNames.contains(club.clubName));
 
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
@@ -555,8 +558,8 @@ class _StandingsCardState extends State<StandingsCard> {
   Widget _buildFormRow(int rank, ClubStanding? club) {
     final isHighlighted =
         club != null &&
-        widget.highlightedClubId != null &&
-        club.clubId == widget.highlightedClubId;
+        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
+         widget.highlightedTeamNames.contains(club.clubName));
 
     final results = club != null ? (_form[club.clubName] ?? []) : <String>[];
 

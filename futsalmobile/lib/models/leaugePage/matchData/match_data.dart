@@ -1,3 +1,4 @@
+import 'match_media.dart';
 import 'match_player.dart';
 import 'match_state.dart';
 
@@ -31,6 +32,7 @@ class MatchData {
   final Map<String, PlayerStats>? originalPlayerStats;
   final bool? statsProcessed;
   final DateTime? statsProcessedAt;
+  final List<MatchMedia> media;
 
   const MatchData({
     required this.matchId,
@@ -58,6 +60,7 @@ class MatchData {
     this.originalPlayerStats,
     this.statsProcessed,
     this.statsProcessedAt,
+    this.media = const [],
   });
 
   String get score => '$homeTeamGoals : $awayTeamGoals';
@@ -90,6 +93,7 @@ class MatchData {
     ),
     'statsProcessed': statsProcessed,
     'statsProcessedAt': statsProcessedAt?.toIso8601String(),
+    'media': media.map((m) => m.toJson()).toList(),
   };
 
   factory MatchData.fromJson(Map<String, dynamic> map) {
@@ -134,6 +138,10 @@ class MatchData {
       statsProcessedAt: map['statsProcessedAt'] != null
           ? DateTime.tryParse(map['statsProcessedAt'].toString())
           : null,
+      media: (map['media'] as List<dynamic>?)
+              ?.map((e) => MatchMedia.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          const [],
     );
   }
 

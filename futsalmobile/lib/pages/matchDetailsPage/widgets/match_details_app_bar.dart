@@ -4,8 +4,15 @@ import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 
 class MatchDetailsAppBar extends StatelessWidget {
   final MatchData match;
+  final TabController? tabController;
+  final List<String> tabLabels;
 
-  const MatchDetailsAppBar({super.key, required this.match});
+  const MatchDetailsAppBar({
+    super.key,
+    required this.match,
+    this.tabController,
+    this.tabLabels = const [],
+  });
 
   String _periodLabel(String? period) {
     switch (period) {
@@ -80,7 +87,12 @@ class MatchDetailsAppBar extends StatelessWidget {
             const SizedBox(height: 50),
             // Teams + score row
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                0,
+                16,
+                tabController != null ? 0 : 24,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -168,6 +180,25 @@ class MatchDetailsAppBar extends StatelessWidget {
                 ],
               ),
             ),
+            if (tabController != null && tabLabels.isNotEmpty)
+              TabBar(
+                controller: tabController,
+                indicatorColor: AppColors.secondary,
+                indicatorWeight: 3,
+                labelColor: AppColors.secondary,
+                unselectedLabelColor: AppColors.ternaryGray,
+                labelStyle: TextStyle(
+                  fontFamily: AppFonts.roboto,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontFamily: AppFonts.roboto,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+                tabs: tabLabels.map((l) => Tab(text: l)).toList(),
+              ),
           ],
         ),
       ),

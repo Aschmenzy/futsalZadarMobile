@@ -100,6 +100,15 @@ class FirebaseService {
     _configWatcher = null;
   }
 
+  // ── Match detail ──────────────────────────────────────────────────────────
+
+  Future<MatchData> getMatchDetail(String matchId) async {
+    final data = await _getMap('/api/public/matches/$matchId');
+    return MatchData.fromJson(
+      Map<String, dynamic>.from(data['match'] as Map),
+    );
+  }
+
   // ── HTTP helper ────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _getMap(String path) async {

@@ -236,11 +236,27 @@ class MatchEventsWidget extends StatelessWidget {
       );
     }
 
+    final minute = e.timeInMatch;
+    final minuteText = Text(
+      "$minute'",
+      style: TextStyle(
+        fontFamily: AppFonts.roboto,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: AppColors.ternaryGray,
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Align(
         alignment: isHome ? Alignment.centerLeft : Alignment.centerRight,
-        child: content,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: isHome
+              ? [minuteText, const SizedBox(width: 6), content]
+              : [content, const SizedBox(width: 6), minuteText],
+        ),
       ),
     );
   }
