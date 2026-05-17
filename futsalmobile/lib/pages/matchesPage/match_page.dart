@@ -156,8 +156,11 @@ class _MatchPageState extends State<MatchPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final match = filtered[i];
+        final playoffLabel = _service.playoffMatchLabels[match.matchId];
+
+        Widget card;
         if (match.isLive || match.status == 'paused') {
-          return StreamBuilder<MatchData>(
+          card = StreamBuilder<MatchData>(
             stream: _service.watchMatch(match),
             initialData: match,
             builder: (context, snap) {
@@ -182,9 +185,8 @@ class _MatchPageState extends State<MatchPage> {
               );
             },
           );
-        }
-        if (match.status != 'scheduled') {
-          return GestureDetector(
+        } else if (match.status != 'scheduled') {
+          card = GestureDetector(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -202,46 +204,70 @@ class _MatchPageState extends State<MatchPage> {
               matchTime: _formatMatchTime(match.matchTime),
             ),
           );
-        }
-        // Scheduled matches get notification bell via StreamBuilder
-        return StreamBuilder<FavoriteItem?>(
-          stream: _favService.watchEntity(match.matchId),
-          builder: (context, snap) {
-            final isNotif = snap.data?.notificationsEnabled ?? false;
-            return GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MatchDetailsPage(match: match),
+        } else {
+          // Scheduled matches get notification bell via StreamBuilder
+          card = StreamBuilder<FavoriteItem?>(
+            stream: _favService.watchEntity(match.matchId),
+            builder: (context, snap) {
+              final isNotif = snap.data?.notificationsEnabled ?? false;
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MatchDetailsPage(match: match),
+                  ),
                 ),
-              ),
-              child: UtakmicaContainer(
-                matchStatus: match.status,
-                team1Name: match.homeTeam,
-                team2Name: match.awayTeam,
-                team1Logo: match.homeTeamLogo,
-                team2Logo: match.awayTeamLogo,
-                team1Score: match.homeTeamGoals,
-                team2Score: match.awayTeamGoals,
-                matchTime: _formatMatchTime(match.matchTime),
-                isNotificationEnabled: isNotif,
-                onNotification: () => _favService.toggleNotification(
-                  FavoriteItem(
-                    entityId: match.matchId,
-                    type: 'match',
-                    name: '${match.homeTeam} vs ${match.awayTeam}',
-                    imageUrl: '',
-                    leagueId: match.leagueCode,
-                    leagueName: match.leagueCode,
-                    starred: snap.data?.starred ?? false,
-                    notificationsEnabled: isNotif,
-                    createdAt: DateTime.now(),
+                child: UtakmicaContainer(
+                  matchStatus: match.status,
+                  team1Name: match.homeTeam,
+                  team2Name: match.awayTeam,
+                  team1Logo: match.homeTeamLogo,
+                  team2Logo: match.awayTeamLogo,
+                  team1Score: match.homeTeamGoals,
+                  team2Score: match.awayTeamGoals,
+                  matchTime: _formatMatchTime(match.matchTime),
+                  isNotificationEnabled: isNotif,
+                  onNotification: () => _favService.toggleNotification(
+                    FavoriteItem(
+                      entityId: match.matchId,
+                      type: 'match',
+                      name: '${match.homeTeam} vs ${match.awayTeam}',
+                      imageUrl: '',
+                      leagueId: match.leagueCode,
+                      leagueName: match.leagueCode,
+                      starred: snap.data?.starred ?? false,
+                      notificationsEnabled: isNotif,
+                      createdAt: DateTime.now(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        if (playoffLabel != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 4),
+                child: Text(
+                  playoffLabel,
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
-            );
-          },
-        );
+              card,
+            ],
+          );
+        }
+        return card;
       },
     );
   }

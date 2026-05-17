@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/playoff_info.dart';
+import 'package:futsalmobile/models/playoff_tie.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
@@ -49,12 +50,22 @@ class FirebaseService {
     'lastUpdatedNews': ['latest_news_', 'news_all'],
     'lastUpdatedSponsors': ['sponsors'],
     'lastUpdatedClubs': ['clubs_', 'search_index_'],
+    // Playoff structure lives in Firestore, not Hive — empty prefix list, but
+    // the timestamp is still tracked so we know when to re-run checkPlayoffs().
+    'lastUpdatedPlayoff': [],
   };
 
   bool _matchCacheDirty = false;
   bool consumeMatchCacheDirty() {
     final dirty = _matchCacheDirty;
     _matchCacheDirty = false;
+    return dirty;
+  }
+
+  bool _playoffCacheDirty = false;
+  bool consumePlayoffCacheDirty() {
+    final dirty = _playoffCacheDirty;
+    _playoffCacheDirty = false;
     return dirty;
   }
 
@@ -73,6 +84,7 @@ class FirebaseService {
 
       bool anyInvalidated = false;
       bool matchesInvalidated = false;
+      bool playoffInvalidated = false;
 
       for (final entry in _categoryPrefixes.entries) {
         final raw = data[entry.key];
@@ -85,12 +97,18 @@ class FirebaseService {
           await _cache.setLastSyncedAt(serverTs, category: entry.key);
           anyInvalidated = true;
           if (entry.key == 'lastUpdatedMatches') matchesInvalidated = true;
+          if (entry.key == 'lastUpdatedPlayoff') playoffInvalidated = true;
           debugPrint('[Cache] ${entry.key} advanced → cleared ${entry.value}');
         }
       }
 
+      if (playoffInvalidated) {
+        await checkPlayoffs();
+      }
+
       if (anyInvalidated) {
         if (matchesInvalidated) _matchCacheDirty = true;
+        if (playoffInvalidated) _playoffCacheDirty = true;
         _cacheInvalidated.add(null);
       }
     });
@@ -199,6 +217,11 @@ class FirebaseService {
           await _cache.invalidateByPrefixes(entry.value);
           await _cache.setLastSyncedAt(serverTs, category: entry.key);
           anyInvalidated = true;
+          if (entry.key == 'lastUpdatedPlayoff') {
+            // Reset in-memory playoff info so the checkPlayoffs() call in
+            // main() re-fetches fresh data from Firestore on this cold start.
+            _cachedPlayoffInfo = const PlayoffInfo(hasLiga1: false, ligaskaGroups: []);
+          }
         }
       }
       return anyInvalidated;
@@ -340,7 +363,7 @@ class FirebaseService {
   // ============================================================
 
   // Internal: load all matches from API for a season.
-  Future<Map<String, List<MatchData>>> _loadAllMatches({String? season, bool bustProxy = false}) async {
+  Future<Map<String, List<MatchData>>> _loadAllMatches({String? season}) async {
     final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
     final cacheKey = 'matches_all_$seasonId';
 
@@ -375,7 +398,10 @@ class FirebaseService {
       await _cache.invalidate(cacheKey);
     }
 
-    final bust = bustProxy ? '&_t=${DateTime.now().millisecondsSinceEpoch}' : '';
+    // Always bust the proxy cache on a Hive miss — we're hitting the API anyway,
+    // and checkForUpdates() may have cleared Hive without going through the
+    // startConfigWatcher path (cold-start after an admin update).
+    final bust = '&_t=${DateTime.now().millisecondsSinceEpoch}';
     final data = await _getMap('/api/public/matches?season=$seasonId$bust');
 
     // Inject leagueCode (map key) and normalise matchId before parsing/caching,
@@ -412,6 +438,28 @@ class FirebaseService {
       return all[leagueCode] ?? [];
     } catch (e) {
       throw Exception('Greska pri dohvatu utakmica: $e');
+    }
+  }
+
+  Future<List<MatchData>> getRecentFinishedMatchesByClub(
+    String leagueCode,
+    String clubName, {
+    int limit = 10,
+  }) async {
+    try {
+      final all = await getAllMatches(leagueCode);
+      final finished =
+          all
+              .where(
+                (m) =>
+                    (m.isFinished || m.isAwarded) &&
+                    (m.homeTeam == clubName || m.awayTeam == clubName),
+              )
+              .toList()
+            ..sort((a, b) => b.matchDate.compareTo(a.matchDate));
+      return finished.take(limit).toList();
+    } catch (e) {
+      throw Exception('Greska pri dohvatu prethodnih utakmica: $e');
     }
   }
 
@@ -586,6 +634,46 @@ class FirebaseService {
     return _matchesSubject!.stream;
   }
 
+  String _playoffRoundLabel(String round, String playoffName) {
+    const names = {
+      'qf': 'Četvrtfinale',
+      'sf': 'Polufinale',
+      'final': 'Finale',
+      '3rd_place': '3. mjesto',
+    };
+    final r = names[round] ?? round;
+    return '$r – $playoffName';
+  }
+
+  Future<List<MatchData>> _fetchPlayoffMatchesForStream(
+      String seasonId) async {
+    final info = _cachedPlayoffInfo;
+    final matches = <MatchData>[];
+
+    Future<void> loadGroup(String playoffId, String playoffName) async {
+      try {
+        final ties = await getPlayoffTies(playoffId, season: seasonId);
+        for (final tie in ties) {
+          final label = _playoffRoundLabel(tie.round, playoffName);
+          for (final matchId in tie.allMatchIds) {
+            try {
+              final match = await getMatchDetail(matchId);
+              _playoffMatchLabels[matchId] = label;
+              matches.add(match);
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (info.hasLiga1) await loadGroup('liga1', 'nadigravanja liga 1');
+    for (final group in info.ligaskaGroups) {
+      await loadGroup(group.id, group.label);
+    }
+
+    return matches;
+  }
+
   Future<void> _fetchUpcomingAndEmit({
     DateTime? targetDate,
     String? season,
@@ -595,22 +683,20 @@ class FirebaseService {
       final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
       if (forceRefresh) await _cache.invalidate('matches_all_$seasonId');
 
-      final all = await _loadAllMatches(season: seasonId, bustProxy: forceRefresh);
+      final all = await _loadAllMatches(season: seasonId);
+      final playoffMatches = await _fetchPlayoffMatchesForStream(seasonId);
       final target = targetDate ?? DateTime.now();
-      final upcoming =
-          all.values
-              .expand((m) => m)
-              .where(
-                (m) =>
-                    !(DateTime.tryParse(m.matchDate) ?? DateTime(1970))
-                        .isBefore(
-                          DateTime(target.year, target.month, target.day),
-                        ) ||
-                    m.status == 'ongoing' ||
-                    m.status == 'paused',
-              )
-              .toList()
-            ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+
+      bool isUpcoming(MatchData m) =>
+          !(DateTime.tryParse(m.matchDate) ?? DateTime(1970))
+              .isBefore(DateTime(target.year, target.month, target.day)) ||
+          m.status == 'ongoing' ||
+          m.status == 'paused';
+
+      final upcoming = [
+        ...all.values.expand((m) => m).where(isUpcoming),
+        ...playoffMatches.where(isUpcoming),
+      ]..sort((a, b) => a.matchDate.compareTo(b.matchDate));
 
       // Update Hive cache.
       final cacheKey = 'upcoming_matches_$seasonId';
@@ -873,6 +959,11 @@ class FirebaseService {
       const PlayoffInfo(hasLiga1: false, ligaskaGroups: []);
   PlayoffInfo get cachedPlayoffInfo => _cachedPlayoffInfo;
 
+  // matchId → round label, e.g. "Četvrtfinale – nadigravanja liga 1"
+  final Map<String, String> _playoffMatchLabels = {};
+  Map<String, String> get playoffMatchLabels =>
+      Map.unmodifiable(_playoffMatchLabels);
+
   Future<PlayoffInfo> checkPlayoffs() async {
     try {
       final season = _cachedSeason ?? await getActiveSeason();
@@ -885,9 +976,9 @@ class FirebaseService {
           .collection('playoff');
 
       debugPrint('[Playoffs] querying: seasons/$season/playoff');
-      final liga1Snap =
-          await playoffRef.doc('liga1').collection('matches').limit(1).get();
-      final hasLiga1 = liga1Snap.docs.isNotEmpty;
+      final liga1Doc = await playoffRef.doc('liga1').get();
+      final hasLiga1 = liga1Doc.exists &&
+          (liga1Doc.data()?['status'] as String?) == 'in_progress';
       debugPrint('[Playoffs] hasLiga1: $hasLiga1');
 
       final ligaskaGroups = <PlayoffGroupInfo>[];
@@ -905,6 +996,33 @@ class FirebaseService {
     } catch (e) {
       debugPrint('[Playoffs] checkPlayoffs error: $e');
       return const PlayoffInfo(hasLiga1: false, ligaskaGroups: []);
+    }
+  }
+
+  // ============================================================
+  // PLAYOFF TIES  — fetched directly from Firestore
+  // ============================================================
+
+  /// Fetches all tie documents for the given [playoffId] (e.g. "liga1").
+  /// Path: seasons/{season}/playoff/{playoffId}/ties/{tieId}
+  Future<List<PlayoffTie>> getPlayoffTies(
+    String playoffId, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
+      final snap = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('playoff')
+          .doc(playoffId)
+          .collection('ties')
+          .get();
+      return snap.docs
+          .map((doc) => PlayoffTie.fromFirestore(doc.id, doc.data()))
+          .toList();
+    } catch (e) {
+      throw Exception('Greška pri dohvatu playoff susreta: $e');
     }
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
-import 'package:futsalmobile/models/league_data.dart';
-import 'package:futsalmobile/pages/leaguePage/leagueDetails/league_detals.dart';
+import 'package:futsalmobile/pages/playoffPage/playoff_details_page.dart';
 
 class PlayoffContainer extends StatelessWidget {
   const PlayoffContainer({
@@ -31,8 +30,9 @@ class PlayoffContainer extends StatelessWidget {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => LeagueDetails(
-            league: LeagueData(id: leagueId, leagueNumber: 0, clubs: []),
+          builder: (_) => PlayoffDetailsPage(
+            playoffId: leagueId,
+            displayName: displayName,
           ),
         ),
       ),

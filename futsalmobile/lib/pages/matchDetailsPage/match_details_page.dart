@@ -52,12 +52,25 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
       final fresh = await _service.getMatchDetail(widget.match.matchId);
       if (!mounted) return;
 
-      setState(() {
-        _match = fresh;
-        if (fresh.media.isNotEmpty) _media = fresh.media;
+      // The detail API strips matchState. For non-scheduled matches, do a
+      // one-shot Firestore read to restore it (events, lineup, etc.).
+      MatchData withState = fresh;
+      if (!fresh.isScheduled && fresh.matchState == null && fresh.leagueCode.isNotEmpty) {
+        try {
+          withState = await _service.watchMatch(fresh).first
+              .timeout(const Duration(seconds: 5));
+        } catch (_) {
+          withState = fresh;
+        }
+      }
 
-        if ((fresh.isLive || fresh.status == 'paused') && _liveStream == null) {
-          _liveStream = _service.watchMatch(fresh);
+      if (!mounted) return;
+      setState(() {
+        _match = withState;
+        if (withState.media.isNotEmpty) _media = withState.media;
+
+        if ((withState.isLive || withState.status == 'paused') && _liveStream == null) {
+          _liveStream = _service.watchMatch(withState);
         }
         if (_media.isNotEmpty && _tabController.length == 2) {
           _tabController.dispose();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/club_details_next_match.dart';
+import 'package:futsalmobile/pages/clubDetailsPage/widgets/club_previous_matches.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 
@@ -40,10 +41,9 @@ class ClubDetailsTab extends StatelessWidget {
 
                   SizedBox(height: screenHeight * 0.03),
 
-                  Container(
-                    width: double.infinity,
-                    height: screenHeight * 0.20,
-                    color: AppColors.ternaryGray,
+                  ClubPreviousMatches(
+                    leagueId: leagueId,
+                    clubName: clubData.clubName,
                   ),
 
                   SizedBox(height: screenHeight * 0.03),

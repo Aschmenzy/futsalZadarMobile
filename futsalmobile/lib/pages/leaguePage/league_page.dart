@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
@@ -17,10 +19,23 @@ class _LeaguePageState extends State<LeaguePage> {
   final _service = FirebaseService();
   final Map<String, int> _clubCounts = {};
   final Map<String, ClubStanding?> _leadingClubs = {};
+  StreamSubscription? _invalidationSub;
+
   @override
   void initState() {
     super.initState();
     _loadCounts();
+    _invalidationSub = _service.onCacheInvalidated.listen((_) {
+      if (_service.consumePlayoffCacheDirty() && mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _invalidationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadCounts() async {

@@ -12,6 +12,8 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
   final ValueChanged<String>? onSeasonChanged;
   final Widget? clubLogo;
   final bool isStarred;
+  final bool showSeasonPicker;
+  final List<Tab>? tabs;
 
   const LeagueAppBar({
     super.key,
@@ -25,6 +27,8 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.seasons,
     this.onSeasonChanged,
     this.isStarred = false,
+    this.showSeasonPicker = true,
+    this.tabs,
   });
 
   static String _formatSeason(String s) {
@@ -124,49 +128,60 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        PopupMenuButton<String>(
-                          onSelected: onSeasonChanged,
-                          enabled: seasons.isNotEmpty,
-                          padding: EdgeInsets.zero,
-                          color: AppColors.secondary,
-                          itemBuilder: (context) => seasons
-                              .map(
-                                (s) => PopupMenuItem<String>(
-                                  value: s,
-                                  child: Text(
-                                    _formatSeason(s),
-                                    style: TextStyle(
-                                      fontFamily: AppFonts.roboto,
-                                      color: Colors.white,
-                                      fontWeight: s == season
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                        if (showSeasonPicker)
+                          PopupMenuButton<String>(
+                            onSelected: onSeasonChanged,
+                            enabled: seasons.isNotEmpty,
+                            padding: EdgeInsets.zero,
+                            color: AppColors.secondary,
+                            itemBuilder: (context) => seasons
+                                .map(
+                                  (s) => PopupMenuItem<String>(
+                                    value: s,
+                                    child: Text(
+                                      _formatSeason(s),
+                                      style: TextStyle(
+                                        fontFamily: AppFonts.roboto,
+                                        color: Colors.white,
+                                        fontWeight: s == season
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
                                     ),
                                   ),
+                                )
+                                .toList(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _displaySeason,
+                                  style: TextStyle(
+                                    fontFamily: AppFonts.roboto,
+                                    color: AppColors.ternary,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              )
-                              .toList(),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _displaySeason,
-                                style: TextStyle(
-                                  fontFamily: AppFonts.roboto,
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_drop_down,
                                   color: AppColors.ternary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                                  size: 24,
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_drop_down,
-                                color: AppColors.ternary,
-                                size: 24,
-                              ),
-                            ],
+                              ],
+                            ),
+                          )
+                        else
+                          Text(
+                            _displaySeason,
+                            style: TextStyle(
+                              fontFamily: AppFonts.roboto,
+                              color: AppColors.ternary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -192,12 +207,13 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
-        tabs: const [
-          Tab(text: 'Detalji'),
-          Tab(text: 'Utakmice'),
-          Tab(text: 'Tablica'),
-          Tab(text: 'Statistika'),
-        ],
+        tabs: tabs ??
+            const [
+              Tab(text: 'Detalji'),
+              Tab(text: 'Utakmice'),
+              Tab(text: 'Tablica'),
+              Tab(text: 'Statistika'),
+            ],
       ),
     );
   }
