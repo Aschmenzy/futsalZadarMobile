@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/playoff_info.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
@@ -339,7 +340,7 @@ class FirebaseService {
   // ============================================================
 
   // Internal: load all matches from API for a season.
-  Future<Map<String, List<MatchData>>> _loadAllMatches({String? season}) async {
+  Future<Map<String, List<MatchData>>> _loadAllMatches({String? season, bool bustProxy = false}) async {
     final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
     final cacheKey = 'matches_all_$seasonId';
 
@@ -374,7 +375,8 @@ class FirebaseService {
       await _cache.invalidate(cacheKey);
     }
 
-    final data = await _getMap('/api/public/matches?season=$seasonId');
+    final bust = bustProxy ? '&_t=${DateTime.now().millisecondsSinceEpoch}' : '';
+    final data = await _getMap('/api/public/matches?season=$seasonId$bust');
 
     // Inject leagueCode (map key) and normalise matchId before parsing/caching,
     // so watchMatch can build the correct Firestore path.
@@ -593,7 +595,7 @@ class FirebaseService {
       final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
       if (forceRefresh) await _cache.invalidate('matches_all_$seasonId');
 
-      final all = await _loadAllMatches(season: seasonId);
+      final all = await _loadAllMatches(season: seasonId, bustProxy: forceRefresh);
       final target = targetDate ?? DateTime.now();
       final upcoming =
           all.values
@@ -860,6 +862,49 @@ class FirebaseService {
       return all.isEmpty ? null : all.first;
     } catch (e) {
       throw Exception('Greska pri dohvatu vijesti: $e');
+    }
+  }
+
+  // ============================================================
+  // PLAYOFFS  — checked once at startup, cached in memory
+  // ============================================================
+
+  PlayoffInfo _cachedPlayoffInfo =
+      const PlayoffInfo(hasLiga1: false, ligaskaGroups: []);
+  PlayoffInfo get cachedPlayoffInfo => _cachedPlayoffInfo;
+
+  Future<PlayoffInfo> checkPlayoffs() async {
+    try {
+      final season = _cachedSeason ?? await getActiveSeason();
+      debugPrint('[Playoffs] checking season: $season');
+
+      // playoff is a subcollection directly on the season doc, not under leagues
+      final playoffRef = _db
+          .collection('seasons')
+          .doc(season)
+          .collection('playoff');
+
+      debugPrint('[Playoffs] querying: seasons/$season/playoff');
+      final liga1Snap =
+          await playoffRef.doc('liga1').collection('matches').limit(1).get();
+      final hasLiga1 = liga1Snap.docs.isNotEmpty;
+      debugPrint('[Playoffs] hasLiga1: $hasLiga1');
+
+      final ligaskaGroups = <PlayoffGroupInfo>[];
+      final groupsSnap =
+          await playoffRef.doc('ligaska').collection('groups').get();
+      debugPrint('[Playoffs] groups docs: ${groupsSnap.docs.length}');
+      for (final groupDoc in groupsSnap.docs) {
+        final label = groupDoc.data()['label'] as String? ?? groupDoc.id;
+        ligaskaGroups.add(PlayoffGroupInfo(id: groupDoc.id, label: label));
+      }
+
+      _cachedPlayoffInfo = PlayoffInfo(hasLiga1: hasLiga1, ligaskaGroups: ligaskaGroups);
+      debugPrint('[Playoffs] season=$season hasLiga1=$hasLiga1 groups=${ligaskaGroups.map((g) => g.id)}');
+      return _cachedPlayoffInfo;
+    } catch (e) {
+      debugPrint('[Playoffs] checkPlayoffs error: $e');
+      return const PlayoffInfo(hasLiga1: false, ligaskaGroups: []);
     }
   }
 

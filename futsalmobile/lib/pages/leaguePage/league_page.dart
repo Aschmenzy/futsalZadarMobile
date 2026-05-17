@@ -3,6 +3,7 @@ import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leading_teams.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_container.dart';
+import 'package:futsalmobile/pages/leaguePage/widgets/playoff_container.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class LeaguePage extends StatefulWidget {
@@ -16,7 +17,6 @@ class _LeaguePageState extends State<LeaguePage> {
   final _service = FirebaseService();
   final Map<String, int> _clubCounts = {};
   final Map<String, ClubStanding?> _leadingClubs = {};
-
   @override
   void initState() {
     super.initState();
@@ -54,7 +54,44 @@ class _LeaguePageState extends State<LeaguePage> {
                   ),
                   SizedBox(height: 40),
 
-                  SizedBox(height: 2),
+                  if (_service.cachedPlayoffInfo.hasAny) ...[
+                    Text(
+                      'Nadigravanje',
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    if (_service.cachedPlayoffInfo.hasLiga1) ...[
+                      PlayoffContainer(
+                        leagueId: 'liga1',
+                        displayName: 'Liga 1',
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                    for (final group in _service.cachedPlayoffInfo.ligaskaGroups) ...[
+                      PlayoffContainer(
+                        leagueId: group.id,
+                        displayName: group.label,
+                      ),
+                      SizedBox(height: 12),
+                    ],
+                    SizedBox(height: 16),
+                  ],
+
+                  Text(
+                    'Lige',
+                    style: TextStyle(
+                      fontFamily: AppFonts.roboto,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  SizedBox(height: 12),
 
                   LeaugeContainer(
                     leaugeNum: 1,

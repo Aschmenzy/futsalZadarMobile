@@ -8,11 +8,153 @@ class MatchEventsWidget extends StatelessWidget {
 
   const MatchEventsWidget({super.key, required this.match});
 
+  String? _resolveName(String? id, List players) {
+    if (id == null || id.isEmpty) return null;
+    try {
+      return players.firstWhere((p) => p.id == id).name;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Widget> _lineupRows() {
+    final state = match.matchState;
+    final homePlayers = state?.homeTeamPlayers ?? [];
+    final awayPlayers = state?.awayTeamPlayers ?? [];
+
+    final homeCaptain = _resolveName(state?.homeCaptainId, homePlayers);
+    final homeGK = _resolveName(state?.homeGoalkeeperId, homePlayers);
+    final awayCaptain = _resolveName(state?.awayCaptainId, awayPlayers);
+    final awayGK = _resolveName(state?.awayGoalkeeperId, awayPlayers);
+
+    final rows = <Widget>[];
+    if (homeCaptain != null || awayCaptain != null) {
+      rows.add(_lineupRow(Icons.star_rounded, 'Kapetan', homeCaptain, awayCaptain));
+    }
+    if (homeGK != null || awayGK != null) {
+      rows.add(_lineupRow(Icons.sports_handball, 'Golman', homeGK, awayGK));
+    }
+    return rows;
+  }
+
+  Widget _lineupRow(IconData icon, String label, String? homeValue, String? awayValue) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: homeValue != null
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 16, color: AppColors.secondary),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          homeValue,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                fontSize: 11,
+                color: AppColors.ternaryGray,
+              ),
+            ),
+          ),
+          Expanded(
+            child: awayValue != null
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          awayValue,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(icon, size: 16, color: AppColors.secondary),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lineupRows = _lineupRows();
     final events = match.matchState?.events;
 
-    if (events == null || events.isEmpty) {
+    // Build event sections
+    final sections = <Widget>[];
+
+    if (events != null && events.isNotEmpty) {
+      final sorted = [...events]
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      int home = 0;
+      int away = 0;
+      final processed = <_EventWithScore>[];
+
+      for (final e in sorted) {
+        if (['goal', 'goal6m', 'goal10m'].contains(e.type)) {
+          if (e.team == 'home') {
+            home++;
+          } else {
+            away++;
+          }
+        } else if (e.type == 'ownGoal') {
+          if (e.team == 'home') {
+            away++;
+          } else {
+            home++;
+          }
+        }
+        processed.add(_EventWithScore(e, home, away));
+      }
+
+      const periodOrder = ['1st', '2nd'];
+      final byPeriod = <String, List<_EventWithScore>>{};
+      for (final item in processed) {
+        byPeriod.putIfAbsent(item.event.period, () => []).add(item);
+      }
+
+      for (final period in periodOrder) {
+        final list = byPeriod[period];
+        if (list == null) continue;
+        sections.add(_periodHeader(period));
+        for (final item in list) {
+          final row = _buildEventRow(item);
+          if (row != null) sections.add(row);
+        }
+      }
+    }
+
+    final allRows = [...lineupRows, ...sections];
+    if (allRows.isEmpty) {
       if (match.isScheduled) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.all(24),
@@ -29,52 +171,6 @@ class MatchEventsWidget extends StatelessWidget {
       );
     }
 
-    // Sort by timestamp, then compute running score
-    final sorted = [...events]
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
-    int home = 0;
-    int away = 0;
-    final processed = <_EventWithScore>[];
-
-    for (final e in sorted) {
-      if (['goal', 'goal6m', 'goal10m'].contains(e.type)) {
-        if (e.team == 'home') {
-          home++;
-        } else {
-          away++;
-        }
-      } else if (e.type == 'ownGoal') {
-        // Own goal counts for the opponent
-        if (e.team == 'home') {
-          away++;
-        } else {
-          home++;
-        }
-      }
-      processed.add(_EventWithScore(e, home, away));
-    }
-
-    // Group by period in defined order
-    const periodOrder = ['1st', '2nd'];
-    final byPeriod = <String, List<_EventWithScore>>{};
-    for (final item in processed) {
-      byPeriod.putIfAbsent(item.event.period, () => []).add(item);
-    }
-
-    final sections = <Widget>[];
-    for (final period in periodOrder) {
-      final list = byPeriod[period];
-      if (list == null) continue;
-      sections.add(_periodHeader(period));
-      for (final item in list) {
-        final row = _buildEventRow(item);
-        if (row != null) sections.add(row);
-      }
-    }
-
-    if (sections.isEmpty) return const SizedBox.shrink();
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -84,7 +180,7 @@ class MatchEventsWidget extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: sections,
+        children: allRows,
       ),
     );
   }
@@ -218,7 +314,6 @@ class MatchEventsWidget extends StatelessWidget {
               ],
             );
     } else {
-      // Card event
       content = Row(
         mainAxisSize: MainAxisSize.min,
         children: [

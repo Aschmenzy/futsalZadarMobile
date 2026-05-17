@@ -14,12 +14,16 @@ class MatchState {
   final DateTime timerStartedAt;
   final DateTime updatedAt;
 
+  final String? homeCaptainId;
+  final String? homeGoalkeeperId;
   final List<MatchPlayer> homeTeamPlayers;
   final List<String> homeInPlay;
   final Map<String, String> homeShirtNumbers;
   final int homeTeamFouls1st;
   final int homeTeamFouls2nd;
 
+  final String? awayCaptainId;
+  final String? awayGoalkeeperId;
   final List<MatchPlayer> awayTeamPlayers;
   final List<String> awayInPlay;
   final Map<String, String> awayShirtNumbers;
@@ -39,11 +43,15 @@ class MatchState {
     required this.timerRemaining,
     required this.timerStartedAt,
     required this.updatedAt,
+    this.homeCaptainId,
+    this.homeGoalkeeperId,
     required this.homeTeamPlayers,
     required this.homeInPlay,
     required this.homeShirtNumbers,
     required this.homeTeamFouls1st,
     required this.homeTeamFouls2nd,
+    this.awayCaptainId,
+    this.awayGoalkeeperId,
     required this.awayTeamPlayers,
     required this.awayInPlay,
     required this.awayShirtNumbers,
@@ -63,11 +71,15 @@ class MatchState {
     'timerRemaining': timerRemaining,
     'timerStartedAt': timerStartedAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
+    'homeCaptainId': homeCaptainId,
+    'homeGoalkeeperId': homeGoalkeeperId,
     'homeTeamPlayers': homeTeamPlayers.map((p) => p.toJson()).toList(),
     'homeInPlay': homeInPlay,
     'homeShirtNumbers': homeShirtNumbers,
     'homeTeamFouls1st': homeTeamFouls1st,
     'homeTeamFouls2nd': homeTeamFouls2nd,
+    'awayCaptainId': awayCaptainId,
+    'awayGoalkeeperId': awayGoalkeeperId,
     'awayTeamPlayers': awayTeamPlayers.map((p) => p.toJson()).toList(),
     'awayInPlay': awayInPlay,
     'awayShirtNumbers': awayShirtNumbers,
@@ -102,6 +114,8 @@ class MatchState {
       timerRemaining: (map['timerRemaining'] as num?)?.toInt() ?? 0,
       timerStartedAt: map['timerStartedAt'] != null ? (DateTime.tryParse(map['timerStartedAt'].toString()) ?? DateTime.now()) : DateTime.now(),
       updatedAt: map['updatedAt'] != null ? (DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now()) : DateTime.now(),
+      homeCaptainId: map['homeCaptainId']?.toString(),
+      homeGoalkeeperId: map['homeGoalkeeperId']?.toString(),
       homeTeamPlayers: (map['homeTeamPlayers'] as List? ?? [])
           .map((p) => MatchPlayer.fromJson(Map<String, dynamic>.from(p as Map)))
           .toList(),
@@ -109,6 +123,8 @@ class MatchState {
       homeShirtNumbers: homeShirts,
       homeTeamFouls1st: map['homeTeamFouls1st'] as int? ?? 0,
       homeTeamFouls2nd: map['homeTeamFouls2nd'] as int? ?? 0,
+      awayCaptainId: map['awayCaptainId']?.toString(),
+      awayGoalkeeperId: map['awayGoalkeeperId']?.toString(),
       awayTeamPlayers: (map['awayTeamPlayers'] as List? ?? [])
           .map((p) => MatchPlayer.fromJson(Map<String, dynamic>.from(p as Map)))
           .toList(),
@@ -161,6 +177,8 @@ class MatchState {
                 ? DateTime.parse(map['updatedAt'] as String)
                 : (map['updatedAt'] as dynamic).toDate())
           : DateTime.now(),
+      homeCaptainId: map['homeCaptainId'] as String?,
+      homeGoalkeeperId: map['homeGoalkeeperId'] as String?,
       homeTeamPlayers: (map['homeTeamPlayers'] as List<dynamic>? ?? [])
           .map((p) => MatchPlayer.fromFirestore(p as Map<String, dynamic>))
           .toList(),
@@ -170,6 +188,8 @@ class MatchState {
       homeShirtNumbers: homeShirts,
       homeTeamFouls1st: map['homeTeamFouls1st'] as int? ?? 0,
       homeTeamFouls2nd: map['homeTeamFouls2nd'] as int? ?? 0,
+      awayCaptainId: map['awayCaptainId'] as String?,
+      awayGoalkeeperId: map['awayGoalkeeperId'] as String?,
       awayTeamPlayers: (map['awayTeamPlayers'] as List<dynamic>? ?? [])
           .map((p) => MatchPlayer.fromFirestore(p as Map<String, dynamic>))
           .toList(),
