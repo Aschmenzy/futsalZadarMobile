@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/playoff_group_data.dart';
 import 'package:futsalmobile/models/playoff_info.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
@@ -702,6 +703,27 @@ class FirebaseService {
           .toList();
     } catch (_) {
       return [];
+    }
+  }
+
+  Future<PlayoffGroupData?> getPlayoffGroupData(
+    String groupId, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
+      final snap = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('playoff')
+          .doc('ligaska')
+          .collection('groups')
+          .doc(groupId)
+          .get();
+      if (!snap.exists) return null;
+      return PlayoffGroupData.fromFirestore(snap.data()!);
+    } catch (_) {
+      return null;
     }
   }
 

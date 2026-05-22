@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/models/playoff_group_data.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_appBar.dart';
 import 'package:futsalmobile/pages/playoffPage/tabs/bracket_tab.dart';
+import 'package:futsalmobile/pages/playoffPage/tabs/playoff_group_standings_tab.dart';
 import 'package:futsalmobile/pages/playoffPage/tabs/playoff_matches_tab.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
@@ -35,6 +37,7 @@ class _PlayoffDetailsPageState extends State<PlayoffDetailsPage>
 
   List<PlayoffTie> _ties = [];
   List<MatchData> _groupMatches = [];
+  PlayoffGroupData? _groupData;
   String _season = '';
   bool _loading = true;
   String? _error;
@@ -44,7 +47,7 @@ class _PlayoffDetailsPageState extends State<PlayoffDetailsPage>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: widget.isGroup ? 1 : 2,
+      length: widget.isGroup ? 2 : 2,
       vsync: this,
     );
     _load();
@@ -64,13 +67,14 @@ class _PlayoffDetailsPageState extends State<PlayoffDetailsPage>
     try {
       final season = await _service.getActiveSeason();
       if (widget.isGroup) {
-        final matches = await _service.getPlayoffGroupMatches(
-          widget.playoffId,
-          season: season,
-        );
+        final results = await Future.wait([
+          _service.getPlayoffGroupMatches(widget.playoffId, season: season),
+          _service.getPlayoffGroupData(widget.playoffId, season: season),
+        ]);
         if (!mounted) return;
         setState(() {
-          _groupMatches = matches;
+          _groupMatches = results[0] as List<MatchData>;
+          _groupData = results[1] as PlayoffGroupData?;
           _season = season;
           _loading = false;
         });
@@ -106,7 +110,7 @@ class _PlayoffDetailsPageState extends State<PlayoffDetailsPage>
         tabController: _tabController,
         showSeasonPicker: false,
         tabs: widget.isGroup
-            ? const [Tab(text: 'Utakmice')]
+            ? const [Tab(text: 'Utakmice'), Tab(text: 'Ljestvica')]
             : const [Tab(text: 'Nosač'), Tab(text: 'Utakmice')],
       ),
       body: _loading
@@ -121,7 +125,13 @@ class _PlayoffDetailsPageState extends State<PlayoffDetailsPage>
               : TabBarView(
                   controller: _tabController,
                   children: widget.isGroup
-                      ? [PlayoffMatchesTab(matches: _groupMatches)]
+                      ? [
+                          PlayoffMatchesTab(matches: _groupMatches),
+                          if (_groupData != null)
+                            PlayoffGroupStandingsTab(data: _groupData!)
+                          else
+                            const Center(child: Text('Nema podataka o ljestvici')),
+                        ]
                       : [
                           BracketTab(ties: _ties),
                           PlayoffMatchesTab(matchIds: _allMatchIds),
