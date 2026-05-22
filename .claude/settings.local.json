@@ -5,7 +5,9 @@
       "Bash(flutter pub:*)",
       "Bash(flutter analyze:*)",
       "Bash(flutter build *)",
-      "Bash(ipconfig)"
+      "Bash(ipconfig)",
+      "Bash(Get-ChildItem -Path \"E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile\\\\lib\\\\pages\\\\playoffPage\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

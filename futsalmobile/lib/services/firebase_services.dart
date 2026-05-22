@@ -581,6 +581,40 @@ class FirebaseService {
         .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id));
   }
 
+  // Reads a playoff match document from Firestore to restore matchState.
+  // Ligaska group matches: playoff/ligaska/groups/{groupId}/matches/{matchId}
+  // Liga1 bracket matches: playoff/liga1/matches/{matchId}
+  Stream<MatchData> watchPlayoffMatch(
+    String matchId, {
+    String? playoffId,
+    String? groupId,
+    String? season,
+  }) {
+    final pid = playoffId ?? _playoffMatchPlayoffId[matchId];
+    if (pid == null || pid.isEmpty) return const Stream.empty();
+    final gid = groupId ?? _playoffMatchGroupId[matchId];
+    final seasonId = season?.isNotEmpty == true ? season! : (_cachedSeason ?? '');
+
+    final DocumentReference<Map<String, dynamic>> ref;
+    if (gid != null && gid.isNotEmpty) {
+      ref = _db
+          .collection('seasons').doc(seasonId)
+          .collection('playoff').doc(pid)
+          .collection('groups').doc(gid)
+          .collection('matches').doc(matchId);
+    } else {
+      ref = _db
+          .collection('seasons').doc(seasonId)
+          .collection('playoff').doc(pid)
+          .collection('matches').doc(matchId);
+    }
+
+    return ref
+        .snapshots()
+        .where((snap) => snap.exists)
+        .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id));
+  }
+
   // ── Upcoming matches stream ────────────────────────────────────────────────
   // Replaces the collectionGroup onSnapshot (was the biggest read cost).
   // Now: loads from API once, re-fetches when onCacheInvalidated fires.
@@ -645,20 +679,48 @@ class FirebaseService {
     return '$r – $playoffName';
   }
 
+  // Reads match documents directly from the ligaska group collection.
+  // Returns only matches where both teams have been assigned.
+  Future<List<MatchData>> getPlayoffGroupMatches(
+    String groupId, {
+    String? season,
+  }) async {
+    try {
+      final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
+      final snap = await _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('playoff')
+          .doc('ligaska')
+          .collection('groups')
+          .doc(groupId)
+          .collection('matches')
+          .get();
+      return snap.docs
+          .map((doc) => MatchData.fromFirestore(doc.data(), doc.id))
+          .where((m) => m.homeTeam.isNotEmpty && m.awayTeam.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<MatchData>> _fetchPlayoffMatchesForStream(
       String seasonId) async {
     final info = _cachedPlayoffInfo;
     final matches = <MatchData>[];
 
-    Future<void> loadGroup(String playoffId, String playoffName) async {
+    // Liga 1 knockout bracket — uses tie structure, matches fetched via HTTP proxy
+    if (info.hasLiga1) {
       try {
-        final ties = await getPlayoffTies(playoffId, season: seasonId);
+        final ties = await getPlayoffTies('liga1', season: seasonId);
         for (final tie in ties) {
-          final label = _playoffRoundLabel(tie.round, playoffName);
+          final label = _playoffRoundLabel(tie.round, 'nadigravanja liga 1');
           for (final matchId in tie.allMatchIds) {
             try {
               final match = await getMatchDetail(matchId);
               _playoffMatchLabels[matchId] = label;
+              _playoffMatchPlayoffId[matchId] = 'liga1';
               matches.add(match);
             } catch (_) {}
           }
@@ -666,9 +728,17 @@ class FirebaseService {
       } catch (_) {}
     }
 
-    if (info.hasLiga1) await loadGroup('liga1', 'nadigravanja liga 1');
+    // Ligaska groups — match documents live at playoff/ligaska/groups/{groupId}/matches/
     for (final group in info.ligaskaGroups) {
-      await loadGroup(group.id, group.label);
+      try {
+        final groupMatches = await getPlayoffGroupMatches(group.id, season: seasonId);
+        for (final match in groupMatches) {
+          _playoffMatchLabels[match.matchId] = '${group.label} – nadigravanje';
+          _playoffMatchPlayoffId[match.matchId] = 'ligaska';
+          _playoffMatchGroupId[match.matchId] = group.id;
+          matches.add(match);
+        }
+      } catch (_) {}
     }
 
     return matches;
@@ -963,6 +1033,13 @@ class FirebaseService {
   final Map<String, String> _playoffMatchLabels = {};
   Map<String, String> get playoffMatchLabels =>
       Map.unmodifiable(_playoffMatchLabels);
+
+  // matchId → playoffId, used to read matchState from Firestore for playoff matches
+  final Map<String, String> _playoffMatchPlayoffId = {};
+  // matchId → groupId, for ligaska group matches (path: playoff/ligaska/groups/{groupId}/matches)
+  final Map<String, String> _playoffMatchGroupId = {};
+
+  bool isPlayoffMatch(String matchId) => _playoffMatchPlayoffId.containsKey(matchId);
 
   Future<PlayoffInfo> checkPlayoffs() async {
     try {

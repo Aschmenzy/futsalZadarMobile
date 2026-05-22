@@ -104,8 +104,8 @@ class _TeamRow extends StatelessWidget {
       return Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
               shape: BoxShape.circle,
@@ -168,8 +168,8 @@ class _TeamLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipOval(
       child: SizedBox(
-        width: 28,
-        height: 28,
+        width: 20,
+        height: 20,
         child: url.isNotEmpty
             ? Image.network(
                 url,
@@ -184,7 +184,7 @@ class _TeamLogo extends StatelessWidget {
   Widget _placeholder() {
     return Container(
       color: Colors.grey.shade200,
-      child: Icon(Icons.sports, size: 16, color: Colors.grey.shade400),
+      child: Icon(Icons.sports, size: 12, color: Colors.grey.shade400),
     );
   }
 }

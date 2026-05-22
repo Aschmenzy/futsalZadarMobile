@@ -91,6 +91,7 @@ class _LeaguePageState extends State<LeaguePage> {
                       PlayoffContainer(
                         leagueId: group.id,
                         displayName: group.label,
+                        isGroup: true,
                       ),
                       SizedBox(height: 12),
                     ],

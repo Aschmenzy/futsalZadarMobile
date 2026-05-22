@@ -7,8 +7,14 @@ import 'package:futsalmobile/widgets/utakmica_container.dart';
 
 class PlayoffMatchesTab extends StatefulWidget {
   final List<String> matchIds;
+  // Pre-loaded matches (group playoffs read directly from Firestore)
+  final List<MatchData>? matches;
 
-  const PlayoffMatchesTab({super.key, required this.matchIds});
+  const PlayoffMatchesTab({
+    super.key,
+    this.matchIds = const [],
+    this.matches,
+  });
 
   @override
   State<PlayoffMatchesTab> createState() => _PlayoffMatchesTabState();
@@ -24,7 +30,12 @@ class _PlayoffMatchesTabState extends State<PlayoffMatchesTab> {
   @override
   void initState() {
     super.initState();
-    _loadMatches();
+    if (widget.matches != null) {
+      _matches = widget.matches!;
+      _loading = false;
+    } else {
+      _loadMatches();
+    }
   }
 
   Future<void> _loadMatches() async {
@@ -97,6 +108,7 @@ class _PlayoffMatchesTabState extends State<PlayoffMatchesTab> {
                 team2Score: match.awayTeamGoals,
                 matchTime: match.matchTime,
                 matchDate: match.matchDate,
+                showMatchDate: true,
               ),
             ),
           );

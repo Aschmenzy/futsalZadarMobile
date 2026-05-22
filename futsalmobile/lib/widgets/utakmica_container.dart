@@ -13,6 +13,7 @@ class UtakmicaContainer extends StatelessWidget {
   final String matchDate;
   final VoidCallback? onNotification;
   final bool isNotificationEnabled;
+  final bool showMatchDate;
 
   const UtakmicaContainer({
     super.key,
@@ -27,6 +28,7 @@ class UtakmicaContainer extends StatelessWidget {
     this.matchDate = "1.1.2000",
     this.onNotification,
     this.isNotificationEnabled = false,
+    this.showMatchDate = false,
   });
 
   @override
@@ -54,7 +56,19 @@ class UtakmicaContainer extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildStatusBadge(screenWidth),
-                    if (matchStatus == 'scheduled' && onNotification != null)
+                    if (showMatchDate &&
+                        matchStatus == 'scheduled' &&
+                        matchDate.isNotEmpty)
+                      Text(
+                        _formatDate(matchDate),
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontSize: screenWidth * 0.032,
+                          color: AppColors.ternaryGray,
+                        ),
+                      )
+                    else if (matchStatus == 'scheduled' &&
+                        onNotification != null)
                       GestureDetector(
                         onTap: onNotification,
                         child: Icon(
@@ -289,7 +303,18 @@ class UtakmicaContainer extends StatelessWidget {
         ),
       );
     } else {
-      // Scheduled status - clock icon
+      if (showMatchDate && matchTime.isEmpty && matchDate.isEmpty) {
+        return Text(
+          'Još nije zakazano',
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            color: AppColors.ternaryGray,
+            fontSize: screenWidth * 0.032,
+            fontStyle: FontStyle.italic,
+          ),
+        );
+      }
+      // Scheduled status - clock icon + time
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -310,6 +335,14 @@ class UtakmicaContainer extends StatelessWidget {
         ],
       );
     }
+  }
+
+  String _formatDate(String isoDate) {
+    try {
+      final parts = isoDate.split('-');
+      if (parts.length == 3) return '${parts[2]}.${parts[1]}.${parts[0]}';
+    } catch (_) {}
+    return isoDate;
   }
 
   /// Builds a team row with logo, name, and score

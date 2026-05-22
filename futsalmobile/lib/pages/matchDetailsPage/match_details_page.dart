@@ -54,11 +54,16 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
 
       // The detail API strips matchState. For non-scheduled matches, do a
       // one-shot Firestore read to restore it (events, lineup, etc.).
+      // Playoff matches are stored under playoff/{id}/matches, not leagues/{code}/matches,
+      // so we check the playoff registry before falling back to the league path.
       MatchData withState = fresh;
-      if (!fresh.isScheduled && fresh.matchState == null && fresh.leagueCode.isNotEmpty) {
+      if (!fresh.isScheduled && fresh.matchState == null) {
         try {
-          withState = await _service.watchMatch(fresh).first
-              .timeout(const Duration(seconds: 5));
+          final isPlayoff = _service.isPlayoffMatch(fresh.matchId);
+          final stream = isPlayoff
+              ? _service.watchPlayoffMatch(fresh.matchId, season: fresh.season)
+              : _service.watchMatch(fresh);
+          withState = await stream.first.timeout(const Duration(seconds: 5));
         } catch (_) {
           withState = fresh;
         }

@@ -7,10 +7,12 @@ class PlayoffContainer extends StatelessWidget {
     super.key,
     required this.leagueId,
     required this.displayName,
+    this.isGroup = false,
   });
 
   final String leagueId;
   final String displayName;
+  final bool isGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class PlayoffContainer extends StatelessWidget {
           builder: (_) => PlayoffDetailsPage(
             playoffId: leagueId,
             displayName: displayName,
+            isGroup: isGroup,
           ),
         ),
       ),

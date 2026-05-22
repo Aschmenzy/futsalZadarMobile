@@ -57,7 +57,9 @@ void main() async {
   } catch (_) {}
 
   // Check once for playoffs — result is cached on the singleton
-  FirebaseService().checkPlayoffs().catchError((_) => FirebaseService().cachedPlayoffInfo);
+  FirebaseService().checkPlayoffs().catchError(
+    (_) => FirebaseService().cachedPlayoffInfo,
+  );
 
   // If the admin triggered an update, invalidate the in-memory search index too
   if (didUpdate) SearchService().invalidate();
