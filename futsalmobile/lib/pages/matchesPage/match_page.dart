@@ -204,6 +204,28 @@ class _MatchPageState extends State<MatchPage> {
               matchTime: _formatMatchTime(match.matchTime),
             ),
           );
+        } else if (playoffLabel != null) {
+          // Playoff matches — no notification bell
+          card = GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MatchDetailsPage(match: match),
+              ),
+            ),
+            child: UtakmicaContainer(
+              matchStatus: match.status,
+              team1Name: match.homeTeam,
+              team2Name: match.awayTeam,
+              team1Logo: match.homeTeamLogo,
+              team2Logo: match.awayTeamLogo,
+              team1Score: match.homeTeamGoals,
+              team2Score: match.awayTeamGoals,
+              matchTime: _formatMatchTime(match.matchTime),
+              showMatchDate: true,
+              matchDate: match.matchDate,
+            ),
+          );
         } else {
           // Scheduled matches get notification bell via StreamBuilder
           card = StreamBuilder<FavoriteItem?>(
