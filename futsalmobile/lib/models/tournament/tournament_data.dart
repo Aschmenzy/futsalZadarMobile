@@ -1,0 +1,93 @@
+/// A knockout tournament document from the top-level `tournaments` collection.
+///
+/// Firestore shape:
+///   tournaments/{id} — bracketSize, format: "knockout", name, seasonStamp,
+///                      status, thirdPlace
+///   subcollections: teams, playerStats, ties
+class TournamentData {
+  final String id;
+  final String name;
+  final int bracketSize; // 4, 8, 16, 32 or 64
+  final String format;
+  final String seasonStamp;
+  final String status;
+  final bool thirdPlace;
+
+  const TournamentData({
+    required this.id,
+    required this.name,
+    required this.bracketSize,
+    required this.format,
+    required this.seasonStamp,
+    required this.status,
+    required this.thirdPlace,
+  });
+
+  bool get isInProgress => status == 'in_progress';
+
+  /// Accepts the common variants for a finished tournament until the exact
+  /// admin-panel value is confirmed.
+  bool get isFinished =>
+      status == 'completed' || status == 'finished' || status == 'done';
+
+  factory TournamentData.fromFirestore(String id, Map<String, dynamic> data) {
+    return TournamentData(
+      id: id,
+      name: data['name']?.toString() ?? '',
+      bracketSize: (data['bracketSize'] as num?)?.toInt() ?? 0,
+      format: data['format']?.toString() ?? 'knockout',
+      seasonStamp: data['seasonStamp']?.toString() ?? '',
+      status: data['status']?.toString() ?? '',
+      thirdPlace: data['thirdPlace'] == true,
+    );
+  }
+}
+
+/// A team entry from tournaments/{id}/teams. Field names are parsed
+/// defensively (clubName/name, clubLogo/logo) to match the admin panel.
+class TournamentTeam {
+  final String id;
+  final String name;
+  final String logo;
+
+  const TournamentTeam({
+    required this.id,
+    required this.name,
+    required this.logo,
+  });
+
+  factory TournamentTeam.fromFirestore(String id, Map<String, dynamic> data) {
+    return TournamentTeam(
+      id: id,
+      name: data['clubName']?.toString() ??
+          data['name']?.toString() ??
+          data['teamName']?.toString() ??
+          '',
+      logo: data['clubLogo']?.toString() ?? data['logo']?.toString() ?? '',
+    );
+  }
+}
+
+/// A player from tournaments/{id}/teams/{teamId}/players.
+class TournamentPlayer {
+  final String id;
+  final String name;
+  final bool isProfessional;
+
+  const TournamentPlayer({
+    required this.id,
+    required this.name,
+    required this.isProfessional,
+  });
+
+  factory TournamentPlayer.fromFirestore(String id, Map<String, dynamic> data) {
+    final first = data['firstName']?.toString() ?? '';
+    final last = data['lastName']?.toString() ?? '';
+    final combined = '$first $last'.trim();
+    return TournamentPlayer(
+      id: id,
+      name: combined.isNotEmpty ? combined : (data['name']?.toString() ?? ''),
+      isProfessional: data['isProfessional'] == true,
+    );
+  }
+}

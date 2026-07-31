@@ -1,21 +1,28 @@
 class MatchPlayer {
   final String id;
   final String name;
+  final bool isProfessional;
 
   const MatchPlayer({
     required this.id,
     required this.name,
+    this.isProfessional = false,
   });
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'name': name, 'isProfessional': isProfessional};
 
-  factory MatchPlayer.fromJson(Map<String, dynamic> map) =>
-      MatchPlayer(id: map['id']?.toString() ?? '', name: map['name']?.toString() ?? '');
+  factory MatchPlayer.fromJson(Map<String, dynamic> map) => MatchPlayer(
+        id: map['id']?.toString() ?? '',
+        name: map['name']?.toString() ?? '',
+        isProfessional: map['isProfessional'] == true,
+      );
 
   factory MatchPlayer.fromFirestore(Map<String, dynamic> map) {
     return MatchPlayer(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
+      isProfessional: map['isProfessional'] == true,
     );
   }
 }

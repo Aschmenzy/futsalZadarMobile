@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
+import 'package:futsalmobile/pages/legal/legal_page.dart';
 import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
 import 'package:futsalmobile/pages/newsDetails/news_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -65,8 +66,31 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Image.asset('assets/images/logo.png', scale: 0.7),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Center(
+                        child: Image.asset('assets/images/logo.png', scale: 0.7),
+                      ),
+                      // Permanent entry point for Terms of Service & Privacy Policy
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: IconButton(
+                          tooltip: 'Pravne informacije',
+                          icon: const Icon(
+                            Icons.info_outline,
+                            color: AppColors.ternaryGray,
+                          ),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LegalPage(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   const AppSearchBar(),

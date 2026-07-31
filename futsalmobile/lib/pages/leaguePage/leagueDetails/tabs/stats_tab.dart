@@ -3,6 +3,7 @@ import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/widgets/pro_badge.dart';
 
 class StatisticsTab extends StatefulWidget {
   final LeagueData league;
@@ -268,14 +269,25 @@ class _StatisticsTabState extends State<StatisticsTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  player.playerFullName,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        player.playerFullName,
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (player.isProfessional) ...[
+                      const SizedBox(width: 6),
+                      const ProBadge(),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 3),
                 Row(

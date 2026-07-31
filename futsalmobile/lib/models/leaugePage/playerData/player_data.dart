@@ -41,6 +41,7 @@ class PlayerData {
   final DateTime thisYearRegistrationDate;
   final String profilePicture;
   final List<ClubHistoryEntry> clubHistory;
+  final bool isProfessional;
 
   const PlayerData({
     required this.id,
@@ -56,6 +57,7 @@ class PlayerData {
     required this.thisYearRegistrationDate,
     this.profilePicture = '',
     this.clubHistory = const [],
+    this.isProfessional = false,
   });
 
   String get fullName => '$firstName $lastName';
@@ -74,6 +76,7 @@ class PlayerData {
     'thisYearRegistrationDate': thisYearRegistrationDate.toIso8601String(),
     'profilePicture': profilePicture,
     'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
+    'isProfessional': isProfessional,
   };
 
   factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
@@ -89,6 +92,7 @@ class PlayerData {
     season: map['season']?.toString() ?? '',
     thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
     profilePicture: map['profilePhoto']?.toString() ?? map['profilePicture']?.toString() ?? '',
+    isProfessional: map['isProfessional'] == true,
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
         .map(
           (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
@@ -148,6 +152,7 @@ class PlayerData {
       season: map['season']?.toString() ?? '',
       thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
       profilePicture: map['profilePhoto']?.toString() ?? '',
+      isProfessional: map['isProfessional'] == true,
       clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
           .map(
             (e) =>

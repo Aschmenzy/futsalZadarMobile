@@ -8,6 +8,7 @@ import 'package:futsalmobile/pages/playerDetailsPage/widgets/player_details_app_
 import 'package:futsalmobile/pages/playerDetailsPage/widgets/stats_card.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/widgets/pro_badge.dart';
 
 // clubId → logo URL resolved from the cached clubs data
 typedef _LogoMap = Map<String, String>;
@@ -172,14 +173,26 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
           children: [
             _buildAvatar(),
             const SizedBox(height: 12),
-            Text(
-              widget.player.fullName,
-              style: TextStyle(
-                fontFamily: AppFonts.roboto,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.player.fullName,
+                    style: TextStyle(
+                      fontFamily: AppFonts.roboto,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.player.isProfessional) ...[
+                  const SizedBox(width: 8),
+                  const ProBadge(fontSize: 11),
+                ],
+              ],
             ),
             Text(
               _formatDate(widget.player.dateOfBirth),

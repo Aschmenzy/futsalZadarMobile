@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/tournament/tournament_data.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leading_teams.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/leauge_container.dart';
 import 'package:futsalmobile/pages/leaguePage/widgets/playoff_container.dart';
+import 'package:futsalmobile/pages/tournamentsPage/tournament_archive_page.dart';
+import 'package:futsalmobile/pages/tournamentsPage/widgets/tournament_container.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class LeaguePage extends StatefulWidget {
@@ -19,17 +22,34 @@ class _LeaguePageState extends State<LeaguePage> {
   final _service = FirebaseService();
   final Map<String, int> _clubCounts = {};
   final Map<String, ClubStanding?> _leadingClubs = {};
+  List<TournamentData> _activeTournaments = [];
+  bool _hasFinishedTournaments = false;
   StreamSubscription? _invalidationSub;
 
   @override
   void initState() {
     super.initState();
     _loadCounts();
+    _loadTournaments();
     _invalidationSub = _service.onCacheInvalidated.listen((_) {
       if (_service.consumePlayoffCacheDirty() && mounted) {
         setState(() {});
       }
     });
+  }
+
+  Future<void> _loadTournaments() async {
+    try {
+      final tournaments = await _service.getTournaments();
+      if (!mounted) return;
+      setState(() {
+        _activeTournaments =
+            tournaments.where((t) => !t.isFinished).toList();
+        _hasFinishedTournaments = tournaments.any((t) => t.isFinished);
+      });
+    } catch (_) {
+      // Tournaments are optional — keep the page functional without them.
+    }
   }
 
   @override
@@ -98,6 +118,29 @@ class _LeaguePageState extends State<LeaguePage> {
                     SizedBox(height: 16),
                   ],
 
+                  if (_activeTournaments.isNotEmpty ||
+                      _hasFinishedTournaments) ...[
+                    Text(
+                      'Turniri',
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    for (final tournament in _activeTournaments) ...[
+                      TournamentContainer(tournament: tournament),
+                      SizedBox(height: 12),
+                    ],
+                    if (_hasFinishedTournaments) ...[
+                      _ArchiveTile(),
+                      SizedBox(height: 12),
+                    ],
+                    SizedBox(height: 16),
+                  ],
+
                   Text(
                     'Lige',
                     style: TextStyle(
@@ -154,6 +197,49 @@ class _LeaguePageState extends State<LeaguePage> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact tile linking to the tournament archive.
+class _ArchiveTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const TournamentArchivePage()),
+      ),
+      child: Card(
+        elevation: 1,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.inventory_2_outlined,
+                  color: AppColors.secondary, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Arhiva turnira',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
           ),
         ),
       ),

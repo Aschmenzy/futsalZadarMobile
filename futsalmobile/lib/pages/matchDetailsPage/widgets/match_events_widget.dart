@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_event.dart';
+import 'package:futsalmobile/models/leaugePage/matchData/match_player.dart';
+import 'package:futsalmobile/widgets/pro_badge.dart';
 
 class MatchEventsWidget extends StatelessWidget {
   final MatchData match;
 
   const MatchEventsWidget({super.key, required this.match});
 
-  String? _resolveName(String? id, List players) {
+  MatchPlayer? _resolvePlayer(String? id, List players) {
     if (id == null || id.isEmpty) return null;
     try {
-      return players.firstWhere((p) => p.id == id).name;
+      return players.firstWhere((p) => p.id == id) as MatchPlayer;
     } catch (_) {
       return null;
     }
@@ -22,10 +24,10 @@ class MatchEventsWidget extends StatelessWidget {
     final homePlayers = state?.homeTeamPlayers ?? [];
     final awayPlayers = state?.awayTeamPlayers ?? [];
 
-    final homeCaptain = _resolveName(state?.homeCaptainId, homePlayers);
-    final homeGK = _resolveName(state?.homeGoalkeeperId, homePlayers);
-    final awayCaptain = _resolveName(state?.awayCaptainId, awayPlayers);
-    final awayGK = _resolveName(state?.awayGoalkeeperId, awayPlayers);
+    final homeCaptain = _resolvePlayer(state?.homeCaptainId, homePlayers);
+    final homeGK = _resolvePlayer(state?.homeGoalkeeperId, homePlayers);
+    final awayCaptain = _resolvePlayer(state?.awayCaptainId, awayPlayers);
+    final awayGK = _resolvePlayer(state?.awayGoalkeeperId, awayPlayers);
 
     final rows = <Widget>[];
     if (homeCaptain != null || awayCaptain != null) {
@@ -37,14 +39,14 @@ class MatchEventsWidget extends StatelessWidget {
     return rows;
   }
 
-  Widget _lineupRow(IconData icon, String label, String? homeValue, String? awayValue) {
+  Widget _lineupRow(IconData icon, String label, MatchPlayer? homePlayer, MatchPlayer? awayPlayer) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: homeValue != null
+            child: homePlayer != null
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -52,7 +54,7 @@ class MatchEventsWidget extends StatelessWidget {
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          homeValue,
+                          homePlayer.name,
                           style: TextStyle(
                             fontFamily: AppFonts.roboto,
                             fontSize: 14,
@@ -60,6 +62,10 @@ class MatchEventsWidget extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (homePlayer.isProfessional) ...[
+                        const SizedBox(width: 5),
+                        const ProBadge(fontSize: 8),
+                      ],
                     ],
                   )
                 : const SizedBox.shrink(),
@@ -76,14 +82,18 @@ class MatchEventsWidget extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: awayValue != null
+            child: awayPlayer != null
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      if (awayPlayer.isProfessional) ...[
+                        const ProBadge(fontSize: 8),
+                        const SizedBox(width: 5),
+                      ],
                       Flexible(
                         child: Text(
-                          awayValue,
+                          awayPlayer.name,
                           textAlign: TextAlign.end,
                           style: TextStyle(
                             fontFamily: AppFonts.roboto,

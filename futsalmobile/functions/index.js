@@ -1,7 +1,10 @@
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
-const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const {
+  onDocumentUpdated,
+  onDocumentWritten,
+} = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 initializeApp();
@@ -103,6 +106,31 @@ exports.onGoalScored = onDocumentUpdated(
     }
 
     await Promise.all(sends);
+    return null;
+  },
+);
+
+// ── News published notification ───────────────────────────────────────────────
+// Fires when a news article becomes active (created active, or flipped
+// isActive false → true). All app installs subscribe to the "news" topic.
+
+exports.onNewsPublished = onDocumentWritten(
+  {
+    document: "seasons/{season}/news/{newsId}",
+    database: "main",
+  },
+  async (event) => {
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!after) return null; // deleted
+
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const wasActive = before?.isActive === true;
+    const isActive = after.isActive === true;
+    if (wasActive || !isActive) return null; // only on publish transition
+
+    const title = "Nova vijest 📰";
+    const body = after.header ?? "";
+    await sendToTopic("news", title, body);
     return null;
   },
 );

@@ -8,6 +8,7 @@ import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dar
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/widgets/pro_badge.dart';
 
 class ClubTeamTab extends StatefulWidget {
   final ClubData clubData;
@@ -178,15 +179,25 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    player.fullName,
-                    style: TextStyle(
-                      fontFamily: AppFonts.roboto,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: AppColors.primary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          player.fullName,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppColors.primary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (player.isProfessional) ...[
+                        const SizedBox(width: 6),
+                        const ProBadge(),
+                      ],
+                    ],
                   ),
                 ],
               ),

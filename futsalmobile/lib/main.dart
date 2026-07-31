@@ -1,17 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_core/firebase_core.dart';
+// firebase_core 4.12+ exports its own (unrelated) FirebaseService — hide it
+// so the app's FirebaseService singleton stays unambiguous.
+import 'package:firebase_core/firebase_core.dart' hide FirebaseService;
 import 'package:futsalmobile/pages/favoritesPage/favorites_page.dart';
 import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsPage/news_page.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:futsalmobile/pages/legal/legal_page.dart';
 import 'package:futsalmobile/services/auth_service.dart';
 import 'package:futsalmobile/services/cache_service.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/services/prefs_service.dart';
 import 'package:futsalmobile/services/search_service.dart';
 import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
 import 'firebase_options.dart';
@@ -44,8 +48,12 @@ void main() async {
   // Re-subscribe to FCM topics (lost on reinstall/clear)
   FavoritesService().restoreSubscriptions().catchError((_) {});
 
-  // Hive cache
+  // Everyone gets news notifications — the Cloud Function publishes to 'news'
+  FirebaseMessaging.instance.subscribeToTopic('news').catchError((_) {});
+
+  // Hive cache + persistent app preferences
   await CacheService.init();
+  await PrefsService.init();
 
   // Check config/app from the server. If the admin bumped lastUpdated,
   // all Hive caches are wiped here before anything else runs.
@@ -84,7 +92,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MainPage(),
+      // First launch: require accepting the Terms of Service & Privacy Policy
+      home: PrefsService.legalAccepted
+          ? const MainPage()
+          : const LegalPage(gateMode: true),
       debugShowCheckedModeBanner: false,
     );
   }

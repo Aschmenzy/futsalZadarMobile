@@ -10,6 +10,7 @@ import 'package:futsalmobile/models/playoff_group_data.dart';
 import 'package:futsalmobile/models/playoff_info.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
+import 'package:futsalmobile/models/tournament/tournament_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
@@ -1122,6 +1123,79 @@ class FirebaseService {
           .toList();
     } catch (e) {
       throw Exception('Greška pri dohvatu playoff susreta: $e');
+    }
+  }
+
+  // ============================================================
+  // TOURNAMENTS  — top-level `tournaments` collection in Firestore
+  // ============================================================
+
+  /// All tournament documents, newest season first.
+  Future<List<TournamentData>> getTournaments() async {
+    try {
+      final snap = await _db.collection('tournaments').get();
+      final list = snap.docs
+          .map((d) => TournamentData.fromFirestore(d.id, d.data()))
+          .toList();
+      list.sort((a, b) => b.seasonStamp.compareTo(a.seasonStamp));
+      return list;
+    } catch (e) {
+      throw Exception('Greška pri dohvatu turnira: $e');
+    }
+  }
+
+  /// Bracket ties for a tournament: tournaments/{id}/ties/{qf_0, sf_1, final, …}
+  Future<List<PlayoffTie>> getTournamentTies(String tournamentId) async {
+    try {
+      final snap = await _db
+          .collection('tournaments')
+          .doc(tournamentId)
+          .collection('ties')
+          .get();
+      return snap.docs
+          .map((doc) => PlayoffTie.fromFirestore(doc.id, doc.data()))
+          .toList();
+    } catch (e) {
+      throw Exception('Greška pri dohvatu ždrijeba turnira: $e');
+    }
+  }
+
+  Future<List<TournamentTeam>> getTournamentTeams(String tournamentId) async {
+    try {
+      final snap = await _db
+          .collection('tournaments')
+          .doc(tournamentId)
+          .collection('teams')
+          .get();
+      final teams = snap.docs
+          .map((d) => TournamentTeam.fromFirestore(d.id, d.data()))
+          .toList();
+      teams.sort((a, b) => a.name.compareTo(b.name));
+      return teams;
+    } catch (e) {
+      throw Exception('Greška pri dohvatu momčadi turnira: $e');
+    }
+  }
+
+  Future<List<TournamentPlayer>> getTournamentTeamPlayers(
+    String tournamentId,
+    String teamId,
+  ) async {
+    try {
+      final snap = await _db
+          .collection('tournaments')
+          .doc(tournamentId)
+          .collection('teams')
+          .doc(teamId)
+          .collection('players')
+          .get();
+      final players = snap.docs
+          .map((d) => TournamentPlayer.fromFirestore(d.id, d.data()))
+          .toList();
+      players.sort((a, b) => a.name.compareTo(b.name));
+      return players;
+    } catch (e) {
+      throw Exception('Greška pri dohvatu igrača momčadi: $e');
     }
   }
 

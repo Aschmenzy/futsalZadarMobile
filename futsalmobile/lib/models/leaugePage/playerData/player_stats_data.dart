@@ -13,6 +13,7 @@ class PlayerStatsData {
   final num yellowCards;
   final num activeYellows;
   final num suspendedUntilRound;
+  final bool isProfessional;
 
   const PlayerStatsData({
     required this.id,
@@ -29,6 +30,7 @@ class PlayerStatsData {
     required this.yellowCards,
     required this.suspendedUntilRound,
     required this.activeYellows,
+    this.isProfessional = false,
   });
 
   num get totalGoals => goals + goals10m + goals6m;
@@ -48,6 +50,7 @@ class PlayerStatsData {
     'yellowCards': yellowCards,
     'activeYellows': activeYellows,
     'suspendedUntilRound': suspendedUntilRound,
+    'isProfessional': isProfessional,
   };
 
   factory PlayerStatsData.fromJson(Map<String, dynamic> map) => PlayerStatsData(
@@ -65,6 +68,7 @@ class PlayerStatsData {
     yellowCards: (map['yellowCards'] as num?) ?? 0,
     activeYellows: (map['activeYellows'] as num?) ?? 0,
     suspendedUntilRound: (map['suspendedUntilRound'] as num?) ?? 0,
+    isProfessional: map['isProfessional'] == true,
   );
 
   factory PlayerStatsData.fromFirestore(
@@ -86,6 +90,7 @@ class PlayerStatsData {
       yellowCards: map['yellowCards'] as num? ?? 0,
       activeYellows: map['activeYellows'] as num,
       suspendedUntilRound: map['suspendedUntilRound'] as num? ?? 0,
+      isProfessional: map['isProfessional'] == true,
     );
   }
 }
