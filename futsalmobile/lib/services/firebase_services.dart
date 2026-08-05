@@ -132,10 +132,27 @@ class FirebaseService {
 
   // ── HTTP helper ────────────────────────────────────────────────────────────
 
+  /// GET with retry: transient socket drops ("Software caused connection
+  /// abort" on Android when the network switches or the app resumes) and
+  /// timeouts get two extra attempts with a short backoff.
+  Future<http.Response> _getWithRetry(String path) async {
+    const maxAttempts = 3;
+    for (var attempt = 1; ; attempt++) {
+      try {
+        return await http
+            .get(Uri.parse('$kApiBaseUrl$path'))
+            .timeout(const Duration(seconds: 60));
+      } on http.ClientException {
+        if (attempt == maxAttempts) rethrow;
+      } on TimeoutException {
+        if (attempt == maxAttempts) rethrow;
+      }
+      await Future.delayed(Duration(milliseconds: 500 * attempt));
+    }
+  }
+
   Future<Map<String, dynamic>> _getMap(String path) async {
-    final response = await http
-        .get(Uri.parse('$kApiBaseUrl$path'))
-        .timeout(const Duration(seconds: 60));
+    final response = await _getWithRetry(path);
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
@@ -143,9 +160,7 @@ class FirebaseService {
   }
 
   Future<List<dynamic>> _getList(String path) async {
-    final response = await http
-        .get(Uri.parse('$kApiBaseUrl$path'))
-        .timeout(const Duration(seconds: 60));
+    final response = await _getWithRetry(path);
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as List<dynamic>;
     }
@@ -1130,7 +1145,8 @@ class FirebaseService {
   // TOURNAMENTS  — top-level `tournaments` collection in Firestore
   // ============================================================
 
-  /// All tournament documents, newest season first.
+  /// All tournament documents, newest season first. Callers split them by
+  /// [TournamentData.isActive]: active → main section, inactive → archive.
   Future<List<TournamentData>> getTournaments() async {
     try {
       final snap = await _db.collection('tournaments').get();

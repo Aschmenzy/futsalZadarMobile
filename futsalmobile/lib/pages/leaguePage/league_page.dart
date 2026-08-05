@@ -23,7 +23,7 @@ class _LeaguePageState extends State<LeaguePage> {
   final Map<String, int> _clubCounts = {};
   final Map<String, ClubStanding?> _leadingClubs = {};
   List<TournamentData> _activeTournaments = [];
-  bool _hasFinishedTournaments = false;
+  bool _hasArchivedTournaments = false;
   StreamSubscription? _invalidationSub;
 
   @override
@@ -43,9 +43,8 @@ class _LeaguePageState extends State<LeaguePage> {
       final tournaments = await _service.getTournaments();
       if (!mounted) return;
       setState(() {
-        _activeTournaments =
-            tournaments.where((t) => !t.isFinished).toList();
-        _hasFinishedTournaments = tournaments.any((t) => t.isFinished);
+        _activeTournaments = tournaments.where((t) => t.isActive).toList();
+        _hasArchivedTournaments = tournaments.any((t) => !t.isActive);
       });
     } catch (_) {
       // Tournaments are optional — keep the page functional without them.
@@ -118,8 +117,7 @@ class _LeaguePageState extends State<LeaguePage> {
                     SizedBox(height: 16),
                   ],
 
-                  if (_activeTournaments.isNotEmpty ||
-                      _hasFinishedTournaments) ...[
+                  if (_activeTournaments.isNotEmpty) ...[
                     Text(
                       'Turniri',
                       style: TextStyle(
@@ -132,10 +130,6 @@ class _LeaguePageState extends State<LeaguePage> {
                     SizedBox(height: 12),
                     for (final tournament in _activeTournaments) ...[
                       TournamentContainer(tournament: tournament),
-                      SizedBox(height: 12),
-                    ],
-                    if (_hasFinishedTournaments) ...[
-                      _ArchiveTile(),
                       SizedBox(height: 12),
                     ],
                     SizedBox(height: 16),
@@ -191,6 +185,11 @@ class _LeaguePageState extends State<LeaguePage> {
                   ),
 
                   SizedBox(height: 20),
+
+                  if (_hasArchivedTournaments) ...[
+                    _ArchiveTile(),
+                    SizedBox(height: 20),
+                  ],
 
                   //vodeci timpovi po ligama PLACE HOLDER
                   LeadingTeams(),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:futsalmobile/constants/constants.dart';
 // firebase_core 4.12+ exports its own (unrelated) FirebaseService — hide it
 // so the app's FirebaseService singleton stays unambiguous.
 import 'package:firebase_core/firebase_core.dart' hide FirebaseService;
@@ -90,7 +91,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Futsal Zadar',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.secondary),
+        // Scaffolds must match the page background everywhere — pages paint
+        // AppColors.background only behind their own content, and any gap
+        // (status bar, below short content) shows this color.
+        scaffoldBackgroundColor: AppColors.background,
       ),
       // First launch: require accepting the Terms of Service & Privacy Policy
       home: PrefsService.legalAccepted

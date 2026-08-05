@@ -1,4 +1,4 @@
-package com.example.futsalmobile
+package hr.futsalzadar.app
 
 import io.flutter.embedding.android.FlutterActivity
 

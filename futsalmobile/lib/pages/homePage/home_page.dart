@@ -175,7 +175,16 @@ class _HomePageState extends State<HomePage> {
                         );
                       }
                       if (!snapshot.hasData || snapshot.data == null) {
-                        return SizedBox.shrink();
+                        return Center(
+                          child: Text(
+                            'Nema vijesti',
+                            style: TextStyle(
+                              fontFamily: AppFonts.roboto,
+                              color: AppColors.ternaryGray,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
                       }
 
                       final news = snapshot.data!;

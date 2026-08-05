@@ -2,7 +2,7 @@
 ///
 /// Firestore shape:
 ///   tournaments/{id} — bracketSize, format: "knockout", name, seasonStamp,
-///                      status, thirdPlace
+///                      status, thirdPlace, isActive
 ///   subcollections: teams, playerStats, ties
 class TournamentData {
   final String id;
@@ -13,6 +13,10 @@ class TournamentData {
   final String status;
   final bool thirdPlace;
 
+  /// Admin visibility toggle — anything not explicitly `true` must never
+  /// surface in the app.
+  final bool isActive;
+
   const TournamentData({
     required this.id,
     required this.name,
@@ -21,6 +25,7 @@ class TournamentData {
     required this.seasonStamp,
     required this.status,
     required this.thirdPlace,
+    required this.isActive,
   });
 
   bool get isInProgress => status == 'in_progress';
@@ -39,6 +44,7 @@ class TournamentData {
       seasonStamp: data['seasonStamp']?.toString() ?? '',
       status: data['status']?.toString() ?? '',
       thirdPlace: data['thirdPlace'] == true,
+      isActive: data['isActive'] == true,
     );
   }
 }

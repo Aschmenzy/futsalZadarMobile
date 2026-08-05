@@ -77,7 +77,7 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              t.isFinished
+              t.isFinished || !t.isActive
                   ? 'Turnir • ${t.seasonStamp} • Završen'
                   : 'Turnir • ${t.seasonStamp}',
               style: TextStyle(
@@ -133,7 +133,7 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
 
     return Column(
       children: [
-        if (widget.tournament.isFinished)
+        if (widget.tournament.isFinished || !widget.tournament.isActive)
           TournamentPodium(
             ties: _ties,
             thirdPlace: widget.tournament.thirdPlace,
