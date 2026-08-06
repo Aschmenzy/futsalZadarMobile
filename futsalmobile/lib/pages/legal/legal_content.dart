@@ -47,7 +47,7 @@ Zadržavamo pravo izmjene ovih Uvjeta. O bitnim izmjenama obavijestit ćemo vas 
 
 9. KONTAKT
 
-Za sva pitanja u vezi ovih Uvjeta možete nas kontaktirati putem službenih kanala Futsal Zadra.
+Za sva pitanja u vezi ovih Uvjeta možete nas kontaktirati na e-mail adresu futsalligazadar.admin@gmail.com.
 ''';
 
 const String kPrivacyPolicyText = '''
@@ -96,5 +96,5 @@ Zadržavamo pravo izmjene ove Politike privatnosti. O bitnim izmjenama obavijest
 
 9. KONTAKT
 
-Za pitanja o privatnosti i zaštiti podataka možete nas kontaktirati putem službenih kanala Futsal Zadra.
+Za pitanja o privatnosti i zaštiti podataka, uključujući zahtjeve za brisanje podataka, možete nas kontaktirati na e-mail adresu futsalligazadar.admin@gmail.com.
 ''';
