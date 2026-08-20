@@ -47,6 +47,33 @@ class TournamentData {
       isActive: data['isActive'] == true,
     );
   }
+
+  /// Canonical, JSON-safe shape for the Hive cache. Deliberately separate from
+  /// [fromFirestore], which tolerates admin-panel field-name variants — the
+  /// cache only ever round-trips these already-normalised keys.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'bracketSize': bracketSize,
+        'format': format,
+        'seasonStamp': seasonStamp,
+        'status': status,
+        'thirdPlace': thirdPlace,
+        'isActive': isActive,
+      };
+
+  factory TournamentData.fromJson(Map<String, dynamic> json) {
+    return TournamentData(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      bracketSize: (json['bracketSize'] as num?)?.toInt() ?? 0,
+      format: json['format']?.toString() ?? 'knockout',
+      seasonStamp: json['seasonStamp']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      thirdPlace: json['thirdPlace'] == true,
+      isActive: json['isActive'] == true,
+    );
+  }
 }
 
 /// A team entry from tournaments/{id}/teams. Field names are parsed
@@ -72,6 +99,16 @@ class TournamentTeam {
       logo: data['clubLogo']?.toString() ?? data['logo']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'logo': logo};
+
+  factory TournamentTeam.fromJson(Map<String, dynamic> json) {
+    return TournamentTeam(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      logo: json['logo']?.toString() ?? '',
+    );
+  }
 }
 
 /// A player from tournaments/{id}/teams/{teamId}/players.
@@ -94,6 +131,20 @@ class TournamentPlayer {
       id: id,
       name: combined.isNotEmpty ? combined : (data['name']?.toString() ?? ''),
       isProfessional: data['isProfessional'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'isProfessional': isProfessional,
+      };
+
+  factory TournamentPlayer.fromJson(Map<String, dynamic> json) {
+    return TournamentPlayer(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      isProfessional: json['isProfessional'] == true,
     );
   }
 }

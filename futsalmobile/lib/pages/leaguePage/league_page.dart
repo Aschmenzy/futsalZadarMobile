@@ -32,9 +32,14 @@ class _LeaguePageState extends State<LeaguePage> {
     _loadCounts();
     _loadTournaments();
     _invalidationSub = _service.onCacheInvalidated.listen((_) {
-      if (_service.consumePlayoffCacheDirty() && mounted) {
-        setState(() {});
-      }
+      // Consume both flags before the mounted check — they are one-shot, and
+      // short-circuiting would leave the second one set for nobody to read.
+      final playoffDirty = _service.consumePlayoffCacheDirty();
+      final tournamentsDirty = _service.consumeTournamentsCacheDirty();
+      if (!mounted) return;
+      if (playoffDirty) setState(() {});
+      // The Hive entry was already cleared by the service, so this re-fetches.
+      if (tournamentsDirty) _loadTournaments();
     });
   }
 

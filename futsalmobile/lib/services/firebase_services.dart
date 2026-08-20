@@ -55,6 +55,9 @@ class FirebaseService {
     // Playoff structure lives in Firestore, not Hive — empty prefix list, but
     // the timestamp is still tracked so we know when to re-run checkPlayoffs().
     'lastUpdatedPlayoff': [],
+    // Every tournament cache key starts with 'tournaments_' (list, ties, teams
+    // and per-team players), so one prefix clears the whole section.
+    'lastUpdatedTournaments': ['tournaments_'],
   };
 
   bool _matchCacheDirty = false;
@@ -68,6 +71,13 @@ class FirebaseService {
   bool consumePlayoffCacheDirty() {
     final dirty = _playoffCacheDirty;
     _playoffCacheDirty = false;
+    return dirty;
+  }
+
+  bool _tournamentsCacheDirty = false;
+  bool consumeTournamentsCacheDirty() {
+    final dirty = _tournamentsCacheDirty;
+    _tournamentsCacheDirty = false;
     return dirty;
   }
 
@@ -87,11 +97,15 @@ class FirebaseService {
       bool anyInvalidated = false;
       bool matchesInvalidated = false;
       bool playoffInvalidated = false;
+      bool tournamentsInvalidated = false;
 
       for (final entry in _categoryPrefixes.entries) {
         final raw = data[entry.key];
-        if (raw == null) continue;
-        final serverTs = (raw as Timestamp).toDate();
+        // Skip anything that isn't a real Timestamp — a field the admin panel
+        // wrote as a string or number must not abort the whole loop and leave
+        // the remaining categories unprocessed.
+        if (raw is! Timestamp) continue;
+        final serverTs = raw.toDate();
         final localTs = _cache.getLastSyncedAt(category: entry.key);
 
         if (localTs == null || serverTs.isAfter(localTs)) {
@@ -100,6 +114,9 @@ class FirebaseService {
           anyInvalidated = true;
           if (entry.key == 'lastUpdatedMatches') matchesInvalidated = true;
           if (entry.key == 'lastUpdatedPlayoff') playoffInvalidated = true;
+          if (entry.key == 'lastUpdatedTournaments') {
+            tournamentsInvalidated = true;
+          }
           debugPrint('[Cache] ${entry.key} advanced → cleared ${entry.value}');
         }
       }
@@ -111,6 +128,7 @@ class FirebaseService {
       if (anyInvalidated) {
         if (matchesInvalidated) _matchCacheDirty = true;
         if (playoffInvalidated) _playoffCacheDirty = true;
+        if (tournamentsInvalidated) _tournamentsCacheDirty = true;
         _cacheInvalidated.add(null);
       }
     });
@@ -227,8 +245,11 @@ class FirebaseService {
       bool anyInvalidated = false;
       for (final entry in _categoryPrefixes.entries) {
         final raw = data[entry.key];
-        if (raw == null) continue;
-        final serverTs = (raw as Timestamp).toDate();
+        // See startConfigWatcher(): a non-Timestamp field is skipped rather
+        // than thrown on, so one bad field can't disable cold-start
+        // invalidation for every other category.
+        if (raw is! Timestamp) continue;
+        final serverTs = raw.toDate();
         final localTs = _cache.getLastSyncedAt(category: entry.key);
         if (localTs == null || serverTs.isAfter(localTs)) {
           await _cache.invalidateByPrefixes(entry.value);
@@ -1145,15 +1166,34 @@ class FirebaseService {
   // TOURNAMENTS  — top-level `tournaments` collection in Firestore
   // ============================================================
 
+  // Every key below starts with 'tournaments_' so the 'lastUpdatedTournaments'
+  // entry in [_categoryPrefixes] clears all of them in one sweep.
+
   /// All tournament documents, newest season first. Callers split them by
   /// [TournamentData.isActive]: active → main section, inactive → archive.
   Future<List<TournamentData>> getTournaments() async {
+    const cacheKey = 'tournaments_all';
+
+    final cached = _cache.getRaw(cacheKey);
+    if (cached != null) {
+      final list = (cached as List)
+          .map((e) => TournamentData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      list.sort((a, b) => b.seasonStamp.compareTo(a.seasonStamp));
+      return list;
+    }
+
     try {
       final snap = await _db.collection('tournaments').get();
       final list = snap.docs
           .map((d) => TournamentData.fromFirestore(d.id, d.data()))
           .toList();
       list.sort((a, b) => b.seasonStamp.compareTo(a.seasonStamp));
+      await _cache.setRaw(
+        cacheKey,
+        list.map((t) => t.toJson()).toList(),
+        CacheService.tournamentsTTL,
+      );
       return list;
     } catch (e) {
       throw Exception('Greška pri dohvatu turnira: $e');
@@ -1162,21 +1202,47 @@ class FirebaseService {
 
   /// Bracket ties for a tournament: tournaments/{id}/ties/{qf_0, sf_1, final, …}
   Future<List<PlayoffTie>> getTournamentTies(String tournamentId) async {
+    final cacheKey = 'tournaments_ties_$tournamentId';
+
+    final cached = _cache.getRaw(cacheKey);
+    if (cached != null) {
+      return (cached as List)
+          .map((e) => PlayoffTie.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
     try {
       final snap = await _db
           .collection('tournaments')
           .doc(tournamentId)
           .collection('ties')
           .get();
-      return snap.docs
+      final ties = snap.docs
           .map((doc) => PlayoffTie.fromFirestore(doc.id, doc.data()))
           .toList();
+      await _cache.setRaw(
+        cacheKey,
+        ties.map((t) => t.toJson()).toList(),
+        CacheService.tournamentsTTL,
+      );
+      return ties;
     } catch (e) {
       throw Exception('Greška pri dohvatu ždrijeba turnira: $e');
     }
   }
 
   Future<List<TournamentTeam>> getTournamentTeams(String tournamentId) async {
+    final cacheKey = 'tournaments_teams_$tournamentId';
+
+    final cached = _cache.getRaw(cacheKey);
+    if (cached != null) {
+      final teams = (cached as List)
+          .map((e) => TournamentTeam.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      teams.sort((a, b) => a.name.compareTo(b.name));
+      return teams;
+    }
+
     try {
       final snap = await _db
           .collection('tournaments')
@@ -1187,6 +1253,11 @@ class FirebaseService {
           .map((d) => TournamentTeam.fromFirestore(d.id, d.data()))
           .toList();
       teams.sort((a, b) => a.name.compareTo(b.name));
+      await _cache.setRaw(
+        cacheKey,
+        teams.map((t) => t.toJson()).toList(),
+        CacheService.tournamentsTTL,
+      );
       return teams;
     } catch (e) {
       throw Exception('Greška pri dohvatu momčadi turnira: $e');
@@ -1197,6 +1268,18 @@ class FirebaseService {
     String tournamentId,
     String teamId,
   ) async {
+    final cacheKey = 'tournaments_players_${tournamentId}_$teamId';
+
+    final cached = _cache.getRaw(cacheKey);
+    if (cached != null) {
+      final players = (cached as List)
+          .map((e) =>
+              TournamentPlayer.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      players.sort((a, b) => a.name.compareTo(b.name));
+      return players;
+    }
+
     try {
       final snap = await _db
           .collection('tournaments')
@@ -1209,6 +1292,11 @@ class FirebaseService {
           .map((d) => TournamentPlayer.fromFirestore(d.id, d.data()))
           .toList();
       players.sort((a, b) => a.name.compareTo(b.name));
+      await _cache.setRaw(
+        cacheKey,
+        players.map((p) => p.toJson()).toList(),
+        CacheService.tournamentsTTL,
+      );
       return players;
     } catch (e) {
       throw Exception('Greška pri dohvatu igrača momčadi: $e');

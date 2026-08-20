@@ -19,6 +19,22 @@ class PlayoffTeam {
       position: map['position'] as int?,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'clubId': clubId,
+        'clubLogo': clubLogo,
+        'clubName': clubName,
+        'position': position,
+      };
+
+  factory PlayoffTeam.fromJson(Map<String, dynamic> json) {
+    return PlayoffTeam(
+      clubId: json['clubId']?.toString() ?? '',
+      clubLogo: json['clubLogo']?.toString() ?? '',
+      clubName: json['clubName']?.toString() ?? '',
+      position: (json['position'] as num?)?.toInt(),
+    );
+  }
 }
 
 class PlayoffTie {
@@ -85,6 +101,59 @@ class PlayoffTie {
       penaltiesScoreA: data['penaltiesScoreA'] as int?,
       penaltiesScoreB: data['penaltiesScoreB'] as int?,
       winner: data['winner'] as String?,
+    );
+  }
+
+  /// Canonical, JSON-safe shape for the Hive cache. Every field is a
+  /// String/int/bool/null, so this round-trips through jsonEncode losslessly.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'round': round,
+        'status': status,
+        'teamA': teamA?.toJson(),
+        'teamB': teamB?.toJson(),
+        'aggregateA': aggregateA,
+        'aggregateB': aggregateB,
+        'isSingleLeg': isSingleLeg,
+        'leg1MatchId': leg1MatchId,
+        'leg1ScoreA': leg1ScoreA,
+        'leg1ScoreB': leg1ScoreB,
+        'leg2MatchId': leg2MatchId,
+        'leg2ScoreA': leg2ScoreA,
+        'leg2ScoreB': leg2ScoreB,
+        'penaltiesMatchId': penaltiesMatchId,
+        'penaltiesScoreA': penaltiesScoreA,
+        'penaltiesScoreB': penaltiesScoreB,
+        'winner': winner,
+      };
+
+  factory PlayoffTie.fromJson(Map<String, dynamic> json) {
+    final teamAData = json['teamA'];
+    final teamBData = json['teamB'];
+
+    return PlayoffTie(
+      id: json['id']?.toString() ?? '',
+      round: json['round']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      teamA: teamAData is Map
+          ? PlayoffTeam.fromJson(Map<String, dynamic>.from(teamAData))
+          : null,
+      teamB: teamBData is Map
+          ? PlayoffTeam.fromJson(Map<String, dynamic>.from(teamBData))
+          : null,
+      aggregateA: (json['aggregateA'] as num?)?.toInt(),
+      aggregateB: (json['aggregateB'] as num?)?.toInt(),
+      isSingleLeg: json['isSingleLeg'] == true,
+      leg1MatchId: json['leg1MatchId'] as String?,
+      leg1ScoreA: (json['leg1ScoreA'] as num?)?.toInt(),
+      leg1ScoreB: (json['leg1ScoreB'] as num?)?.toInt(),
+      leg2MatchId: json['leg2MatchId'] as String?,
+      leg2ScoreA: (json['leg2ScoreA'] as num?)?.toInt(),
+      leg2ScoreB: (json['leg2ScoreB'] as num?)?.toInt(),
+      penaltiesMatchId: json['penaltiesMatchId'] as String?,
+      penaltiesScoreA: (json['penaltiesScoreA'] as num?)?.toInt(),
+      penaltiesScoreB: (json['penaltiesScoreB'] as num?)?.toInt(),
+      winner: json['winner'] as String?,
     );
   }
 

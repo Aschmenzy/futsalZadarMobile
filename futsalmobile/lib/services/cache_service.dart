@@ -17,6 +17,11 @@ class CacheService {
   static const Duration searchIndexTTL = Duration(hours: 24);
   static const Duration sponsorsTTL = Duration(hours: 24);
 
+  /// Brackets change fast on tournament days, and the admin bumping
+  /// `lastUpdatedTournaments` is the primary refresh path — this TTL is only
+  /// the safety net for when that bump is missed.
+  static const Duration tournamentsTTL = Duration(minutes: 30);
+
   // ── Singleton ──────────────────────────────────────────────────────────────
   static final CacheService _instance = CacheService._internal();
   factory CacheService() => _instance;
