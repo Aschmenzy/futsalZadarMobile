@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
@@ -20,6 +22,12 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
     with SingleTickerProviderStateMixin {
   final _service = FirebaseService();
   late final TabController _tabController;
+  StreamSubscription? _invalidationSub;
+
+  /// Starts as the object handed over by the list, then tracks the server on
+  /// every invalidation — `isFinished` and `thirdPlace` decide whether the
+  /// podium shows, and both can flip while this page is open.
+  late TournamentData _tournament;
 
   List<PlayoffTie> _ties = [];
   bool _loading = true;
@@ -28,22 +36,30 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
   @override
   void initState() {
     super.initState();
+    _tournament = widget.tournament;
     _tabController = TabController(length: 2, vsync: this);
     _loadTies();
+    _invalidationSub = _service.onTournamentsInvalidated.listen((_) {
+      if (!mounted) return;
+      _loadTies();
+      _refreshTournament();
+    });
   }
 
   @override
   void dispose() {
+    _invalidationSub?.cancel();
     _tabController.dispose();
     super.dispose();
   }
 
   Future<void> _loadTies() async {
     try {
-      final ties = await _service.getTournamentTies(widget.tournament.id);
+      final ties = await _service.getTournamentTies(_tournament.id);
       if (!mounted) return;
       setState(() {
         _ties = ties;
+        _error = null;
         _loading = false;
       });
     } catch (e) {
@@ -55,9 +71,24 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
     }
   }
 
+  /// Re-reads this tournament's own document from the (already refreshed)
+  /// list. A tournament that has been deleted leaves the current object in
+  /// place rather than blanking the page the user is looking at.
+  Future<void> _refreshTournament() async {
+    try {
+      final all = await _service.getTournaments();
+      if (!mounted) return;
+      final matches = all.where((t) => t.id == _tournament.id).toList();
+      if (matches.isNotEmpty) setState(() => _tournament = matches.first);
+    } catch (_) {
+      // Header stays on the last known values — the bracket itself still
+      // reloaded above, which is what the user came here for.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final t = widget.tournament;
+    final t = _tournament;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -133,15 +164,12 @@ class _TournamentDetailsPageState extends State<TournamentDetailsPage>
 
     return Column(
       children: [
-        if (widget.tournament.isFinished || !widget.tournament.isActive)
-          TournamentPodium(
-            ties: _ties,
-            thirdPlace: widget.tournament.thirdPlace,
-          ),
+        if (_tournament.isFinished || !_tournament.isActive)
+          TournamentPodium(ties: _ties, thirdPlace: _tournament.thirdPlace),
         Expanded(
           child: TournamentBracketWidget(
-            bracketSize: widget.tournament.bracketSize,
-            thirdPlace: widget.tournament.thirdPlace,
+            bracketSize: _tournament.bracketSize,
+            thirdPlace: _tournament.thirdPlace,
             ties: _ties,
           ),
         ),

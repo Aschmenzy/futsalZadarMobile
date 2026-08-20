@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage> {
                     alignment: Alignment.center,
                     children: [
                       Center(
-                        child: Image.asset('assets/images/logo.png', scale: 0.7),
+                        child: Image.asset('assets/images/logo.png', height: 107),
                       ),
                       // Permanent entry point for Terms of Service & Privacy Policy
                       Positioned(

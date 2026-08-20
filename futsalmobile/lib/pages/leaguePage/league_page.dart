@@ -89,7 +89,7 @@ class _LeaguePageState extends State<LeaguePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
-                    child: Image.asset('assets/images/logo.png', scale: 0.7),
+                    child: Image.asset('assets/images/logo.png', height: 107),
                   ),
                   SizedBox(height: 40),
 

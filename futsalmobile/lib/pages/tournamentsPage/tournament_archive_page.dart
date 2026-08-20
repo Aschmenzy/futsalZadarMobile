@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/tournament/tournament_data.dart';
@@ -22,11 +24,23 @@ class _TournamentArchivePageState extends State<TournamentArchivePage> {
   String? _selectedSeason; // null = all seasons
   bool _loading = true;
   String? _error;
+  StreamSubscription? _invalidationSub;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Deactivating a tournament moves it into this list, so the archive has to
+    // react to the same signal the active list does.
+    _invalidationSub = _service.onTournamentsInvalidated.listen((_) {
+      if (mounted) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _invalidationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -39,6 +53,12 @@ class _TournamentArchivePageState extends State<TournamentArchivePage> {
       setState(() {
         _tournaments = archived;
         _seasons = seasons;
+        // A season filter pointing at a season that no longer has entries
+        // would render an empty list with no way back — reset it.
+        if (_selectedSeason != null && !seasons.contains(_selectedSeason)) {
+          _selectedSeason = null;
+        }
+        _error = null;
         _loading = false;
       });
     } catch (e) {

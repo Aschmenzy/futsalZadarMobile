@@ -41,6 +41,12 @@ class FirebaseService {
   final _cacheInvalidated = StreamController<void>.broadcast();
   Stream<void> get onCacheInvalidated => _cacheInvalidated.stream;
 
+  /// Fires only when `lastUpdatedTournaments` advances. Pages showing a live
+  /// bracket listen here instead of [onCacheInvalidated] so a news or matches
+  /// bump doesn't cost them a round trip to Firestore.
+  final _tournamentsInvalidated = StreamController<void>.broadcast();
+  Stream<void> get onTournamentsInvalidated => _tournamentsInvalidated.stream;
+
   static const Map<String, List<String>> _categoryPrefixes = {
     'lastUpdatedMatches': [
       'matches_',
@@ -128,7 +134,13 @@ class FirebaseService {
       if (anyInvalidated) {
         if (matchesInvalidated) _matchCacheDirty = true;
         if (playoffInvalidated) _playoffCacheDirty = true;
-        if (tournamentsInvalidated) _tournamentsCacheDirty = true;
+        if (tournamentsInvalidated) {
+          _tournamentsCacheDirty = true;
+          // Broadcast rather than a one-shot flag: several tournament pages
+          // can be open at once (list, bracket, teams) and each needs the
+          // signal, unlike [_tournamentsCacheDirty] which LeaguePage consumes.
+          _tournamentsInvalidated.add(null);
+        }
         _cacheInvalidated.add(null);
       }
     });
@@ -1171,6 +1183,8 @@ class FirebaseService {
 
   /// All tournament documents, newest season first. Callers split them by
   /// [TournamentData.isActive]: active → main section, inactive → archive.
+  Future<List<TournamentData>>? _tournamentsInFlight;
+
   Future<List<TournamentData>> getTournaments() async {
     const cacheKey = 'tournaments_all';
 
@@ -1183,6 +1197,14 @@ class FirebaseService {
       return list;
     }
 
+    // An invalidation wakes every open tournament page at once, so several
+    // callers hit the empty cache in the same tick. Share one collection read
+    // between them instead of paying for N.
+    return _tournamentsInFlight ??= _fetchTournaments(cacheKey)
+        .whenComplete(() => _tournamentsInFlight = null);
+  }
+
+  Future<List<TournamentData>> _fetchTournaments(String cacheKey) async {
     try {
       final snap = await _db.collection('tournaments').get();
       final list = snap.docs

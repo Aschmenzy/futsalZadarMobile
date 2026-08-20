@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/tournament/tournament_data.dart';
@@ -21,11 +23,25 @@ class _TournamentTeamsTabState extends State<TournamentTeamsTab> {
   final Map<String, Future<List<TournamentPlayer>>> _playerFutures = {};
   bool _loading = true;
   String? _error;
+  StreamSubscription? _invalidationSub;
 
   @override
   void initState() {
     super.initState();
     _loadTeams();
+    _invalidationSub = _service.onTournamentsInvalidated.listen((_) {
+      if (!mounted) return;
+      // Drop the memoized player futures too — the roster cache was just
+      // cleared, so keeping them would pin the pre-update squads on screen.
+      _playerFutures.clear();
+      _loadTeams();
+    });
+  }
+
+  @override
+  void dispose() {
+    _invalidationSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadTeams() async {
@@ -34,6 +50,7 @@ class _TournamentTeamsTabState extends State<TournamentTeamsTab> {
       if (!mounted) return;
       setState(() {
         _teams = teams;
+        _error = null;
         _loading = false;
       });
     } catch (e) {

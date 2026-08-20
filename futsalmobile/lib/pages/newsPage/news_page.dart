@@ -91,7 +91,7 @@ class _NewsPageState extends State<NewsPage> {
                               Center(
                                 child: Image.asset(
                                   'assets/images/logo.png',
-                                  scale: 0.7,
+                                  height: 107,
                                 ),
                               ),
 

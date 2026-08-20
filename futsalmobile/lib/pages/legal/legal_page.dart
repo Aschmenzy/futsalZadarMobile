@@ -67,7 +67,7 @@ class _LegalPageState extends State<LegalPage>
           children: [
             const SizedBox(height: 24),
             Center(
-              child: Image.asset('assets/images/logo.png', scale: 0.7),
+              child: Image.asset('assets/images/logo.png', height: 107),
             ),
             const SizedBox(height: 16),
             Text(

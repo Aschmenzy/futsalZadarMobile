@@ -285,7 +285,7 @@ class _DetailsTabState extends State<DetailsTab> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Image.asset('assets/images/logo.png', scale: 2),
+                    Image.asset('assets/images/logo.png', height: 37.5),
                     SizedBox(width: screenWidth * 0.02),
                     Text(
                       leagueName,

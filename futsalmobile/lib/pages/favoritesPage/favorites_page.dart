@@ -19,7 +19,7 @@ class FavoritesPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Image.asset('assets/images/logo.png', scale: 0.7)),
+            Center(child: Image.asset('assets/images/logo.png', height: 107)),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Text(
