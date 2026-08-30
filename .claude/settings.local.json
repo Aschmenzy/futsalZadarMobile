@@ -60,7 +60,9 @@
       "PowerShell($keytool = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\\\\bin\\\\keytool.exe\"; & $keytool -printcert -jarfile \"E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile\\\\build\\\\app\\\\outputs\\\\bundle\\\\release\\\\app-release.aab\" 2>&1 | Select-String \"Owner:|SHA256:\")",
       "PowerShell(Get-Item \"E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile\\\\build\\\\app\\\\outputs\\\\bundle\\\\release\\\\app-release.aab\" | Select-Object FullName, @{n='MB';e={[math]::Round\\($_.Length/1MB,1\\)}}, LastWriteTime)",
       "WebFetch(domain:play.google.com)",
-      "PowerShell(Get-ChildItem \"E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile\\\\build\\\\app\\\\intermediates\\\\merged_manifest\" -Recurse -Filter \"AndroidManifest.xml\" | ForEach-Object { $hit = Select-String -Path $_.FullName -Pattern \"AD_ID\" -SimpleMatch; \"$\\($_.FullName\\)  -> $\\(if \\($hit\\) { 'AD_ID FOUND' } else { 'no AD_ID' }\\)\" })"
+      "PowerShell(Get-ChildItem \"E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile\\\\build\\\\app\\\\intermediates\\\\merged_manifest\" -Recurse -Filter \"AndroidManifest.xml\" | ForEach-Object { $hit = Select-String -Path $_.FullName -Pattern \"AD_ID\" -SimpleMatch; \"$\\($_.FullName\\)  -> $\\(if \\($hit\\) { 'AD_ID FOUND' } else { 'no AD_ID' }\\)\" })",
+      "PowerShell($jb = \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\\\\bin\"; if \\(Test-Path \"$jb\\\\keytool.exe\"\\) { Write-Output \"found: $jb\" } else { Get-Command keytool -ErrorAction SilentlyContinue | Select-Object Source; Get-ChildItem \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\\\\bin\" -ErrorAction SilentlyContinue | Select-Object -First 5 Name })",
+      "PowerShell(cd E:\\\\FlutterProjects\\\\futsalZadarMobile\\\\futsalmobile; Get-Item build\\\\app\\\\outputs\\\\bundle\\\\release\\\\app-release.aab | Select-Object FullName, @{n='MB';e={\"{0:N1}\" -f \\($_.Length/1MB\\)}}, LastWriteTime)"
     ]
   }
 }
