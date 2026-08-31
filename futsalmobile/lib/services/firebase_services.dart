@@ -1016,7 +1016,7 @@ class FirebaseService {
       final standings = await getAllClubsInLeague(leagueCode);
       return standings.isEmpty ? null : standings.first;
     } catch (e) {
-      throw Exception('Greska pri pronalasku najboljeg tima u lizi: $e');
+      throw Exception('Greska pri pronalasku najboljeg tima u ligi: $e');
     }
   }
 

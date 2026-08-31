@@ -24,10 +24,53 @@ class _StatisticsTabState extends State<StatisticsTab> {
   bool _loading = true;
   String? _error;
 
+  /// Club logos keyed by club id and by normalised club name.
+  Map<String, String> _clubLogos = {};
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadClubLogos();
+  }
+
+  static String _nameKey(String name) => name.trim().toLowerCase();
+
+  /// Loads club logos for the league so player rows can show the real crest.
+  Future<void> _loadClubLogos() async {
+    final logos = <String, String>{};
+    try {
+      final clubs = await _service.getClubsByLeague(widget.league.id);
+      for (final club in clubs) {
+        if (club.clubProfileImg.isEmpty) continue;
+        logos[club.id] = club.clubProfileImg;
+        logos[_nameKey(club.clubName)] = club.clubProfileImg;
+      }
+    } catch (_) {}
+
+    // Fallback: standings also carry a logo per club.
+    try {
+      final standings = await _service.getAllClubsInLeague(
+        widget.league.id,
+        season: widget.season,
+      );
+      for (final s in standings) {
+        if (s.clubLogo.isEmpty) continue;
+        logos.putIfAbsent(s.clubId, () => s.clubLogo);
+        logos.putIfAbsent(_nameKey(s.clubName), () => s.clubLogo);
+      }
+    } catch (_) {}
+
+    if (!mounted || logos.isEmpty) return;
+    setState(() => _clubLogos = logos);
+  }
+
+  /// Resolves a player's club logo: value from the stats payload first,
+  /// then a lookup by club id, then by club name.
+  String? _logoFor(PlayerStatsData player) {
+    if (player.clubLogo.isNotEmpty) return player.clubLogo;
+    final byId = player.clubId.isNotEmpty ? _clubLogos[player.clubId] : null;
+    return byId ?? _clubLogos[_nameKey(player.clubName)];
   }
 
   Future<void> _loadData() async {
@@ -65,7 +108,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
             children: [
               // 1. Top Scorers
               _buildStatCard(
-                title: 'Vodeći strijelci u lizi',
+                title: 'Vodeći strijelci u ligi',
                 players: _topScorers,
                 trailing: (p) => _statWithIcon(
                   label: '${p.totalGoals.toInt()}',
@@ -299,12 +342,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
                         color: Color(0xFFEEEEEE),
                         shape: BoxShape.circle,
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/clubLogo/dinamo.png',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                      child: ClipOval(child: _clubLogo(player)),
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -328,6 +366,21 @@ class _StatisticsTabState extends State<StatisticsTab> {
       ),
     );
   }
+
+  /// Club crest for a player row, with a neutral fallback icon.
+  Widget _clubLogo(PlayerStatsData player) {
+    final url = _logoFor(player);
+    if (url == null || url.isEmpty) return _clubLogoFallback();
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _clubLogoFallback(),
+    );
+  }
+
+  Widget _clubLogoFallback() => Center(
+    child: Icon(Icons.shield_outlined, size: 13, color: Colors.grey.shade500),
+  );
 
   /// Bold number + small circular asset icon (e.g. soccer ball)
   Widget _statWithIcon({required String label, required String icon}) {

@@ -1,6 +1,8 @@
 class PlayerStatsData {
   final String id;
+  final String clubId;
   final String clubName;
+  final String clubLogo;
   final num fouls;
   final num goals;
   final num goals10m;
@@ -17,7 +19,9 @@ class PlayerStatsData {
 
   const PlayerStatsData({
     required this.id,
+    this.clubId = '',
     required this.clubName,
+    this.clubLogo = '',
     required this.fouls,
     required this.goals,
     required this.goals10m,
@@ -37,7 +41,9 @@ class PlayerStatsData {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'clubId': clubId,
     'clubName': clubName,
+    'clubLogo': clubLogo,
     'fouls': fouls,
     'goals': goals,
     'goals10m': goals10m,
@@ -55,7 +61,10 @@ class PlayerStatsData {
 
   factory PlayerStatsData.fromJson(Map<String, dynamic> map) => PlayerStatsData(
     id: map['id']?.toString() ?? '',
+    clubId: map['clubId']?.toString() ?? '',
     clubName: map['clubName']?.toString() ?? '',
+    clubLogo:
+        map['clubLogo']?.toString() ?? map['clubProfileImg']?.toString() ?? '',
     fouls: (map['fouls'] as num?) ?? 0,
     goals: (map['goals'] as num?) ?? 0,
     goals10m: (map['goals10m'] as num?) ?? 0,
@@ -77,7 +86,10 @@ class PlayerStatsData {
   ) {
     return PlayerStatsData(
       id: docId,
+      clubId: map['clubId'] as String? ?? '',
       clubName: map['clubName'] as String? ?? '',
+      clubLogo:
+          map['clubLogo'] as String? ?? map['clubProfileImg'] as String? ?? '',
       fouls: map['fouls'] as num? ?? 0,
       goals: map['goals'] as num? ?? 0,
       goals10m: map['goals10m'] as num? ?? 0,

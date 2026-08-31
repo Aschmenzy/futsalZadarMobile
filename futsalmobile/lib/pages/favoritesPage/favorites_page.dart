@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
+import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
+import 'package:futsalmobile/pages/clubDetailsPage/club_cetails_page.dart';
+import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/auth_service.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -301,11 +305,43 @@ class _ClubFavoriteCardState extends State<_ClubFavoriteCard> {
   final _service = FirebaseService();
   List<MatchData> _lastFive = [];
   MatchData? _nextMatch;
+  bool _opening = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// Opens the club profile. The season is stored on the favorite, but older
+  /// entries may not have it — fall back to the active season.
+  Future<void> _openClub() async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    final item = widget.item;
+    var season = item.season;
+    try {
+      if (season == null || season.isEmpty) {
+        season = await _service.getActiveSeason();
+      }
+    } catch (_) {
+      season = '';
+    }
+    if (!mounted) return;
+    setState(() => _opening = false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClubCetailsPage(
+          clubId: item.entityId,
+          clubName: item.name,
+          clubLogo: item.imageUrl,
+          leagueId: item.leagueId,
+          leagueName: item.leagueName,
+          season: season!,
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -350,13 +386,8 @@ class _ClubFavoriteCardState extends State<_ClubFavoriteCard> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return _TappableCard(
+      onTap: _openClub,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -469,11 +500,69 @@ class _PlayerFavoriteCardState extends State<_PlayerFavoriteCard> {
   final _service = FirebaseService();
   PlayerStatsData? _stats;
   MatchData? _nextMatch;
+  bool _opening = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// Opens the player profile. The favorite only stores ids, so the full
+  /// player and club records are resolved from the cached league data first.
+  Future<void> _openPlayer() async {
+    if (_opening) return;
+    setState(() => _opening = true);
+    final item = widget.item;
+
+    ClubData? club;
+    PlayerData? player;
+    try {
+      final clubs = await _service.getClubsByLeague(item.leagueId);
+      club =
+          clubs.where((c) => c.id == item.clubId).firstOrNull ??
+          clubs.where((c) => c.clubName == item.clubName).firstOrNull;
+
+      if (club != null) {
+        final players = await _service.getPlayersByClub(item.leagueId, club.id);
+        player = players.where((p) => p.id == item.entityId).firstOrNull;
+      }
+
+      // The player may have changed clubs since being starred — scan the league.
+      if (player == null) {
+        for (final c in clubs) {
+          final players = await _service.getPlayersByClub(item.leagueId, c.id);
+          final found = players.where((p) => p.id == item.entityId).firstOrNull;
+          if (found != null) {
+            player = found;
+            club = c;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    setState(() => _opening = false);
+
+    if (player == null || club == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil igrača trenutno nije dostupan')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlayerDetailsPage(
+          player: player!,
+          leagueId: item.leagueId,
+          clubData: club!,
+          leaugeName: item.leagueName,
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -498,13 +587,8 @@ class _PlayerFavoriteCardState extends State<_PlayerFavoriteCard> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return _TappableCard(
+      onTap: _openPlayer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -635,6 +719,32 @@ class _MatchNotifCard extends StatelessWidget {
 }
 
 // ── Shared sub-widgets ─────────────────────────────────────────────────────────
+
+/// White favorite card that opens the entity's profile when tapped.
+class _TappableCard extends StatelessWidget {
+  final VoidCallback onTap;
+  final Widget child;
+  const _TappableCard({required this.onTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(padding: const EdgeInsets.all(14), child: child),
+        ),
+      ),
+    );
+  }
+}
 
 class _NextMatchColumn extends StatelessWidget {
   final MatchData match;
