@@ -106,6 +106,7 @@ class _PlayoffMatchesTabState extends State<PlayoffMatchesTab> {
                 team2Logo: match.awayTeamLogo,
                 team1Score: match.homeTeamGoals,
                 team2Score: match.awayTeamGoals,
+                footballArena: match.footballArena,
                 matchTime: match.matchTime,
                 matchDate: match.matchDate,
                 showMatchDate: true,

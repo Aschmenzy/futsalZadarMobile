@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/widgets/arena_label.dart';
 
 class NextMatch extends StatelessWidget {
   final MatchData? match;
@@ -106,6 +107,12 @@ class NextMatch extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  SizedBox(height: screenHeight * 0.012),
+                  ArenaLabel(
+                    footballArena: match!.footballArena,
+                    fontSize: screenWidth * 0.032,
+                    iconSize: screenWidth * 0.045,
                   ),
                 ],
               ),

@@ -79,6 +79,8 @@ class MatchRowWidget extends StatelessWidget {
                 _teamRow(match.homeTeamLogo, match.homeTeam),
                 const SizedBox(height: 5),
                 _teamRow(match.awayTeamLogo, match.awayTeam),
+                const SizedBox(height: 5),
+                _arenaRow(),
               ],
             ),
           ),
@@ -110,6 +112,35 @@ class MatchRowWidget extends StatelessWidget {
           const SizedBox(width: 4),
         ],
       ),
+    );
+  }
+
+  Widget _arenaRow() {
+    return Row(
+      children: [
+        // Same width as the team logos so the text lines up with team names.
+        SizedBox(
+          width: 28,
+          child: Icon(
+            Icons.location_on_outlined,
+            size: 16,
+            color: AppColors.ternaryGray,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            match.arenaLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              fontSize: 12,
+              color: AppColors.ternaryGray,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

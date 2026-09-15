@@ -254,6 +254,7 @@ class _HomePageState extends State<HomePage> {
               team2Logo: m.awayTeamLogo,
               team1Score: m.homeTeamGoals,
               team2Score: m.awayTeamGoals,
+              footballArena: m.footballArena,
               matchTime: _formatMatchDate(m.matchTime),
             ),
           );
@@ -273,6 +274,7 @@ class _HomePageState extends State<HomePage> {
         team2Logo: match.awayTeamLogo,
         team1Score: match.homeTeamGoals,
         team2Score: match.awayTeamGoals,
+        footballArena: match.footballArena,
         matchTime: _formatMatchDate(match.matchTime),
       ),
     );

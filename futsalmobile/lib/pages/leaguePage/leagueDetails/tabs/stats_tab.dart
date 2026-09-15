@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/league_data.dart';
+import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
+import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/pro_badge.dart';
 
@@ -19,8 +22,10 @@ class _StatisticsTabState extends State<StatisticsTab> {
   final _service = FirebaseService();
   List<PlayerStatsData> _topScorers = [];
   List<PlayerStatsData> _topRedCards = [];
+  List<PlayerStatsData> _topYellowCards = [];
   List<PlayerStatsData> _oneYellow = [];
   List<PlayerStatsData> _twoYellows = [];
+  List<PlayerStatsData> _threeYellows = [];
   bool _loading = true;
   String? _error;
 
@@ -84,8 +89,10 @@ class _StatisticsTabState extends State<StatisticsTab> {
       setState(() {
         _topScorers = stats['topScorers']!;
         _topRedCards = stats['topRedCards']!;
+        _topYellowCards = stats['topYellowCards']!;
         _oneYellow = stats['oneYellow']!;
         _twoYellows = stats['twoYellows']!;
+        _threeYellows = stats['threeYellows']!;
         _loading = false;
       });
     } catch (e) {
@@ -129,52 +136,35 @@ class _StatisticsTabState extends State<StatisticsTab> {
               // 3. Top Yellow Cards
               _buildStatCard(
                 title: 'Vodeći po žutim kartonima',
-                players: _topScorers, // replace with your yellow card list
+                players: _topYellowCards,
                 trailing: (p) =>
-                    _statWithYellowCard(label: '${p.totalGoals.toInt()}'),
+                    _statWithYellowCard(label: '${p.yellowCards.toInt()}'),
               ),
               const SizedBox(height: 10),
 
-              // 4. 2nd Accumulated Yellow
+              // 4. 3rd Accumulated Yellow
               _buildStatCard(
-                title: '2. Akumulirani žuti karton',
-                players: _twoYellows,
-                trailing: (p) => Container(
-                  width: 25,
-                  height: 25,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/icons/stats/yellowCard.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+                title: '3. Akumulirani žuti karton',
+                players: _threeYellows,
+                trailing: (_) => _yellowCardIcon(),
                 emptyText: 'Nema igrača s aktivnim žutim kartonima',
               ),
               const SizedBox(height: 10),
 
-              // 5. 1st Accumulated Yellow
+              // 5. 2nd Accumulated Yellow
+              _buildStatCard(
+                title: '2. Akumulirani žuti karton',
+                players: _twoYellows,
+                trailing: (_) => _yellowCardIcon(),
+                emptyText: 'Nema igrača s aktivnim žutim kartonima',
+              ),
+              const SizedBox(height: 10),
+
+              // 6. 1st Accumulated Yellow
               _buildStatCard(
                 title: '1. Akumulirani žuti karton',
                 players: _oneYellow,
-                trailing: (p) => Container(
-                  width: 25,
-                  height: 25,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/icons/stats/yellowCard.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+                trailing: (_) => _yellowCardIcon(),
                 emptyText: 'Nema igrača s aktivnim žutim kartonima',
               ),
               const SizedBox(height: 10),
@@ -186,6 +176,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
   }
   // ── Card container ───────────────────────────────────────────────────────────
 
+  /// Number of players shown in a card before "Prikaži sve".
+  static const _previewCount = 5;
+
   Widget _buildStatCard({
     required String title,
     Color? titleColor,
@@ -194,6 +187,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
     required Widget Function(PlayerStatsData) trailing,
     String emptyText = 'Nema dostupnih statistika',
   }) {
+    final canOpen = !_loading && _error == null && players.isNotEmpty;
+    final preview = players.take(_previewCount).toList();
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -201,79 +197,108 @@ class _StatisticsTabState extends State<StatisticsTab> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE4E4E4), width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-            child: Row(
-              children: [
-                if (titleIcon != null) ...[
-                  Icon(
-                    titleIcon,
-                    size: 16,
-                    color: titleColor ?? Colors.black87,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canOpen
+              ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => _StatListPage(
+                      title: title,
+                      players: players,
+                      rowBuilder: (p) => _playerRow(p, trailing),
+                    ),
                   ),
-                  const SizedBox(width: 5),
-                ],
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: titleColor ?? Colors.black87,
-                  ),
+                )
+              : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title row
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                child: Row(
+                  children: [
+                    if (titleIcon != null) ...[
+                      Icon(
+                        titleIcon,
+                        size: 16,
+                        color: titleColor ?? Colors.black87,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: titleColor ?? Colors.black87,
+                        ),
+                      ),
+                    ),
+                    if (canOpen) ...[
+                      Text(
+                        'Prikaži sve (${players.length})',
+                        style: TextStyle(
+                          fontFamily: AppFonts.roboto,
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: Colors.grey.shade600,
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
+
+              // Body
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.all(28),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                )
+              else if (players.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    emptyText,
+                    style: TextStyle(
+                      fontFamily: AppFonts.roboto,
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: preview.length,
+                  separatorBuilder: (_, _) => const _RowDivider(),
+                  itemBuilder: (context, index) =>
+                      _playerRow(preview[index], trailing),
+                ),
+            ],
           ),
-
-          const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
-
-          // Body
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(28),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_error != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
-            )
-          else if (players.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                emptyText,
-                style: TextStyle(
-                  fontFamily: AppFonts.roboto,
-                  color: Colors.grey,
-                  fontSize: 13,
-                ),
-              ),
-            )
-          else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: players.length,
-              separatorBuilder: (_, _) => const Divider(
-                height: 1,
-                thickness: 1,
-                color: Color(0xFFF0F0F0),
-                indent: 14,
-                endIndent: 14,
-              ),
-              itemBuilder: (context, index) =>
-                  _playerRow(players[index], trailing),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -284,85 +309,151 @@ class _StatisticsTabState extends State<StatisticsTab> {
     PlayerStatsData player,
     Widget Function(PlayerStatsData) trailing,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          // Player photo
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEEEEE),
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/logo_withBg.png',
-                fit: BoxFit.cover,
+    return InkWell(
+      onTap: () => _openPlayer(player),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          children: [
+            // Player photo
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFEEEEEE),
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/logo_withBg.png',
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          // Name + club
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        player.playerFullName,
+            // Name + club
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          player.playerFullName,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (player.isProfessional) ...[
+                        const SizedBox(width: 6),
+                        const ProBadge(),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEEEEEE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval(child: _clubLogo(player)),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        player.clubName,
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: Colors.black87,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    if (player.isProfessional) ...[
-                      const SizedBox(width: 6),
-                      const ProBadge(),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEEEEEE),
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipOval(child: _clubLogo(player)),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      player.clubName,
-                      style: TextStyle(
-                        fontFamily: AppFonts.roboto,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Trailing widget (stat or card pips)
-          trailing(player),
-        ],
+            // Trailing widget (stat or card pips)
+            trailing(player),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _openingPlayer = false;
+
+  /// Opens the player profile. Stats rows only carry ids, so the full player
+  /// and club records are resolved from the cached league data first.
+  Future<void> _openPlayer(PlayerStatsData stats) async {
+    if (_openingPlayer) return;
+    _openingPlayer = true;
+    final leagueId = widget.league.id;
+
+    ClubData? club;
+    PlayerData? player;
+    try {
+      final clubs = await _service.getClubsByLeague(leagueId);
+      club =
+          clubs.where((c) => c.id == stats.clubId).firstOrNull ??
+          clubs
+              .where((c) => _nameKey(c.clubName) == _nameKey(stats.clubName))
+              .firstOrNull;
+
+      if (club != null) {
+        final players = await _service.getPlayersByClub(leagueId, club.id);
+        player = players.where((p) => p.id == stats.playerId).firstOrNull;
+      }
+
+      // The player may have changed clubs since these stats — scan the league.
+      if (player == null) {
+        for (final c in clubs) {
+          final players = await _service.getPlayersByClub(leagueId, c.id);
+          final found = players
+              .where((p) => p.id == stats.playerId)
+              .firstOrNull;
+          if (found != null) {
+            player = found;
+            club = c;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+
+    _openingPlayer = false;
+    if (!mounted) return;
+
+    if (player == null || club == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil igrača trenutno nije dostupan')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlayerDetailsPage(
+          player: player!,
+          leagueId: leagueId,
+          clubData: club!,
+          leaugeName: widget.league.name,
+        ),
       ),
     );
   }
@@ -407,6 +498,24 @@ class _StatisticsTabState extends State<StatisticsTab> {
           child: ClipOval(child: Image.asset(icon, fit: BoxFit.cover)),
         ),
       ],
+    );
+  }
+
+  /// Plain yellow card icon (accumulated yellow sections)
+  Widget _yellowCardIcon() {
+    return Container(
+      width: 25,
+      height: 25,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/icons/stats/yellowCard.png',
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 
@@ -474,6 +583,70 @@ class _StatisticsTabState extends State<StatisticsTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RowDivider extends StatelessWidget {
+  const _RowDivider();
+
+  @override
+  Widget build(BuildContext context) => const Divider(
+    height: 1,
+    thickness: 1,
+    color: Color(0xFFF0F0F0),
+    indent: 14,
+    endIndent: 14,
+  );
+}
+
+/// Full list of players for one stats section.
+class _StatListPage extends StatelessWidget {
+  final String title;
+  final List<PlayerStatsData> players;
+  final Widget Function(PlayerStatsData) rowBuilder;
+
+  const _StatListPage({
+    required this.title,
+    required this.players,
+    required this.rowBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        title: Text(
+          title,
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(10),
+        child: Material(
+          color: Colors.white,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFFE4E4E4), width: 1),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: players.length,
+            separatorBuilder: (_, _) => const _RowDivider(),
+            itemBuilder: (_, index) => rowBuilder(players[index]),
+          ),
+        ),
+      ),
     );
   }
 }

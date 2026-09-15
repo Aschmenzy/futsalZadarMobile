@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/widgets/arena_label.dart';
 
 class MatchDetailsAppBar extends StatelessWidget {
   final MatchData match;
@@ -87,12 +88,7 @@ class MatchDetailsAppBar extends StatelessWidget {
             const SizedBox(height: 50),
             // Teams + score row
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                0,
-                16,
-                tabController != null ? 0 : 24,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -179,6 +175,15 @@ class MatchDetailsAppBar extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                tabController != null ? 8 : 24,
+              ),
+              child: ArenaLabel(footballArena: match.footballArena),
             ),
             if (tabController != null && tabLabels.isNotEmpty)
               TabBar(

@@ -23,6 +23,9 @@ class MatchData {
   final String? referee1;
   final String? referee2;
 
+  // null/empty until the arena is decided
+  final String? footballArena;
+
   // null when status is "scheduled"
   final MatchState? matchState;
 
@@ -54,6 +57,7 @@ class MatchData {
     required this.delegate,
     this.referee1,
     this.referee2,
+    this.footballArena,
     this.matchState,
     this.originalHomeScore,
     this.originalAwayScore,
@@ -64,6 +68,14 @@ class MatchData {
   });
 
   String get score => '$homeTeamGoals : $awayTeamGoals';
+
+  /// Arena label shown on match cards and rows.
+  String get arenaLabel => arenaLabelFor(footballArena);
+
+  static String arenaLabelFor(String? arena) =>
+      arena == null || arena.trim().isEmpty
+      ? 'Dvorana još nije odlučena'
+      : 'Dvorana: ${arena.trim()}';
 
   Map<String, dynamic> toJson() => {
     'matchId': matchId,
@@ -85,6 +97,7 @@ class MatchData {
     'delegate': delegate,
     'referee1': referee1,
     'referee2': referee2,
+    'footballArena': footballArena,
     'matchState': matchState?.toJson(),
     'originalHomeScore': originalHomeScore,
     'originalAwayScore': originalAwayScore,
@@ -126,6 +139,7 @@ class MatchData {
       delegate: map['delegate']?.toString() ?? '',
       referee1: map['referee1']?.toString(),
       referee2: map['referee2']?.toString(),
+      footballArena: map['footballArena']?.toString(),
       matchState: map['matchState'] != null
           ? MatchState.fromJson(
               Map<String, dynamic>.from(map['matchState'] as Map),
@@ -189,6 +203,7 @@ class MatchData {
       delegate: map['delegate'] as String? ?? '',
       referee1: map['referee1'] as String?,
       referee2: map['referee2'] as String?,
+      footballArena: map['footballArena'] as String?,
       matchState: map['matchState'] != null
           ? MatchState.fromFirestore(map['matchState'] as Map<String, dynamic>)
           : null,

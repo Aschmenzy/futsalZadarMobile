@@ -41,99 +41,95 @@ class _MatchPageState extends State<MatchPage> {
           color: AppColors.background,
           child: Padding(
             padding: const EdgeInsets.only(top: 16.0, left: 32, right: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Image.asset('assets/images/logo.png', height: 107),
-                ),
+            child: StreamBuilder<List<MatchData>>(
+              stream: _matchesStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                  _cachedMatches = snapshot.data!;
+                }
+                final matches = _cachedMatches;
+                final hasMatches = matches != null && matches.isNotEmpty;
 
-                SizedBox(height: screenHeight * 0.035),
+                Widget listArea;
+                if (hasMatches) {
+                  listArea = _buildMatchesList(matches, _selectedDate);
+                } else if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  listArea = Center(
+                    child: ShimmerLoading(
+                      width: double.infinity,
+                      height: screenHeight * 0.18,
+                    ),
+                  );
+                } else if (snapshot.hasError) {
+                  listArea = Center(
+                    child: Text('Greška pri učitavanju: ${snapshot.error}'),
+                  );
+                } else {
+                  listArea = Center(child: Text('Nema dostupnih utakmica'));
+                }
 
-                CalendarCard(
-                  currentDate: _selectedDate,
-                  onDateChanged: (date) {
-                    setState(() {
-                      _selectedDate = date;
-                    });
-                  },
-                ),
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Image.asset('assets/images/logo.png', height: 107),
+                    ),
 
-                SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: screenHeight * 0.035),
 
-                SponsorsBanner(),
+                    CalendarCard(
+                      currentDate: _selectedDate,
+                      matchDays: _matchDays(matches),
+                      onDateChanged: (date) {
+                        setState(() {
+                          _selectedDate = date;
+                        });
+                      },
+                    ),
 
-                SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: screenHeight * 0.035),
 
-                Text(
-                  "Utakmice",
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                    SponsorsBanner(),
 
-                SizedBox(height: screenHeight * 0.035),
+                    SizedBox(height: screenHeight * 0.035),
 
-                Expanded(
-                  child: StreamBuilder<List<MatchData>>(
-                    stream: _matchesStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        if (_cachedMatches != null &&
-                            _cachedMatches!.isNotEmpty) {
-                          return _buildMatchesList(
-                            _cachedMatches!,
-                            _selectedDate,
-                          );
-                        }
-                        return Center(
-                          child: ShimmerLoading(
-                            width: double.infinity,
-                            height: screenHeight * 0.18,
-                          ),
-                        );
-                      }
+                    Text(
+                      "Utakmice",
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
 
-                      if (snapshot.hasError) {
-                        if (_cachedMatches != null &&
-                            _cachedMatches!.isNotEmpty) {
-                          return _buildMatchesList(
-                            _cachedMatches!,
-                            _selectedDate,
-                          );
-                        }
-                        return Center(
-                          child: Text(
-                            'Greška pri učitavanju: ${snapshot.error}',
-                          ),
-                        );
-                      }
+                    SizedBox(height: screenHeight * 0.035),
 
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        if (_cachedMatches != null &&
-                            _cachedMatches!.isNotEmpty) {
-                          return _buildMatchesList(
-                            _cachedMatches!,
-                            _selectedDate,
-                          );
-                        }
-                        return Center(child: Text('Nema dostupnih utakmica'));
-                      }
-
-                      _cachedMatches = snapshot.data!;
-                      return _buildMatchesList(_cachedMatches!, _selectedDate);
-                    },
-                  ),
-                ),
-              ],
+                    Expanded(child: listArea),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Days (normalized to y/m/d) that have at least one match, so the calendar
+  /// can mark them with a dot. Derived from the matches already in memory —
+  /// no extra fetch.
+  Set<DateTime> _matchDays(List<MatchData>? matches) {
+    if (matches == null) return const {};
+    final days = <DateTime>{};
+    for (final match in matches) {
+      if (match.matchDate.isEmpty) continue;
+      final date = DateTime.tryParse(match.matchDate);
+      if (date == null) continue;
+      days.add(DateTime(date.year, date.month, date.day));
+    }
+    return days;
   }
 
   Widget _buildMatchesList(List<MatchData> matches, DateTime selectedDate) {
@@ -180,6 +176,7 @@ class _MatchPageState extends State<MatchPage> {
                   team2Logo: m.awayTeamLogo,
                   team1Score: m.homeTeamGoals,
                   team2Score: m.awayTeamGoals,
+                  footballArena: m.footballArena,
                   matchTime: _formatMatchTime(m.matchTime),
                 ),
               );
@@ -201,6 +198,7 @@ class _MatchPageState extends State<MatchPage> {
               team2Logo: match.awayTeamLogo,
               team1Score: match.homeTeamGoals,
               team2Score: match.awayTeamGoals,
+              footballArena: match.footballArena,
               matchTime: _formatMatchTime(match.matchTime),
             ),
           );
@@ -221,6 +219,7 @@ class _MatchPageState extends State<MatchPage> {
               team2Logo: match.awayTeamLogo,
               team1Score: match.homeTeamGoals,
               team2Score: match.awayTeamGoals,
+              footballArena: match.footballArena,
               matchTime: _formatMatchTime(match.matchTime),
               showMatchDate: true,
               matchDate: match.matchDate,
@@ -247,6 +246,7 @@ class _MatchPageState extends State<MatchPage> {
                   team2Logo: match.awayTeamLogo,
                   team1Score: match.homeTeamGoals,
                   team2Score: match.awayTeamGoals,
+                  footballArena: match.footballArena,
                   matchTime: _formatMatchTime(match.matchTime),
                   isNotificationEnabled: isNotif,
                   onNotification: () => _favService.toggleNotification(

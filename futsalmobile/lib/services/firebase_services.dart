@@ -943,32 +943,21 @@ class FirebaseService {
       }
     }
 
-    final scorers = [...players]
-      ..sort(
-        (a, b) => (b.goals + b.goals10m + b.goals6m).compareTo(
-          a.goals + a.goals10m + a.goals6m,
-        ),
-      );
-    final redCards = [...players]
+    // Full lists — callers show a top-5 preview and the rest on tap.
+    final scorers = players.where((p) => p.totalGoals > 0).toList()
+      ..sort((a, b) => b.totalGoals.compareTo(a.totalGoals));
+    final redCards = players.where((p) => p.redCards > 0).toList()
       ..sort((a, b) => b.redCards.compareTo(a.redCards));
-    final yellowCards = [...players]
+    final yellowCards = players.where((p) => p.yellowCards > 0).toList()
       ..sort((a, b) => b.yellowCards.compareTo(a.yellowCards));
-    final activeYellowPlayers = players
-        .where((p) => p.activeYellows > 0)
-        .toList();
 
     return {
-      'topScorers': scorers.take(5).toList(),
-      'topRedCards': redCards.take(5).toList(),
-      'topYellowCards': yellowCards.take(5).toList(),
-      'oneYellow': activeYellowPlayers
-          .where((p) => p.activeYellows == 1)
-          .take(5)
-          .toList(),
-      'twoYellows': activeYellowPlayers
-          .where((p) => p.activeYellows == 2)
-          .take(5)
-          .toList(),
+      'topScorers': scorers,
+      'topRedCards': redCards,
+      'topYellowCards': yellowCards,
+      'oneYellow': players.where((p) => p.activeYellows == 1).toList(),
+      'twoYellows': players.where((p) => p.activeYellows == 2).toList(),
+      'threeYellows': players.where((p) => p.activeYellows == 3).toList(),
     };
   }
 

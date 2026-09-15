@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/widgets/arena_label.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
 class ClubDetailsNextMatch extends StatefulWidget {
@@ -155,6 +156,12 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
                         ),
                       ),
                     ],
+                  ),
+                  SizedBox(height: screenHeight * 0.012),
+                  ArenaLabel(
+                    footballArena: _nextMatch!.footballArena,
+                    fontSize: screenWidth * 0.032,
+                    iconSize: screenWidth * 0.045,
                   ),
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
+import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 
 class UtakmicaContainer extends StatelessWidget {
   final String matchStatus;
@@ -14,6 +15,7 @@ class UtakmicaContainer extends StatelessWidget {
   final VoidCallback? onNotification;
   final bool isNotificationEnabled;
   final bool showMatchDate;
+  final String? footballArena;
 
   const UtakmicaContainer({
     super.key,
@@ -29,6 +31,7 @@ class UtakmicaContainer extends StatelessWidget {
     this.onNotification,
     this.isNotificationEnabled = false,
     this.showMatchDate = false,
+    this.footballArena,
   });
 
   @override
@@ -40,7 +43,7 @@ class UtakmicaContainer extends StatelessWidget {
       elevation: 0.10,
       child: Container(
         width: double.infinity,
-        height: screenHeight * 0.18,
+        height: screenHeight * 0.21,
         decoration: BoxDecoration(
           color: AppColors.ternary,
           borderRadius: BorderRadius.circular(10),
@@ -83,6 +86,8 @@ class UtakmicaContainer extends StatelessWidget {
                       ),
                   ],
                 ),
+                // Arena row
+                _buildArenaRow(screenWidth),
                 SizedBox(height: screenHeight * 0.005),
                 // Team 1 row
                 _buildTeamRow(screenWidth, team1Logo, team1Name, team1Score),
@@ -335,6 +340,32 @@ class UtakmicaContainer extends StatelessWidget {
         ],
       );
     }
+  }
+
+  /// Waypoint icon + arena name, styled like the clock row.
+  Widget _buildArenaRow(double screenWidth) {
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on_outlined,
+          color: AppColors.ternaryGray,
+          size: screenWidth * 0.06,
+        ),
+        SizedBox(width: screenWidth * 0.02),
+        Expanded(
+          child: Text(
+            MatchData.arenaLabelFor(footballArena),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              color: AppColors.ternaryGray,
+              fontSize: screenWidth * 0.035,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   String _formatDate(String isoDate) {
