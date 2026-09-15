@@ -87,6 +87,19 @@ class FirebaseService {
     return dirty;
   }
 
+  // ── Forced update ─────────────────────────────────────────────────────────
+
+  /// `minBuildNumber` from config/app — builds below it must update before
+  /// using the app. null when the field is missing or not a valid number.
+  final ValueNotifier<int?> minBuildNumber = ValueNotifier(null);
+
+  void _readMinBuildNumber(Map<String, dynamic> data) {
+    final raw = data['minBuildNumber'];
+    minBuildNumber.value = raw is num
+        ? raw.toInt()
+        : int.tryParse(raw?.toString() ?? '');
+  }
+
   StreamSubscription? _configWatcher;
 
   void startConfigWatcher() {
@@ -96,6 +109,7 @@ class FirebaseService {
     ) async {
       if (!snap.exists) return;
       final data = snap.data()!;
+      _readMinBuildNumber(data);
 
       _cachedSeason = data['activeSeason'] as String? ?? _cachedSeason ?? '';
       await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);
@@ -250,6 +264,7 @@ class FirebaseService {
           .get(const GetOptions(source: Source.cache));
       if (!snap.exists) return false;
       final data = snap.data()!;
+      _readMinBuildNumber(data);
 
       _cachedSeason = data['activeSeason'] as String? ?? _cachedSeason ?? '';
       await _cache.setRaw('season', _cachedSeason, CacheService.seasonTTL);

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import 'package:futsalmobile/constants/constants.dart';
 // so the app's FirebaseService singleton stays unambiguous.
 import 'package:firebase_core/firebase_core.dart' hide FirebaseService;
 import 'package:futsalmobile/pages/favoritesPage/favorites_page.dart';
+import 'package:futsalmobile/pages/forceUpdate/force_update_page.dart';
 import 'package:futsalmobile/pages/homePage/home_page.dart';
 import 'package:futsalmobile/pages/leaguePage/league_page.dart';
 import 'package:futsalmobile/pages/matchesPage/match_page.dart';
@@ -20,6 +23,7 @@ import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/services/prefs_service.dart';
 import 'package:futsalmobile/services/search_service.dart';
 import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -98,8 +102,18 @@ void main() async {
   // forceRefresh=true when admin bumped a timestamp so stale cache is bypassed.
   SearchService().ensureIndexLoaded(forceRefresh: didUpdate).catchError((_) {});
 
+  // Installed build number (the +N in pubspec version) for the forced
+  // update check against config/app.minBuildNumber.
+  try {
+    final info = await PackageInfo.fromPlatform();
+    kInstalledBuildNumber = int.tryParse(info.buildNumber);
+  } catch (_) {}
+
   runApp(const MyApp());
 }
+
+/// null when it couldn't be read — the forced update check is then skipped.
+int? kInstalledBuildNumber;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -120,6 +134,27 @@ class MyApp extends StatelessWidget {
           ? const MainPage()
           : const LegalPage(gateMode: true),
       debugShowCheckedModeBanner: false,
+      // Forced update gate sits above every route. The app stays mounted
+      // underneath so the config watcher keeps running — lowering
+      // minBuildNumber again lifts the gate without a restart.
+      builder: (context, child) => ValueListenableBuilder<int?>(
+        valueListenable: FirebaseService().minBuildNumber,
+        builder: (context, minBuild, _) {
+          final installed = kInstalledBuildNumber;
+          // Android only for now: the update button links to Google Play.
+          final mustUpdate =
+              Platform.isAndroid &&
+              installed != null &&
+              minBuild != null &&
+              installed < minBuild;
+          return Stack(
+            children: [
+              child!,
+              if (mustUpdate) const Positioned.fill(child: ForceUpdatePage()),
+            ],
+          );
+        },
+      ),
     );
   }
 }
