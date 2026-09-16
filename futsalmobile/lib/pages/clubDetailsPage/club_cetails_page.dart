@@ -54,6 +54,11 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
       _clubData = data;
       _loading = false;
     });
+    // Older favorites were stored with the standings name, which can differ
+    // from the clubs document — realign it (and its FCM topic).
+    if (data != null) {
+      await _favService.syncEntityName(widget.clubId, data.clubName);
+    }
   }
 
   @override
@@ -66,7 +71,7 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
       FavoriteItem(
         entityId: widget.clubId,
         type: 'club',
-        name: widget.clubName,
+        name: _clubData?.clubName ?? widget.clubName,
         imageUrl: widget.clubLogo,
         leagueId: widget.leagueId,
         leagueName: widget.leagueName,
@@ -88,7 +93,7 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
         final appBar = ClubDetailsAppBar(
           tabController: _tabController,
           leagueName: widget.leagueName,
-          clubName: widget.clubName,
+          clubName: _clubData?.clubName ?? widget.clubName,
           clubLogo: widget.clubLogo,
           isStarred: isStarred,
           isNotificationEnabled: isNotif,

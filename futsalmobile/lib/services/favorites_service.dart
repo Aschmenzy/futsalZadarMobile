@@ -174,6 +174,38 @@ class FavoritesService {
     }
   }
 
+  /// Keeps a stored favorite's name in sync with the club document name.
+  /// Older favorites were saved with the standings name, which can differ from
+  /// the clubs document — and the FCM topic is derived from that name, so a
+  /// stale one also means missed notifications.
+  Future<void> syncEntityName(String entityId, String newName) async {
+    final col = _favCollection;
+    if (col == null || newName.isEmpty) return;
+    try {
+      final doc = col.doc(entityId);
+      final snap = await doc.get();
+      if (!snap.exists) return;
+      final current = FavoriteItem.fromMap(snap.data()!);
+      if (current.name == newName) return;
+
+      await doc.update({
+        'name': newName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('[FAV] syncEntityName — "${current.name}" -> "$newName"');
+
+      if (current.notificationsEnabled) {
+        final messaging = FirebaseMessaging.instance;
+        await messaging.unsubscribeFromTopic(_topicFor(current));
+        await messaging.subscribeToTopic(
+          _topicFor(current.copyWith(name: newName)),
+        );
+      }
+    } catch (e) {
+      debugPrint('[FAV] syncEntityName error: $e');
+    }
+  }
+
   Future<void> removeFromFavorites(String entityId) async {
     await _favCollection?.doc(entityId).delete();
   }

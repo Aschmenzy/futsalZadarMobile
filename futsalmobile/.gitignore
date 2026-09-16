@@ -52,3 +52,8 @@ android/key.properties
 # Local launch notes
 PLAY_STORE_LAUNCH.md
 LEGAL_POLICIES.md
+
+# Firebase admin credentials — full access to the project, keep them out of git
+*-firebase-adminsdk-*.json
+**/serviceAccount*.json
+**/service-account*.json

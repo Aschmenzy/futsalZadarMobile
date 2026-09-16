@@ -66,11 +66,15 @@ class FavoriteItem {
         createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       );
 
-  FavoriteItem copyWith({bool? starred, bool? notificationsEnabled}) =>
+  FavoriteItem copyWith({
+    bool? starred,
+    bool? notificationsEnabled,
+    String? name,
+  }) =>
       FavoriteItem(
         entityId: entityId,
         type: type,
-        name: name,
+        name: name ?? this.name,
         imageUrl: imageUrl,
         leagueId: leagueId,
         leagueName: leagueName,
