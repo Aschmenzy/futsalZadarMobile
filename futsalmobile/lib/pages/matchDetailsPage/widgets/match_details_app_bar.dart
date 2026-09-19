@@ -28,10 +28,13 @@ class MatchDetailsAppBar extends StatelessWidget {
     }
   }
 
+  bool get _isPaused => match.status == 'paused';
+
   String get _statusLabel {
     if (match.isLive) {
       return _periodLabel(match.matchState?.currentPeriod);
     }
+    if (_isPaused) return 'Poluvrijeme';
     if (match.isFinished || match.isAwarded) return 'Završeno';
     if (match.isPostponed) return 'Odgođena';
     if (match.isInterrupted) return 'Utakmica prekinuta';
@@ -44,9 +47,44 @@ class MatchDetailsAppBar extends StatelessWidget {
 
   Color get _statusColor {
     if (match.isLive) return AppColors.liveGame;
+    if (_isPaused) return AppColors.accentYellow;
     if (match.isPostponed) return AppColors.ternaryGray;
     if (match.isInterrupted) return AppColors.gameInterrupted;
     return AppColors.secondary;
+  }
+
+  /// "UŽIVO" / "PAUZA" pill, matching the badge used on match cards.
+  Widget _liveBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: _statusColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: AppColors.ternary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            match.isLive ? 'UŽIVO' : 'PAUZA',
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              color: AppColors.ternary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -113,7 +151,7 @@ class MatchDetailsAppBar extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Centre: score + status + delegate
+                  // Centre: score + live badge + status
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Column(
@@ -128,6 +166,10 @@ class MatchDetailsAppBar extends StatelessWidget {
                             color: AppColors.primary,
                           ),
                         ),
+                        if (match.isLive || _isPaused) ...[
+                          const SizedBox(height: 6),
+                          _liveBadge(),
+                        ],
                         const SizedBox(height: 4),
                         Text(
                           _statusLabel,
@@ -137,16 +179,6 @@ class MatchDetailsAppBar extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                             fontSize: 12,
                             color: _statusColor,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Delegat: ${match.delegate}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontSize: 10,
-                            color: AppColors.ternaryGray,
                           ),
                         ),
                       ],

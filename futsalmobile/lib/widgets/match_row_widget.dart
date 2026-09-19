@@ -25,10 +25,20 @@ class MatchRowWidget extends StatelessWidget {
   }
 
   String get _timeLabel {
+    // A running match must not fall through to _formatTime, which would read
+    // the past kick-off time and label it "FT".
+    if (match.isLive) return 'UŽIVO';
+    if (match.status == 'paused') return 'PAUZA';
     if (match.isAwarded) return 'Dodjeljena';
     if (match.isPostponed) return 'Odgođena';
     if (match.isInterrupted) return 'Prekinuta';
     return _formatTime(match.matchDate, match.matchTime);
+  }
+
+  Color get _timeColor {
+    if (match.isLive) return AppColors.liveGame;
+    if (match.status == 'paused') return AppColors.accentYellow;
+    return AppColors.ternaryGray;
   }
 
   @override
@@ -59,8 +69,8 @@ class MatchRowWidget extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: AppFonts.roboto,
                     fontSize: 13,
-                    color: AppColors.ternaryGray,
-                    fontWeight: FontWeight.w500,
+                    color: _timeColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],

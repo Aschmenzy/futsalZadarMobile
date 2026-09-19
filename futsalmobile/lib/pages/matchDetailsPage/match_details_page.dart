@@ -6,6 +6,7 @@ import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_media.dart';
 import 'package:futsalmobile/pages/matchDetailsPage/widgets/match_details_app_bar.dart';
 import 'package:futsalmobile/pages/matchDetailsPage/widgets/match_events_widget.dart';
+import 'package:futsalmobile/pages/matchDetailsPage/widgets/match_lineup_widget.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/widgets/standings_card.dart';
@@ -37,14 +38,27 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
     super.initState();
     _match = widget.match;
     _media = widget.match.media;
-    _tabController = TabController(
-      length: _media.isNotEmpty ? 3 : 2,
-      vsync: this,
-    );
+    _tabController = TabController(length: _tabCount, vsync: this);
+    // The list that pushed this page already knows the match is running, so
+    // attach the Firestore stream right away: the detail endpoint is cached
+    // and can still report "scheduled", which would blank out the header.
+    if (_isRunning(widget.match)) _liveStream = _streamFor(widget.match);
     _fetchMatchDetail();
     _invalidationSub = _service.onCacheInvalidated.listen(
       (_) => _fetchMatchDetail(),
     );
+  }
+
+  int get _tabCount => _hasPhotos ? 4 : 3;
+
+  static bool _isRunning(MatchData m) => m.isLive || m.status == 'paused';
+
+  /// Real-time source for a match — playoff matches live under a different
+  /// Firestore path than league matches.
+  Stream<MatchData> _streamFor(MatchData match) {
+    return _service.isPlayoffMatch(match.matchId)
+        ? _service.watchPlayoffMatch(match.matchId, season: match.season)
+        : _service.watchMatch(match);
   }
 
   Future<void> _fetchMatchDetail() async {
@@ -52,18 +66,22 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
       final fresh = await _service.getMatchDetail(widget.match.matchId);
       if (!mounted) return;
 
-      // The detail API strips matchState. For non-scheduled matches, do a
-      // one-shot Firestore read to restore it (events, lineup, etc.).
-      // Playoff matches are stored under playoff/{id}/matches, not leagues/{code}/matches,
-      // so we check the playoff registry before falling back to the league path.
+      // The detail API strips matchState, so restore it with a one-shot
+      // Firestore read (events, lineup, etc.). A cached "scheduled" from the
+      // endpoint must not override a match the caller already saw running,
+      // so the read also runs in that case.
+      final startedElsewhere = !widget.match.isScheduled;
       MatchData withState = fresh;
-      if (!fresh.isScheduled && fresh.matchState == null) {
+      // When the live stream is already attached it delivers the full
+      // Firestore document anyway, so the one-shot read would be a second
+      // billed read for the same doc.
+      if (_liveStream == null &&
+          (!fresh.isScheduled || startedElsewhere) &&
+          fresh.matchState == null) {
         try {
-          final isPlayoff = _service.isPlayoffMatch(fresh.matchId);
-          final stream = isPlayoff
-              ? _service.watchPlayoffMatch(fresh.matchId, season: fresh.season)
-              : _service.watchMatch(fresh);
-          withState = await stream.first.timeout(const Duration(seconds: 5));
+          withState = await _streamFor(fresh)
+              .first
+              .timeout(const Duration(seconds: 5));
         } catch (_) {
           withState = fresh;
         }
@@ -74,12 +92,12 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
         _match = withState;
         if (withState.media.isNotEmpty) _media = withState.media;
 
-        if ((withState.isLive || withState.status == 'paused') && _liveStream == null) {
-          _liveStream = _service.watchMatch(withState);
+        if ((_isRunning(withState) || startedElsewhere) && _liveStream == null) {
+          _liveStream = _streamFor(withState);
         }
-        if (_media.isNotEmpty && _tabController.length == 2) {
+        if (_tabController.length != _tabCount) {
           _tabController.dispose();
-          _tabController = TabController(length: 3, vsync: this);
+          _tabController = TabController(length: _tabCount, vsync: this);
         }
         _loading = false;
       });
@@ -114,7 +132,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
   }
 
   Widget _buildPage(MatchData match) {
-    final tabs = ['Detalji', 'Tablica', if (_hasPhotos) 'Fotografije'];
+    final tabs = ['Detalji', 'Sastav', 'Tablica', if (_hasPhotos) 'Fotografije'];
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -130,6 +148,7 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
               controller: _tabController,
               children: [
                 _detailsTab(match),
+                _lineupTab(match),
                 _standingsTab(match),
                 if (_hasPhotos) _photosTab(match),
               ],
@@ -153,6 +172,12 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
         ],
       ),
     );
+  }
+
+  Widget _lineupTab(MatchData match) {
+    // Same matchState fallback as the details tab — the HTTP endpoint drops it.
+    final lineupMatch = match.matchState != null ? match : widget.match;
+    return MatchLineupWidget(match: lineupMatch);
   }
 
   Widget _standingsTab(MatchData match) {

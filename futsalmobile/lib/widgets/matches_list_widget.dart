@@ -98,6 +98,10 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
         rounds.add(match.round);
       }
 
+      for (final list in grouped.values) {
+        list.sort(_byPlayedThenKickoff);
+      }
+
       setState(() {
         _matches = matches;
         _matchesByRound = grouped;
@@ -112,6 +116,20 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
         _loading = false;
       });
     }
+  }
+
+  /// Played matches sink to the bottom. Above them, matches still to come are
+  /// ordered by kick-off with the next one to be played on top; the played
+  /// ones below run the other way, latest result first. Matches without a
+  /// date yet sort last within their group.
+  static int _byPlayedThenKickoff(MatchData a, MatchData b) {
+    if (a.isPlayed != b.isPlayed) return a.isPlayed ? 1 : -1;
+    final ka = a.kickoff;
+    final kb = b.kickoff;
+    if (ka == null && kb == null) return 0;
+    if (ka == null) return 1;
+    if (kb == null) return -1;
+    return a.isPlayed ? kb.compareTo(ka) : ka.compareTo(kb);
   }
 
   Map<int, List<MatchData>> get _filtered {
@@ -382,19 +400,7 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
                           final match = entry.value[matchIndex];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      MatchDetailsPage(match: match),
-                                ),
-                              ),
-                              child: MatchRowWidget(
-                                match: match,
-                                trailing: _trailing(match),
-                              ),
-                            ),
+                            child: _matchRow(match),
                           );
                         }
                         cursor += entry.value.length;
@@ -405,6 +411,27 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  /// A running match keeps streaming from Firestore so the row shows the live
+  /// score — the cached list payload only refreshes when the admin bumps it.
+  Widget _matchRow(MatchData match) {
+    if (!match.isLive && match.status != 'paused') return _matchRowFor(match);
+    return StreamBuilder<MatchData>(
+      stream: _service.watchMatch(match),
+      initialData: match,
+      builder: (context, snap) => _matchRowFor(snap.data ?? match),
+    );
+  }
+
+  Widget _matchRowFor(MatchData match) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MatchDetailsPage(match: match)),
+      ),
+      child: MatchRowWidget(match: match, trailing: _trailing(match)),
     );
   }
 

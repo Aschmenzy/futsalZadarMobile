@@ -69,6 +69,17 @@ class MatchData {
 
   String get score => '$homeTeamGoals : $awayTeamGoals';
 
+  /// Kick-off as a DateTime, or null while the date/time is still undecided.
+  DateTime? get kickoff {
+    if (matchDate.isEmpty) return null;
+    return DateTime.tryParse(
+      matchTime.isEmpty ? matchDate : '$matchDate $matchTime',
+    );
+  }
+
+  /// A match nobody is waiting for any more — it sorts below the rest.
+  bool get isPlayed => isFinished || isAwarded;
+
   /// Arena label shown on match cards and rows.
   String get arenaLabel => arenaLabelFor(footballArena);
 

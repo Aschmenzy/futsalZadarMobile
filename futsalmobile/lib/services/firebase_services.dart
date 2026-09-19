@@ -18,6 +18,7 @@ import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/services/cache_service.dart';
+import 'package:futsalmobile/services/shared_match_stream.dart';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 
@@ -630,20 +631,43 @@ class FirebaseService {
 
   // ── Single match real-time stream — stays on Firestore (live match) ────────
 
+  // One Firestore listener per match document, shared by everything watching
+  // it. The home card, the league list row and the detail page all sit on the
+  // same document, and without this each of them is billed a separate read
+  // for every write to that match.
+  final Map<String, SharedMatchStream<MatchData>> _matchWatches = {};
+
+  Stream<MatchData> _sharedMatchStream(
+    String matchId,
+    Stream<MatchData> Function() create,
+  ) {
+    final watch = _matchWatches.putIfAbsent(
+      matchId,
+      () => SharedMatchStream<MatchData>(
+        create,
+        () => _matchWatches.remove(matchId),
+      ),
+    );
+    return watch.stream;
+  }
+
   Stream<MatchData> watchMatch(MatchData match) {
     final seasonId = match.season.isNotEmpty
         ? match.season
         : (_cachedSeason ?? '');
-    return _db
-        .collection('seasons')
-        .doc(seasonId)
-        .collection('leagues')
-        .doc(match.leagueCode)
-        .collection('matches')
-        .doc(match.matchId)
-        .snapshots()
-        .where((snap) => snap.exists)
-        .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id));
+    return _sharedMatchStream(
+      match.matchId,
+      () => _db
+          .collection('seasons')
+          .doc(seasonId)
+          .collection('leagues')
+          .doc(match.leagueCode)
+          .collection('matches')
+          .doc(match.matchId)
+          .snapshots()
+          .where((snap) => snap.exists)
+          .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id)),
+    );
   }
 
   // Reads a playoff match document from Firestore to restore matchState.
@@ -674,10 +698,13 @@ class FirebaseService {
           .collection('matches').doc(matchId);
     }
 
-    return ref
-        .snapshots()
-        .where((snap) => snap.exists)
-        .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id));
+    return _sharedMatchStream(
+      matchId,
+      () => ref
+          .snapshots()
+          .where((snap) => snap.exists)
+          .map((snap) => MatchData.fromFirestore(snap.data()!, snap.id)),
+    );
   }
 
   // ── Upcoming matches stream ────────────────────────────────────────────────

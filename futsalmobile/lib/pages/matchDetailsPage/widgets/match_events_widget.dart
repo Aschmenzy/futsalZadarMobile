@@ -2,120 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_event.dart';
-import 'package:futsalmobile/models/leaugePage/matchData/match_player.dart';
-import 'package:futsalmobile/widgets/pro_badge.dart';
+import 'package:futsalmobile/pages/matchDetailsPage/widgets/match_player_link.dart';
 
 class MatchEventsWidget extends StatelessWidget {
   final MatchData match;
 
   const MatchEventsWidget({super.key, required this.match});
 
-  MatchPlayer? _resolvePlayer(String? id, List players) {
-    if (id == null || id.isEmpty) return null;
-    try {
-      return players.firstWhere((p) => p.id == id) as MatchPlayer;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  List<Widget> _lineupRows() {
-    final state = match.matchState;
-    final homePlayers = state?.homeTeamPlayers ?? [];
-    final awayPlayers = state?.awayTeamPlayers ?? [];
-
-    final homeCaptain = _resolvePlayer(state?.homeCaptainId, homePlayers);
-    final homeGK = _resolvePlayer(state?.homeGoalkeeperId, homePlayers);
-    final awayCaptain = _resolvePlayer(state?.awayCaptainId, awayPlayers);
-    final awayGK = _resolvePlayer(state?.awayGoalkeeperId, awayPlayers);
-
-    final rows = <Widget>[];
-    if (homeCaptain != null || awayCaptain != null) {
-      rows.add(_lineupRow(Icons.star_rounded, 'Kapetan', homeCaptain, awayCaptain));
-    }
-    if (homeGK != null || awayGK != null) {
-      rows.add(_lineupRow(Icons.sports_handball, 'Golman', homeGK, awayGK));
-    }
-    return rows;
-  }
-
-  Widget _lineupRow(IconData icon, String label, MatchPlayer? homePlayer, MatchPlayer? awayPlayer) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: homePlayer != null
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 16, color: AppColors.secondary),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          homePlayer.name,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (homePlayer.isProfessional) ...[
-                        const SizedBox(width: 5),
-                        const ProBadge(fontSize: 8),
-                      ],
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: AppFonts.roboto,
-                fontSize: 11,
-                color: AppColors.ternaryGray,
-              ),
-            ),
-          ),
-          Expanded(
-            child: awayPlayer != null
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (awayPlayer.isProfessional) ...[
-                        const ProBadge(fontSize: 8),
-                        const SizedBox(width: 5),
-                      ],
-                      Flexible(
-                        child: Text(
-                          awayPlayer.name,
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(icon, size: 16, color: AppColors.secondary),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
+  // Newest first: later periods on top, and inside a period the most recent
+  // event first, so goals/own goals/cards that just happened lead the list.
+  static const _periodOrder = ['penalties', 'ot', '2nd', '1st'];
 
   @override
   Widget build(BuildContext context) {
-    final lineupRows = _lineupRows();
     final events = match.matchState?.events;
 
     // Build event sections
@@ -146,25 +45,28 @@ class MatchEventsWidget extends StatelessWidget {
         processed.add(_EventWithScore(e, home, away));
       }
 
-      const periodOrder = ['1st', '2nd'];
       final byPeriod = <String, List<_EventWithScore>>{};
       for (final item in processed) {
         byPeriod.putIfAbsent(item.event.period, () => []).add(item);
       }
 
-      for (final period in periodOrder) {
-        final list = byPeriod[period];
-        if (list == null) continue;
+      // Any period the app does not know about still gets rendered, oldest last.
+      final periods = [
+        ..._periodOrder.where(byPeriod.containsKey),
+        ...byPeriod.keys.where((p) => !_periodOrder.contains(p)),
+      ];
+
+      for (final period in periods) {
+        final list = byPeriod[period]!;
         sections.add(_periodHeader(period));
-        for (final item in list) {
-          final row = _buildEventRow(item);
+        for (final item in list.reversed) {
+          final row = _buildEventRow(context, item);
           if (row != null) sections.add(row);
         }
       }
     }
 
-    final allRows = [...lineupRows, ...sections];
-    if (allRows.isEmpty) {
+    if (sections.isEmpty) {
       if (match.isScheduled) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.all(24),
@@ -190,7 +92,7 @@ class MatchEventsWidget extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: allRows,
+        children: sections,
       ),
     );
   }
@@ -201,6 +103,8 @@ class MatchEventsWidget extends StatelessWidget {
     final label = switch (period) {
       '1st' => 'Prvo poluvrijeme',
       '2nd' => 'Drugo poluvrijeme',
+      'ot' => 'Produžeci',
+      'penalties' => 'Penali',
       _ => period,
     };
 
@@ -229,7 +133,7 @@ class MatchEventsWidget extends StatelessWidget {
 
   // ── Event row ─────────────────────────────────────────────────────────────────
 
-  Widget? _buildEventRow(_EventWithScore item) {
+  Widget? _buildEventRow(BuildContext context, _EventWithScore item) {
     final e = item.event;
     final isHome = e.team == 'home';
     final isGoal = ['goal', 'goal6m', 'goal10m', 'ownGoal'].contains(e.type);
@@ -274,26 +178,22 @@ class MatchEventsWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
+                _playerName(
+                  context,
+                  e,
                   name,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ],
             )
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                _playerName(
+                  context,
+                  e,
                   name,
-                  style: TextStyle(
-                    fontFamily: AppFonts.roboto,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
                 Card(
@@ -327,13 +227,11 @@ class MatchEventsWidget extends StatelessWidget {
       content = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          _playerName(
+            context,
+            e,
             e.playerName,
-            style: TextStyle(
-              fontFamily: AppFonts.roboto,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
+            const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 6),
           _cardIcon(e.type),
@@ -367,6 +265,30 @@ class MatchEventsWidget extends StatelessWidget {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  /// Player name, tappable when the event carries a player id.
+  Widget _playerName(
+    BuildContext context,
+    MatchEvent event,
+    String label,
+    TextStyle style,
+  ) {
+    final text = Text(
+      label,
+      style: style.copyWith(fontFamily: AppFonts.roboto),
+    );
+    if (event.playerId.isEmpty) return text;
+    return GestureDetector(
+      onTap: () => MatchPlayerLink.open(
+        context,
+        leagueId: match.leagueCode,
+        leagueName: match.league,
+        teamName: event.team == 'home' ? match.homeTeam : match.awayTeam,
+        playerId: event.playerId,
+      ),
+      child: text,
+    );
+  }
 
   Widget _cardIcon(String type) {
     return Image.asset(
