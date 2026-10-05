@@ -21,8 +21,14 @@ class MatchEventsWidget extends StatelessWidget {
     final sections = <Widget>[];
 
     if (events != null && events.isNotEmpty) {
+      // Order by the minute the event happened, not by the moment the admin
+      // saved it: a card entered late for an earlier minute must still sort
+      // into its own place. Equal minutes keep their entry order.
       final sorted = [...events]
-        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        ..sort((a, b) {
+          final byMinute = a.timeInMatch.compareTo(b.timeInMatch);
+          return byMinute != 0 ? byMinute : a.timestamp.compareTo(b.timestamp);
+        });
 
       int home = 0;
       int away = 0;

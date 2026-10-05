@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
+import 'package:futsalmobile/pages/clubDetailsPage/club_cetails_page.dart';
+import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/arena_label.dart';
 
 class MatchDetailsAppBar extends StatelessWidget {
@@ -51,6 +53,94 @@ class MatchDetailsAppBar extends StatelessWidget {
     if (match.isPostponed) return AppColors.ternaryGray;
     if (match.isInterrupted) return AppColors.gameInterrupted;
     return AppColors.secondary;
+  }
+
+  static String _nameKey(String name) => name.trim().toLowerCase();
+
+  /// Opens the club page for one of the two teams. The match document holds
+  /// team names only, so the club id is resolved from the cached club list
+  /// (standings as a fallback); nothing happens when neither knows the team.
+  Future<void> _openClub(
+    BuildContext context, {
+    required String teamName,
+    required String teamLogo,
+  }) async {
+    if (match.leagueCode.isEmpty || teamName.isEmpty) return;
+
+    final service = FirebaseService();
+    String? clubId;
+    String? clubName;
+    String? clubLogo;
+
+    try {
+      final clubs = await service.getClubsByLeague(match.leagueCode);
+      final club = clubs
+          .where((c) => _nameKey(c.clubName) == _nameKey(teamName))
+          .firstOrNull;
+      if (club != null) {
+        clubId = club.id;
+        clubName = club.clubName;
+        clubLogo = club.clubProfileImg;
+      }
+    } catch (_) {}
+
+    if (clubId == null) {
+      try {
+        final standings = await service.getAllClubsInLeague(
+          match.leagueCode,
+          season: match.season,
+        );
+        final s = standings
+            .where((s) => _nameKey(s.clubName) == _nameKey(teamName))
+            .firstOrNull;
+        if (s != null && s.clubId.isNotEmpty) {
+          clubId = s.clubId;
+          clubName = s.clubName;
+          clubLogo = s.clubLogo;
+        }
+      } catch (_) {}
+    }
+
+    if (clubId == null || !context.mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ClubCetailsPage(
+          clubId: clubId!,
+          clubName: clubName ?? teamName,
+          clubLogo: (clubLogo?.isNotEmpty ?? false) ? clubLogo! : teamLogo,
+          leagueId: match.leagueCode,
+          leagueName: match.league,
+          season: match.season,
+        ),
+      ),
+    );
+  }
+
+  /// Crest + name for one team, tappable through to the club page.
+  Widget _team(BuildContext context, String name, String logo) {
+    return InkWell(
+      onTap: () => _openClub(context, teamName: name, teamLogo: logo),
+      child: Column(
+        children: [
+          _teamLogo(logo),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: AppFonts.roboto,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// "UŽIVO" / "PAUZA" pill, matching the badge used on match cards.
@@ -132,24 +222,7 @@ class MatchDetailsAppBar extends StatelessWidget {
                 children: [
                   // Home team
                   Expanded(
-                    child: Column(
-                      children: [
-                        _teamLogo(match.homeTeamLogo),
-                        const SizedBox(height: 8),
-                        Text(
-                          match.homeTeam,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _team(context, match.homeTeam, match.homeTeamLogo),
                   ),
                   // Centre: score + live badge + status
                   Padding(
@@ -186,24 +259,7 @@ class MatchDetailsAppBar extends StatelessWidget {
                   ),
                   // Away team
                   Expanded(
-                    child: Column(
-                      children: [
-                        _teamLogo(match.awayTeamLogo),
-                        const SizedBox(height: 8),
-                        Text(
-                          match.awayTeam,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _team(context, match.awayTeam, match.awayTeamLogo),
                   ),
                 ],
               ),

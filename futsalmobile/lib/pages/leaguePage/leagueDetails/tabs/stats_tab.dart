@@ -32,6 +32,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
   /// Club logos keyed by club id and by normalised club name.
   Map<String, String> _clubLogos = {};
 
+  /// Player profile photos keyed by player id.
+  Map<String, String> _playerPhotos = {};
+
   @override
   void initState() {
     super.initState();
@@ -41,12 +44,25 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   static String _nameKey(String name) => name.trim().toLowerCase();
 
-  /// Loads club logos for the league so player rows can show the real crest.
+  /// Loads club logos for the league so player rows can show the real crest,
+  /// plus the players' own profile photos for the row avatar.
   Future<void> _loadClubLogos() async {
     final logos = <String, String>{};
+    final photos = <String, String>{};
     try {
       final clubs = await _service.getClubsByLeague(widget.league.id);
       for (final club in clubs) {
+        // Players come from the same cached payload the profile page uses,
+        // so this costs no extra request.
+        try {
+          final players = await _service.getPlayersByClub(
+            widget.league.id,
+            club.id,
+          );
+          for (final p in players) {
+            if (p.profilePicture.isNotEmpty) photos[p.id] = p.profilePicture;
+          }
+        } catch (_) {}
         if (club.clubProfileImg.isEmpty) continue;
         logos[club.id] = club.clubProfileImg;
         logos[_nameKey(club.clubName)] = club.clubProfileImg;
@@ -66,8 +82,11 @@ class _StatisticsTabState extends State<StatisticsTab> {
       }
     } catch (_) {}
 
-    if (!mounted || logos.isEmpty) return;
-    setState(() => _clubLogos = logos);
+    if (!mounted || (logos.isEmpty && photos.isEmpty)) return;
+    setState(() {
+      if (logos.isNotEmpty) _clubLogos = logos;
+      if (photos.isNotEmpty) _playerPhotos = photos;
+    });
   }
 
   /// Resolves a player's club logo: value from the stats payload first,
@@ -316,20 +335,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
         child: Row(
           children: [
             // Player photo
-            Container(
-              width: 52,
-              height: 52,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEEEEEE),
-                shape: BoxShape.circle,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/logo_withBg.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+            SizedBox(width: 52, height: 52, child: _playerPhoto(player)),
 
             const SizedBox(width: 12),
 
@@ -457,6 +463,23 @@ class _StatisticsTabState extends State<StatisticsTab> {
       ),
     );
   }
+
+  /// Row avatar: the player's own photo when there is one, otherwise the
+  /// plain app logo (no coloured disc behind it).
+  Widget _playerPhoto(PlayerStatsData player) {
+    final url = player.playerId.isEmpty ? null : _playerPhotos[player.playerId];
+    if (url == null || url.isEmpty) return _playerPhotoFallback();
+    return ClipOval(
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _playerPhotoFallback(),
+      ),
+    );
+  }
+
+  Widget _playerPhotoFallback() =>
+      Image.asset('assets/images/logo.png', fit: BoxFit.contain);
 
   /// Club crest for a player row, with a neutral fallback icon.
   Widget _clubLogo(PlayerStatsData player) {
