@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/playoff_group_data.dart';
 
@@ -259,12 +260,12 @@ class _StandingsCard extends StatelessWidget {
   Widget _clubLogo(String url) {
     if (url.isNotEmpty) {
       return ClipOval(
-        child: Image.network(
+        child: CachedImage(
           url,
           width: 22,
           height: 22,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stack) => _fallbackLogo(),
+          errorBuilder: (_) => _fallbackLogo(),
         ),
       );
     }

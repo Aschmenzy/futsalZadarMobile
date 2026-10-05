@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_media.dart';
@@ -79,9 +80,9 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
           (!fresh.isScheduled || startedElsewhere) &&
           fresh.matchState == null) {
         try {
-          withState = await _streamFor(fresh)
-              .first
-              .timeout(const Duration(seconds: 5));
+          withState = await _streamFor(
+            fresh,
+          ).first.timeout(const Duration(seconds: 5));
         } catch (_) {
           withState = fresh;
         }
@@ -92,7 +93,8 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
         _match = withState;
         if (withState.media.isNotEmpty) _media = withState.media;
 
-        if ((_isRunning(withState) || startedElsewhere) && _liveStream == null) {
+        if ((_isRunning(withState) || startedElsewhere) &&
+            _liveStream == null) {
           _liveStream = _streamFor(withState);
         }
         if (_tabController.length != _tabCount) {
@@ -132,7 +134,12 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
   }
 
   Widget _buildPage(MatchData match) {
-    final tabs = ['Detalji', 'Sastav', 'Tablica', if (_hasPhotos) 'Fotografije'];
+    final tabs = [
+      'Detalji',
+      'Sastav',
+      'Tablica',
+      if (_hasPhotos) 'Fotografije',
+    ];
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
@@ -214,10 +221,10 @@ class _MatchDetailsPageState extends State<MatchDetailsPage>
         final photo = _media[index];
         return GestureDetector(
           onTap: () => _openFullscreen(context, _media, index),
-          child: Image.network(
+          child: CachedImage(
             photo.url,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(
+            errorBuilder: (_) => Container(
               color: AppColors.background,
               child: const Icon(
                 Icons.broken_image,
@@ -291,10 +298,10 @@ class _FullscreenGalleryState extends State<_FullscreenGallery> {
         itemBuilder: (context, index) {
           return InteractiveViewer(
             child: Center(
-              child: Image.network(
+              child: CachedImage(
                 widget.photos[index].url,
                 fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Icon(
+                errorBuilder: (_) => const Icon(
                   Icons.broken_image,
                   color: Colors.white54,
                   size: 64,

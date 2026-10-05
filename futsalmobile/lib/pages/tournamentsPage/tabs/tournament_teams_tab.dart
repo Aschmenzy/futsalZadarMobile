@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/tournament/tournament_data.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -216,10 +217,10 @@ class _TournamentTeamsTabState extends State<TournamentTeamsTab> {
         width: 36,
         height: 36,
         child: team.logo.isNotEmpty
-            ? Image.network(
+            ? CachedImage(
                 team.logo,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _logoPlaceholder(),
+                errorBuilder: (_) => _logoPlaceholder(),
               )
             : _logoPlaceholder(),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/pages/newsDetails/widgets/news_appBar.dart';
 import 'package:intl/intl.dart';
@@ -33,7 +34,7 @@ class NewsDetailsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 imageUrl != null && imageUrl!.isNotEmpty
-                    ? Image.network(imageUrl!, fit: BoxFit.cover)
+                    ? CachedImage(imageUrl!, fit: BoxFit.cover)
                     : Image.asset(
                         'assets/images/newsImage.png',
                         fit: BoxFit.fitWidth,

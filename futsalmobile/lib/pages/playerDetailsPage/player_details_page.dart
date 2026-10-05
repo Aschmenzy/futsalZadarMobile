@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
@@ -237,7 +238,7 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                           children: [
                             if (widget.clubData.clubProfileImg.isNotEmpty)
                               ClipOval(
-                                child: Image.network(
+                                child: CachedImage(
                                   widget.clubData.clubProfileImg,
                                   width: 28,
                                   height: 28,
@@ -370,10 +371,10 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
             ),
             child: ClipOval(
               child: logoUrl != null && logoUrl.isNotEmpty
-                  ? Image.network(
+                  ? CachedImage(
                       logoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(
+                      errorBuilder: (_) => Icon(
                         Icons.sports_soccer,
                         size: 20,
                         color: AppColors.ternaryGray,
@@ -404,12 +405,12 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   Widget _buildAvatar() {
     if (widget.player.profilePicture.isNotEmpty) {
       return ClipOval(
-        child: Image.network(
+        child: CachedImage(
           widget.player.profilePicture,
           width: 90,
           height: 90,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _initialsAvatar(),
+          errorBuilder: (_) => _initialsAvatar(),
         ),
       );
     }

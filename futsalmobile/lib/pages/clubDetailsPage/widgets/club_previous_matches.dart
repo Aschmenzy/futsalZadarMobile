@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
@@ -132,12 +133,12 @@ class _ClubPreviousMatchesState extends State<ClubPreviousMatches> {
                         children: [
                           ClipOval(
                             child: logo.isNotEmpty
-                                ? Image.network(
+                                ? CachedImage(
                                     logo,
                                     width: 32,
                                     height: 32,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => _fallbackLogo(),
+                                    errorBuilder: (_) => _fallbackLogo(),
                                   )
                                 : _fallbackLogo(),
                           ),
@@ -170,7 +171,11 @@ class _ClubPreviousMatchesState extends State<ClubPreviousMatches> {
         color: AppColors.background,
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.sports_soccer, size: 16, color: AppColors.ternaryGray),
+      child: const Icon(
+        Icons.sports_soccer,
+        size: 16,
+        color: AppColors.ternaryGray,
+      ),
     );
   }
 }

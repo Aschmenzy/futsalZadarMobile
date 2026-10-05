@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 
@@ -393,7 +394,7 @@ class UtakmicaContainer extends StatelessWidget {
                 width: screenWidth * 0.08,
                 height: screenWidth * 0.08,
                 child: teamLogo.isNotEmpty
-                    ? Image.network(teamLogo, fit: BoxFit.cover)
+                    ? CachedImage(teamLogo, fit: BoxFit.cover)
                     : Image.asset('assets/images/newsImage.png', scale: 0.7),
               ),
               SizedBox(width: screenWidth * 0.03),

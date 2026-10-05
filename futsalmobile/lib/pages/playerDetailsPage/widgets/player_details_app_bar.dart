@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 
 class PlayerDetailsAppBar extends StatelessWidget
@@ -97,7 +98,7 @@ class PlayerDetailsAppBar extends StatelessWidget
                     ),
                     child: ClipOval(
                       child: clubLogo.isNotEmpty
-                          ? Image.network(clubLogo, fit: BoxFit.cover)
+                          ? CachedImage(clubLogo, fit: BoxFit.cover)
                           : const Icon(Icons.sports_soccer, color: Colors.grey),
                     ),
                   ),

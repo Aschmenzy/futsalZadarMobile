@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 
@@ -171,10 +172,10 @@ class _TeamLogo extends StatelessWidget {
         width: 20,
         height: 20,
         child: url.isNotEmpty
-            ? Image.network(
+            ? CachedImage(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _placeholder(),
+                errorBuilder: (_) => _placeholder(),
               )
             : _placeholder(),
       ),

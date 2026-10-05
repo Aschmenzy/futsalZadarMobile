@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 
 class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -100,7 +101,7 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
                       shape: BoxShape.circle,
                     ),
                     child: ClipOval(
-                      child: Image.network(clubLogo!, fit: BoxFit.cover),
+                      child: CachedImage(clubLogo!, fit: BoxFit.cover),
                     ),
                   ),
                   const SizedBox(width: 12),

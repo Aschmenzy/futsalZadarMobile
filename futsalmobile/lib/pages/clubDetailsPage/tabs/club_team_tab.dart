@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
@@ -217,12 +218,12 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
   Widget _buildAvatar(PlayerData player) {
     if (player.profilePicture.isNotEmpty) {
       return ClipOval(
-        child: Image.network(
+        child: CachedImage(
           player.profilePicture,
           width: 42,
           height: 42,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _initialsAvatar(player),
+          errorBuilder: (_) => _initialsAvatar(player),
         ),
       );
     }

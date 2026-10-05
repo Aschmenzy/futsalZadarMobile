@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/club_cetails_page.dart';
@@ -302,12 +303,12 @@ class MatchDetailsAppBar extends StatelessWidget {
 Widget _teamLogo(String? logoUrl) {
   if (logoUrl != null && logoUrl.isNotEmpty) {
     return ClipOval(
-      child: Image.network(
+      child: CachedImage(
         logoUrl,
         width: 72,
         height: 72,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _fallbackLogo(),
+        errorBuilder: (_) => _fallbackLogo(),
       ),
     );
   }

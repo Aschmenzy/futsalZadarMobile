@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 
@@ -23,18 +24,18 @@ class TournamentPodium extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final finalTie =
-        _tie((t) => t.id == 'final' || t.round == 'final');
-    final thirdTie =
-        _tie((t) => t.id == '3rd_place' || t.round == '3rd_place');
+    final finalTie = _tie((t) => t.id == 'final' || t.round == 'final');
+    final thirdTie = _tie((t) => t.id == '3rd_place' || t.round == '3rd_place');
 
     if (finalTie?.winner == null) return const SizedBox.shrink();
 
     final winnerId = finalTie!.winner!;
-    final winner =
-        finalTie.teamA?.clubId == winnerId ? finalTie.teamA : finalTie.teamB;
-    final runnerUp =
-        finalTie.teamA?.clubId == winnerId ? finalTie.teamB : finalTie.teamA;
+    final winner = finalTie.teamA?.clubId == winnerId
+        ? finalTie.teamA
+        : finalTie.teamB;
+    final runnerUp = finalTie.teamA?.clubId == winnerId
+        ? finalTie.teamB
+        : finalTie.teamA;
 
     PlayoffTeam? third;
     if (thirdPlace && thirdTie?.winner != null) {
@@ -107,12 +108,12 @@ class _PodiumRow extends StatelessWidget {
         const SizedBox(width: 8),
         if (team != null && team!.clubLogo.isNotEmpty) ...[
           ClipOval(
-            child: Image.network(
+            child: CachedImage(
               team!.clubLogo,
               width: 22,
               height: 22,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox(width: 22, height: 22),
+              errorBuilder: (_) => const SizedBox(width: 22, height: 22),
             ),
           ),
           const SizedBox(width: 8),

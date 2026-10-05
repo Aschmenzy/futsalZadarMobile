@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/widgets/arena_label.dart';
@@ -129,12 +130,12 @@ class NextMatch extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         ClipOval(
-          child: Image.network(
+          child: CachedImage(
             logoUrl,
             width: screenWidth * 0.13,
             height: screenWidth * 0.13,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => CircleAvatar(
+            errorBuilder: (_) => CircleAvatar(
               radius: screenWidth * 0.065,
               child: const Icon(Icons.sports),
             ),

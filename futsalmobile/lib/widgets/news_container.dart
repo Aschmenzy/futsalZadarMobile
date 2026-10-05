@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 
 class NewsContainer extends StatelessWidget {
@@ -33,7 +34,7 @@ class NewsContainer extends StatelessWidget {
                   top: Radius.circular(10),
                 ),
                 child: imageUrl != null && imageUrl!.isNotEmpty
-                    ? Image.network(
+                    ? CachedImage(
                         imageUrl!,
                         width: double.infinity,
                         height: screenHeight * 0.2,

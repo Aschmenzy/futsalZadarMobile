@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/league_data.dart';
@@ -470,10 +471,10 @@ class _StatisticsTabState extends State<StatisticsTab> {
     final url = player.playerId.isEmpty ? null : _playerPhotos[player.playerId];
     if (url == null || url.isEmpty) return _playerPhotoFallback();
     return ClipOval(
-      child: Image.network(
+      child: CachedImage(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _playerPhotoFallback(),
+        errorBuilder: (_) => _playerPhotoFallback(),
       ),
     );
   }
@@ -485,10 +486,10 @@ class _StatisticsTabState extends State<StatisticsTab> {
   Widget _clubLogo(PlayerStatsData player) {
     final url = _logoFor(player);
     if (url == null || url.isEmpty) return _clubLogoFallback();
-    return Image.network(
+    return CachedImage(
       url,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _clubLogoFallback(),
+      errorBuilder: (_) => _clubLogoFallback(),
     );
   }
 

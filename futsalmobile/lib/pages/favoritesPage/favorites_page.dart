@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/club_data.dart';
@@ -617,7 +618,7 @@ class _PlayerFavoriteCardState extends State<_PlayerFavoriteCard> {
                           if (item.clubImageUrl != null &&
                               item.clubImageUrl!.isNotEmpty)
                             ClipOval(
-                              child: Image.network(
+                              child: CachedImage(
                                 item.clubImageUrl!,
                                 width: 18,
                                 height: 18,
@@ -852,12 +853,12 @@ class _CircleAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (imageUrl.isNotEmpty) {
       return ClipOval(
-        child: Image.network(
+        child: CachedImage(
           imageUrl,
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _initials(),
+          errorBuilder: (_) => _initials(),
         ),
       );
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 
@@ -99,12 +100,18 @@ class MatchRowWidget extends StatelessWidget {
             children: [
               Text(
                 match.homeTeamGoals.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 5),
               Text(
                 match.awayTeamGoals.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -115,10 +122,7 @@ class MatchRowWidget extends StatelessWidget {
             color: AppColors.ternaryGray,
           ),
           const SizedBox(width: 8),
-          SizedBox(
-            width: 36,
-            child: trailing ?? const SizedBox.shrink(),
-          ),
+          SizedBox(width: 36, child: trailing ?? const SizedBox.shrink()),
           const SizedBox(width: 4),
         ],
       ),
@@ -165,10 +169,10 @@ class MatchRowWidget extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: ClipOval(
-            child: Image.network(
+            child: CachedImage(
               logo,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const Icon(Icons.sports, size: 16),
+              errorBuilder: (_) => const Icon(Icons.sports, size: 16),
             ),
           ),
         ),

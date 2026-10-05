@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -76,12 +77,12 @@ class _SponsorsBannerState extends State<SponsorsBanner> {
         },
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
+          child: CachedImage(
             sponsor.imageUrl,
             width: double.infinity,
             height: screenHeight * 0.12,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            errorBuilder: (_) => const SizedBox.shrink(),
           ),
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 
@@ -114,12 +115,12 @@ class _TeamRow extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: clubLogo != null && clubLogo!.isNotEmpty
-              ? Image.network(
+              ? CachedImage(
                   clubLogo!,
                   width: 36,
                   height: 36,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _placeholder(),
+                  errorBuilder: (_) => _placeholder(),
                 )
               : _placeholder(),
         ),

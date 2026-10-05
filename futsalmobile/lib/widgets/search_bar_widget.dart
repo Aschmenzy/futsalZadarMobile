@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
@@ -284,10 +285,10 @@ class _ResultTile extends StatelessWidget {
               ),
               child: ClipOval(
                 child: entry.photoUrl != null && entry.photoUrl!.isNotEmpty
-                    ? Image.network(
+                    ? CachedImage(
                         entry.photoUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _fallbackIcon(),
+                        errorBuilder: (_) => _fallbackIcon(),
                       )
                     : _fallbackIcon(),
               ),

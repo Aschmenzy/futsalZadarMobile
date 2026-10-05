@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_player.dart';
@@ -76,14 +77,15 @@ class MatchLineupWidget extends StatelessWidget {
     required String? goalkeeperId,
   }) {
     // Numbered players first in shirt order, unnumbered ones alphabetically.
-    final sorted = [...players]..sort((a, b) {
-      final na = int.tryParse(shirtNumbers[a.id] ?? '');
-      final nb = int.tryParse(shirtNumbers[b.id] ?? '');
-      if (na != null && nb != null) return na.compareTo(nb);
-      if (na != null) return -1;
-      if (nb != null) return 1;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+    final sorted = [...players]
+      ..sort((a, b) {
+        final na = int.tryParse(shirtNumbers[a.id] ?? '');
+        final nb = int.tryParse(shirtNumbers[b.id] ?? '');
+        if (na != null && nb != null) return na.compareTo(nb);
+        if (na != null) return -1;
+        if (nb != null) return 1;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
 
     return Container(
       decoration: BoxDecoration(
@@ -137,10 +139,10 @@ class MatchLineupWidget extends StatelessWidget {
             ),
             child: ClipOval(
               child: logo.isNotEmpty
-                  ? Image.network(
+                  ? CachedImage(
                       logo,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
+                      errorBuilder: (_) => const Icon(
                         Icons.sports_soccer,
                         size: 18,
                         color: AppColors.ternaryGray,

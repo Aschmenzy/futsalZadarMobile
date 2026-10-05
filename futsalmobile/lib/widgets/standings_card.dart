@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/clubStanding.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
@@ -386,8 +387,9 @@ class _StandingsCardState extends State<StandingsCard> {
 
     final isHighlighted =
         club != null &&
-        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
-         widget.highlightedTeamNames.contains(club.clubName));
+        ((widget.highlightedClubId != null &&
+                club.clubId == widget.highlightedClubId) ||
+            widget.highlightedTeamNames.contains(club.clubName));
 
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
@@ -469,8 +471,9 @@ class _StandingsCardState extends State<StandingsCard> {
 
     final isHighlighted =
         club != null &&
-        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
-         widget.highlightedTeamNames.contains(club.clubName));
+        ((widget.highlightedClubId != null &&
+                club.clubId == widget.highlightedClubId) ||
+            widget.highlightedTeamNames.contains(club.clubName));
 
     return GestureDetector(
       onTap: club == null ? null : () => _onClubTap(club),
@@ -558,8 +561,9 @@ class _StandingsCardState extends State<StandingsCard> {
   Widget _buildFormRow(int rank, ClubStanding? club) {
     final isHighlighted =
         club != null &&
-        ((widget.highlightedClubId != null && club.clubId == widget.highlightedClubId) ||
-         widget.highlightedTeamNames.contains(club.clubName));
+        ((widget.highlightedClubId != null &&
+                club.clubId == widget.highlightedClubId) ||
+            widget.highlightedTeamNames.contains(club.clubName));
 
     final results = club != null ? (_form[club.clubName] ?? []) : <String>[];
 
@@ -675,12 +679,12 @@ class _StandingsCardState extends State<StandingsCard> {
     if (club == null) return const SizedBox(width: 22);
     if (club.clubLogo.isNotEmpty) {
       return ClipOval(
-        child: Image.network(
+        child: CachedImage(
           club.clubLogo,
           width: 22,
           height: 22,
           fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => _fallbackLogo(),
+          errorBuilder: (_) => _fallbackLogo(),
         ),
       );
     }
