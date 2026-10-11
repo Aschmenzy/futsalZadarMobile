@@ -951,41 +951,117 @@ class FirebaseService {
     }
   }
 
-  Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(
+  /// Every player-stats row of a league season (cached per league + season).
+  Future<List<PlayerStatsData>> _loadLeagueStats(
     String leagueCode, {
     String? season,
   }) async {
     final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
     final key = 'stats_${leagueCode}_$seasonId';
 
-    List<PlayerStatsData> players;
-
     final cached = _cache.getRaw(key);
     if (cached != null) {
-      players = (cached as List)
+      return (cached as List)
           .map(
             (e) =>
                 PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
           )
           .toList();
-    } else {
-      try {
-        final list = await _getList(
-          '/api/public/stats?league=$leagueCode&season=$seasonId',
-        );
-        players = list
-            .map(
-              (e) =>
-                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
-            )
-            .toList();
-        await _cache.setRaw(key, list, CacheService.statsTTL);
-      } catch (e) {
-        throw Exception('Greska pri dohvatu statistika igraca: $e');
-      }
     }
+    try {
+      final list = await _getList(
+        '/api/public/stats?league=$leagueCode&season=$seasonId',
+      );
+      final players = list
+          .map(
+            (e) =>
+                PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+      await _cache.setRaw(key, list, CacheService.statsTTL);
+      return players;
+    } catch (e) {
+      throw Exception('Greska pri dohvatu statistika igraca: $e');
+    }
+  }
 
-    // Full lists — callers show a top-5 preview and the rest on tap.
+  Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(
+    String leagueCode, {
+    String? season,
+  }) async {
+    final players = await _loadLeagueStats(leagueCode, season: season);
+    return groupPlayerStats(players);
+  }
+
+  /// Stats rows of one club. Matched on club id, with the club name as a
+  /// fallback for rows written before clubId was stored.
+  Future<List<PlayerStatsData>> getClubPlayerStats(
+    String leagueCode, {
+    required String clubId,
+    required String clubName,
+    String? season,
+  }) async {
+    final players = await _loadLeagueStats(leagueCode, season: season);
+    final nameKey = clubName.trim().toLowerCase();
+    return players
+        .where(
+          (p) => p.clubId.isNotEmpty
+              ? p.clubId == clubId
+              : p.clubName.trim().toLowerCase() == nameKey,
+        )
+        .toList();
+  }
+
+  /// Highest round the club has already played (finished or awarded) this
+  /// season; 0 before its first match.
+  Future<int> getLastPlayedRound(
+    String leagueCode,
+    String clubName, {
+    String? season,
+  }) async {
+    final matches = await getAllMatches(leagueCode, season: season);
+    var last = 0;
+    for (final m in matches) {
+      if (!m.isPlayed) continue;
+      if (m.homeTeam != clubName && m.awayTeam != clubName) continue;
+      if (m.round > last) last = m.round;
+    }
+    return last;
+  }
+
+  /// Players of a club serving a ban right now, as playerId → the last round
+  /// they miss. `suspendedUntilRound` is inclusive (a red card in round 1
+  /// stores 2), so a ban is still running while it is past the club's last
+  /// played round.
+  Future<Map<String, int>> getSuspendedPlayers(
+    String leagueCode, {
+    required String clubId,
+    required String clubName,
+    String? season,
+  }) async {
+    final players = await getClubPlayerStats(
+      leagueCode,
+      clubId: clubId,
+      clubName: clubName,
+      season: season,
+    );
+    final lastRound = await getLastPlayedRound(
+      leagueCode,
+      clubName,
+      season: season,
+    );
+    return {
+      for (final p in players)
+        if (p.playerId.isNotEmpty && p.suspendedUntilRound.toInt() > lastRound)
+          p.playerId: p.suspendedUntilRound.toInt(),
+    };
+  }
+
+  /// Leaderboards and accumulated-yellow groups for a set of stats rows.
+  /// Full lists — callers show a top-5 preview and the rest on tap.
+  static Map<String, List<PlayerStatsData>> groupPlayerStats(
+    List<PlayerStatsData> players,
+  ) {
     final scorers = players.where((p) => p.totalGoals > 0).toList()
       ..sort((a, b) => b.totalGoals.compareTo(a.totalGoals));
     final redCards = players.where((p) => p.redCards > 0).toList()

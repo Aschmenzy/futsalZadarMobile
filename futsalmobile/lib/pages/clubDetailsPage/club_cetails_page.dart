@@ -6,6 +6,7 @@ import 'package:futsalmobile/pages/clubDetailsPage/tabs/club_matches_tab.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/tabs/club_team_tab.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/tabs/club_table_tab.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/clubs_details_appBar.dart';
+import 'package:futsalmobile/pages/leaguePage/leagueDetails/tabs/stats_tab.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 
@@ -43,7 +44,7 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadClub();
   }
 
@@ -154,6 +155,14 @@ class _ClubCetailsPageState extends State<ClubCetailsPage>
                 clubData: _clubData!,
                 leagueId: widget.leagueId,
                 leaugeName: widget.leagueName,
+                season: widget.season,
+              ),
+              StatisticsTab(
+                leagueId: widget.leagueId,
+                leagueName: widget.leagueName,
+                season: widget.season,
+                clubId: _clubData!.id,
+                clubName: _clubData!.clubName,
               ),
             ],
           ),

@@ -141,6 +141,10 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       bottom: TabBar(
         controller: tabController,
+        // Five tabs don't fit evenly on narrow phones — let them scroll.
+        isScrollable: true,
+        tabAlignment: TabAlignment.center,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 12),
         indicatorColor: const Color(0xFFE91E63),
         indicatorWeight: 3,
         labelColor: Colors.white,
@@ -160,6 +164,7 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
           Tab(text: 'Utakmice'),
           Tab(text: 'Tablica'),
           Tab(text: 'Ekipa'),
+          Tab(text: 'Statistika'),
         ],
       ),
     );

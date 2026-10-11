@@ -1,4 +1,5 @@
 import 'match_media.dart';
+import 'match_official.dart';
 import 'match_player.dart';
 import 'match_state.dart';
 
@@ -22,6 +23,10 @@ class MatchData {
   final String delegate;
   final String? referee1;
   final String? referee2;
+
+  // Trainer / voditelj entries from the match sheet; empty on older matches.
+  final List<MatchOfficial> homeOfficials;
+  final List<MatchOfficial> awayOfficials;
 
   // null/empty until the arena is decided
   final String? footballArena;
@@ -57,6 +62,8 @@ class MatchData {
     required this.delegate,
     this.referee1,
     this.referee2,
+    this.homeOfficials = const [],
+    this.awayOfficials = const [],
     this.footballArena,
     this.matchState,
     this.originalHomeScore,
@@ -108,6 +115,8 @@ class MatchData {
     'delegate': delegate,
     'referee1': referee1,
     'referee2': referee2,
+    'homeOfficials': homeOfficials.map((o) => o.toJson()).toList(),
+    'awayOfficials': awayOfficials.map((o) => o.toJson()).toList(),
     'footballArena': footballArena,
     'matchState': matchState?.toJson(),
     'originalHomeScore': originalHomeScore,
@@ -150,6 +159,8 @@ class MatchData {
       delegate: map['delegate']?.toString() ?? '',
       referee1: map['referee1']?.toString(),
       referee2: map['referee2']?.toString(),
+      homeOfficials: MatchOfficial.listFrom(map['homeOfficials']),
+      awayOfficials: MatchOfficial.listFrom(map['awayOfficials']),
       footballArena: map['footballArena']?.toString(),
       matchState: map['matchState'] != null
           ? MatchState.fromJson(
@@ -214,6 +225,8 @@ class MatchData {
       delegate: map['delegate'] as String? ?? '',
       referee1: map['referee1'] as String?,
       referee2: map['referee2'] as String?,
+      homeOfficials: MatchOfficial.listFrom(map['homeOfficials']),
+      awayOfficials: MatchOfficial.listFrom(map['awayOfficials']),
       footballArena: map['footballArena'] as String?,
       matchState: map['matchState'] != null
           ? MatchState.fromFirestore(map['matchState'] as Map<String, dynamic>)

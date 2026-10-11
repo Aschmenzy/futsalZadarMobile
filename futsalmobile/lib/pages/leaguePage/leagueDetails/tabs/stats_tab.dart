@@ -2,18 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
-import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/pro_badge.dart';
 
+/// Player statistics for a league season. With [clubId] / [clubName] set it
+/// narrows to that club's players and leads with who is suspended right now.
 class StatisticsTab extends StatefulWidget {
-  final LeagueData league;
+  final String leagueId;
+  final String leagueName;
   final String season;
+  final String? clubId;
+  final String? clubName;
 
-  const StatisticsTab({super.key, required this.league, required this.season});
+  const StatisticsTab({
+    super.key,
+    required this.leagueId,
+    required this.leagueName,
+    required this.season,
+    this.clubId,
+    this.clubName,
+  });
 
   @override
   State<StatisticsTab> createState() => _StatisticsTabState();
@@ -27,6 +38,12 @@ class _StatisticsTabState extends State<StatisticsTab> {
   List<PlayerStatsData> _oneYellow = [];
   List<PlayerStatsData> _twoYellows = [];
   List<PlayerStatsData> _threeYellows = [];
+
+  /// Club view only: players banned right now, and playerId -> last round
+  /// they miss.
+  List<PlayerStatsData> _suspended = [];
+  Map<String, int> _suspendedUntil = {};
+
   bool _loading = true;
   String? _error;
 
@@ -45,19 +62,22 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   static String _nameKey(String name) => name.trim().toLowerCase();
 
+  bool get _isClubView => widget.clubId != null && widget.clubName != null;
+
   /// Loads club logos for the league so player rows can show the real crest,
   /// plus the players' own profile photos for the row avatar.
   Future<void> _loadClubLogos() async {
     final logos = <String, String>{};
     final photos = <String, String>{};
     try {
-      final clubs = await _service.getClubsByLeague(widget.league.id);
+      final clubs = await _service.getClubsByLeague(widget.leagueId);
       for (final club in clubs) {
+        if (_isClubView && club.id != widget.clubId) continue;
         // Players come from the same cached payload the profile page uses,
         // so this costs no extra request.
         try {
           final players = await _service.getPlayersByClub(
-            widget.league.id,
+            widget.leagueId,
             club.id,
           );
           for (final p in players) {
@@ -73,7 +93,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
     // Fallback: standings also carry a logo per club.
     try {
       final standings = await _service.getAllClubsInLeague(
-        widget.league.id,
+        widget.leagueId,
         season: widget.season,
       );
       for (final s in standings) {
@@ -100,13 +120,45 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   Future<void> _loadData() async {
     try {
-      final stats = await _service.getAllLeaguePlayerStats(
-        widget.league.id,
-        season: widget.season,
-      );
+      final Map<String, List<PlayerStatsData>> stats;
+      var suspended = <PlayerStatsData>[];
+      var suspendedUntil = <String, int>{};
+      if (_isClubView) {
+        final players = await _service.getClubPlayerStats(
+          widget.leagueId,
+          clubId: widget.clubId!,
+          clubName: widget.clubName!,
+          season: widget.season,
+        );
+        stats = FirebaseService.groupPlayerStats(players);
+        try {
+          suspendedUntil = await _service.getSuspendedPlayers(
+            widget.leagueId,
+            clubId: widget.clubId!,
+            clubName: widget.clubName!,
+            season: widget.season,
+          );
+        } catch (_) {}
+        suspended =
+            players
+                .where((p) => suspendedUntil.containsKey(p.playerId))
+                .toList()
+              ..sort(
+                (a, b) => suspendedUntil[b.playerId]!.compareTo(
+                  suspendedUntil[a.playerId]!,
+                ),
+              );
+      } else {
+        stats = await _service.getAllLeaguePlayerStats(
+          widget.leagueId,
+          season: widget.season,
+        );
+      }
 
       if (!mounted) return;
       setState(() {
+        _suspended = suspended;
+        _suspendedUntil = suspendedUntil;
         _topScorers = stats['topScorers']!;
         _topRedCards = stats['topRedCards']!;
         _topYellowCards = stats['topYellowCards']!;
@@ -133,9 +185,22 @@ class _StatisticsTabState extends State<StatisticsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Column(
             children: [
+              // 0. Suspended players (club view)
+              if (_isClubView) ...[
+                _buildStatCard(
+                  title: 'Suspendirani igrači',
+                  titleIcon: Icons.block,
+                  titleColor: _suspendedColor,
+                  players: _suspended,
+                  trailing: (p) => _suspensionLabel(p),
+                  emptyText: 'Nema suspendiranih igrača',
+                ),
+                const SizedBox(height: 10),
+              ],
+
               // 1. Top Scorers
               _buildStatCard(
-                title: 'Vodeći strijelci u ligi',
+                title: _isClubView ? 'Strijelci' : 'Vodeći strijelci u ligi',
                 players: _topScorers,
                 trailing: (p) => _statWithIcon(
                   label: '${p.totalGoals.toInt()}',
@@ -146,7 +211,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
               // 2. Top Red Cards
               _buildStatCard(
-                title: 'Vodeći po crvenim kartonima',
+                title: _isClubView
+                    ? 'Crveni kartoni'
+                    : 'Vodeći po crvenim kartonima',
                 players: _topRedCards,
                 trailing: (p) =>
                     _statWithRedCard(label: '${p.redCards.toInt()}'),
@@ -155,7 +222,9 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
               // 3. Top Yellow Cards
               _buildStatCard(
-                title: 'Vodeći po žutim kartonima',
+                title: _isClubView
+                    ? 'Žuti kartoni'
+                    : 'Vodeći po žutim kartonima',
                 players: _topYellowCards,
                 trailing: (p) =>
                     _statWithYellowCard(label: '${p.yellowCards.toInt()}'),
@@ -366,30 +435,45 @@ class _StatisticsTabState extends State<StatisticsTab> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEEEEEE),
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(child: _clubLogo(player)),
-                      ),
-                      const SizedBox(width: 5),
+                  if (_isClubView) ...[
+                    if (_suspendedUntil.containsKey(player.playerId)) ...[
+                      const SizedBox(height: 3),
                       Text(
-                        player.clubName,
+                        'Suspendiran',
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w600,
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: _suspendedColor,
                         ),
                       ),
                     ],
-                  ),
+                  ] else ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEEEEEE),
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(child: _clubLogo(player)),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          player.clubName,
+                          style: TextStyle(
+                            fontFamily: AppFonts.roboto,
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -409,7 +493,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
   Future<void> _openPlayer(PlayerStatsData stats) async {
     if (_openingPlayer) return;
     _openingPlayer = true;
-    final leagueId = widget.league.id;
+    final leagueId = widget.leagueId;
 
     ClubData? club;
     PlayerData? player;
@@ -459,7 +543,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
           player: player!,
           leagueId: leagueId,
           clubData: club!,
-          leaugeName: widget.league.name,
+          leaugeName: widget.leagueName,
         ),
       ),
     );
@@ -496,6 +580,29 @@ class _StatisticsTabState extends State<StatisticsTab> {
   Widget _clubLogoFallback() => Center(
     child: Icon(Icons.shield_outlined, size: 13, color: Colors.grey.shade500),
   );
+
+  static const _suspendedColor = Color(0xFFD32F2F);
+
+  /// "do 5. kola" - last round the suspended player misses.
+  Widget _suspensionLabel(PlayerStatsData player) {
+    final until = _suspendedUntil[player.playerId];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _suspendedColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        until == null ? 'Suspendiran' : 'do $until. kola',
+        style: TextStyle(
+          fontFamily: AppFonts.roboto,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+          color: _suspendedColor,
+        ),
+      ),
+    );
+  }
 
   /// Bold number + small circular asset icon (e.g. soccer ball)
   Widget _statWithIcon({required String label, required String icon}) {

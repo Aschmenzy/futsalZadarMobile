@@ -15,12 +15,14 @@ class ClubTeamTab extends StatefulWidget {
   final ClubData clubData;
   final String leagueId;
   final String leaugeName;
+  final String? season;
 
   const ClubTeamTab({
     super.key,
     required this.clubData,
     required this.leagueId,
     required this.leaugeName,
+    this.season,
   });
 
   @override
@@ -30,6 +32,9 @@ class ClubTeamTab extends StatefulWidget {
 class _ClubTeamTabState extends State<ClubTeamTab> {
   final _service = FirebaseService();
   List<PlayerData> _players = [];
+
+  /// playerId -> last round of a ban still running.
+  Map<String, int> _suspendedUntil = {};
   bool _loading = true;
   String? _error;
 
@@ -37,6 +42,20 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
   void initState() {
     super.initState();
     _loadPlayers();
+    _loadSuspensions();
+  }
+
+  Future<void> _loadSuspensions() async {
+    try {
+      final suspended = await _service.getSuspendedPlayers(
+        widget.leagueId,
+        clubId: widget.clubData.id,
+        clubName: widget.clubData.clubName,
+        season: widget.season,
+      );
+      if (!mounted || suspended.isEmpty) return;
+      setState(() => _suspendedUntil = suspended);
+    } catch (_) {}
   }
 
   Future<void> _loadPlayers() async {
@@ -200,6 +219,18 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
                       ],
                     ],
                   ),
+                  if (_suspendedUntil[player.id] case final until?) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'Suspendiran do $until. kola',
+                      style: TextStyle(
+                        fontFamily: AppFonts.roboto,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: const Color(0xFFD32F2F),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -236,19 +236,12 @@ class _LeagueFavoriteCardState extends State<_LeagueFavoriteCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Logo
-          Container(
+          SizedBox(
             width: 56,
             height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/images/logo_withBg.png',
-                fit: BoxFit.cover,
-              ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(width: 12),

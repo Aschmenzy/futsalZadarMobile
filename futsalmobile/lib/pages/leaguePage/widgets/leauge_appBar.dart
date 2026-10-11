@@ -97,18 +97,12 @@ class LeagueAppBar extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   // Logo lige
                   clubLogo ??
-                      Container(
+                      SizedBox(
                         width: 60,
                         height: 60,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/logo_withBg.png',
-                            fit: BoxFit.cover,
-                          ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                   const SizedBox(width: 12),

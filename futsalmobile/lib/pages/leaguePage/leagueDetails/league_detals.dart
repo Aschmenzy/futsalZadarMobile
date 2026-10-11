@@ -98,7 +98,8 @@ class _LeagueDetailsState extends State<LeagueDetails>
                     ),
                     StatisticsTab(
                       key: ValueKey(_selectedSeason),
-                      league: widget.league,
+                      leagueId: widget.league.id,
+                      leagueName: widget.league.name,
                       season: _selectedSeason,
                     ),
                   ],

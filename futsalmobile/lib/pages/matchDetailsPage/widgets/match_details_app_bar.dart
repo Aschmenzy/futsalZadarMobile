@@ -48,6 +48,37 @@ class MatchDetailsAppBar extends StatelessWidget {
     return formatted;
   }
 
+  /// "04.10.2026. • 17:00" — kickoff shown above the score once the match
+  /// has started, since the status label no longer carries the date.
+  String get _kickoffLabel {
+    final parts = match.matchDate.split('-');
+    final date = parts.length == 3
+        ? '${parts[2]}.${parts[1]}.${parts[0]}.'
+        : match.matchDate;
+    return match.matchTime.isEmpty ? date : '$date • ${match.matchTime}';
+  }
+
+  Widget _kickoffPill() {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          _kickoffLabel,
+          style: TextStyle(
+            fontFamily: AppFonts.roboto,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.ternaryGray,
+          ),
+        ),
+      ),
+    );
+  }
+
   Color get _statusColor {
     if (match.isLive) return AppColors.liveGame;
     if (_isPaused) return AppColors.accentYellow;
@@ -214,7 +245,12 @@ class MatchDetailsAppBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 50),
+            if (!match.isScheduled && match.matchDate.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _kickoffPill(),
+              const SizedBox(height: 18),
+            ] else
+              const SizedBox(height: 50),
             // Teams + score row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
