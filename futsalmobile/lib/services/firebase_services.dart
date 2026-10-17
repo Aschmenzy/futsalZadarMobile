@@ -10,6 +10,7 @@ import 'package:futsalmobile/models/playoff_group_data.dart';
 import 'package:futsalmobile/models/playoff_info.dart';
 import 'package:futsalmobile/models/playoff_tie.dart';
 import 'package:futsalmobile/models/sponsor_data.dart';
+import 'package:futsalmobile/models/team_lead_data.dart';
 import 'package:futsalmobile/models/tournament/tournament_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
@@ -55,10 +56,10 @@ class FirebaseService {
       'stats_',
       'upcoming_matches_',
     ],
-    'lastUpdatedPlayers': ['players_', 'search_index_'],
+    'lastUpdatedPlayers': ['players_', 'search_index_', 'voditelji_'],
     'lastUpdatedNews': ['latest_news_', 'news_all'],
     'lastUpdatedSponsors': ['sponsors'],
-    'lastUpdatedClubs': ['clubs_', 'search_index_'],
+    'lastUpdatedClubs': ['clubs_', 'search_index_', 'voditelji_'],
     // Playoff structure lives in Firestore, not Hive — empty prefix list, but
     // the timestamp is still tracked so we know when to re-run checkPlayoffs().
     'lastUpdatedPlayoff': [],
@@ -358,6 +359,57 @@ class FirebaseService {
     } catch (e) {
       throw Exception('Greska pri dohvatu kluba: $e');
     }
+  }
+
+  /// Voditelji of a club active in [season], read from the club's
+  /// `voditelji` subcollection (a handful of docs, only when a club page is
+  /// opened). Falls back to the club record's `teamLead` string for clubs
+  /// that have no voditelji docs yet.
+  Future<List<TeamLeadData>> getClubTeamLeads(
+    ClubData club,
+    String leagueId, {
+    String? season,
+  }) async {
+    final key = 'voditelji_${leagueId}_${club.id}';
+    List<TeamLeadData> all;
+
+    final cached = _cache.getRaw(key);
+    if (cached != null) {
+      all = (cached as List)
+          .map(
+            (e) => TeamLeadData.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+    } else {
+      try {
+        final snap = await _db
+            .collection(leagueId)
+            .doc(club.id)
+            .collection('voditelji')
+            .get();
+        all =
+            snap.docs
+                .map((d) => TeamLeadData.fromJson({...d.data(), 'id': d.id}))
+                .where((t) => t.fullName.isNotEmpty)
+                .toList()
+              ..sort((a, b) => a.fullName.compareTo(b.fullName));
+        await _cache.setRaw(
+          key,
+          all.map((t) => t.toJson()).toList(),
+          CacheService.playersTTL,
+        );
+      } catch (_) {
+        all = [];
+      }
+    }
+
+    final seasonId = season ?? _cachedSeason;
+    final active = all.where((t) => t.isActiveIn(seasonId)).toList();
+    if (active.isNotEmpty) return active;
+    if (club.teamLead.trim().isNotEmpty) {
+      return [TeamLeadData.fromName(club.teamLead)];
+    }
+    return [];
   }
 
   Future<int> getClubCount(String leagueId) async {
@@ -915,40 +967,8 @@ class FirebaseService {
     String playerId, {
     String? season,
   }) async {
-    try {
-      final seasonId = season ?? _cachedSeason ?? await getActiveSeason();
-      final key = 'stats_${leagueCode}_$seasonId';
-
-      List<PlayerStatsData> players;
-      final cached = _cache.getRaw(key);
-      if (cached != null) {
-        players = (cached as List)
-            .map(
-              (e) =>
-                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
-            )
-            .toList();
-      } else {
-        final list = await _getList(
-          '/api/public/stats?league=$leagueCode&season=$seasonId',
-        );
-        players = list
-            .map(
-              (e) =>
-                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
-            )
-            .toList();
-        await _cache.setRaw(key, list, CacheService.statsTTL);
-      }
-
-      try {
-        return players.firstWhere((p) => p.playerId == playerId);
-      } catch (_) {
-        return null;
-      }
-    } catch (e) {
-      throw Exception('Greska pri dohvatu statistika igraca: $e');
-    }
+    final players = await _loadLeagueStats(leagueCode, season: season);
+    return players.where((p) => p.playerId == playerId).firstOrNull;
   }
 
   /// Every player-stats row of a league season (cached per league + season).
@@ -961,12 +981,14 @@ class FirebaseService {
 
     final cached = _cache.getRaw(key);
     if (cached != null) {
-      return (cached as List)
-          .map(
-            (e) =>
-                PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
-          )
-          .toList();
+      return _withRegistryNames(
+        (cached as List)
+            .map(
+              (e) =>
+                  PlayerStatsData.fromJson(Map<String, dynamic>.from(e as Map)),
+            )
+            .toList(),
+      );
     }
     try {
       final list = await _getList(
@@ -979,10 +1001,51 @@ class FirebaseService {
           )
           .toList();
       await _cache.setRaw(key, list, CacheService.statsTTL);
-      return players;
+      return _withRegistryNames(players);
     } catch (e) {
       throw Exception('Greska pri dohvatu statistika igraca: $e');
     }
+  }
+
+  /// Placeholder name the admin writes when it could not resolve a player
+  /// while processing a match, e.g. "Player 31".
+  static final _placeholderName = RegExp(
+    r'^player\s*\d*$',
+    caseSensitive: false,
+  );
+
+  /// Replaces empty / placeholder stats names with the name from the player
+  /// registry (matched on player id). Best effort: rows stay as they are when
+  /// the registry can't be loaded.
+  Future<List<PlayerStatsData>> _withRegistryNames(
+    List<PlayerStatsData> rows,
+  ) async {
+    bool needsName(PlayerStatsData p) =>
+        p.playerId.isNotEmpty &&
+        (p.playerFullName.trim().isEmpty ||
+            _placeholderName.hasMatch(p.playerFullName.trim()));
+    if (!rows.any(needsName)) return rows;
+
+    final Map<String, String> names;
+    try {
+      final all = await _loadAllPlayers();
+      names = {
+        for (final p in all)
+          if (p['id'] != null)
+            p['id'].toString(): '${p['firstName'] ?? ''} ${p['lastName'] ?? ''}'
+                .trim(),
+      };
+    } catch (_) {
+      return rows;
+    }
+
+    return [
+      for (final p in rows)
+        if (needsName(p) && (names[p.playerId]?.isNotEmpty ?? false))
+          p.copyWith(playerFullName: names[p.playerId])
+        else
+          p,
+    ];
   }
 
   Future<Map<String, List<PlayerStatsData>>> getAllLeaguePlayerStats(

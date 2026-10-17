@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 class PlayerStatsData {
   final String id;
   final String clubId;
@@ -39,6 +41,28 @@ class PlayerStatsData {
 
   num get totalGoals => goals + goals10m + goals6m;
 
+  PlayerStatsData copyWith({String? playerFullName}) => PlayerStatsData(
+    id: id,
+    clubId: clubId,
+    clubName: clubName,
+    clubLogo: clubLogo,
+    fouls: fouls,
+    goals: goals,
+    goals10m: goals10m,
+    goals6m: goals6m,
+    matchesPlayed: matchesPlayed,
+    playerId: playerId,
+    ownGoals: ownGoals,
+    playerFullName: playerFullName != null
+        ? formatPersonName(playerFullName)
+        : this.playerFullName,
+    redCards: redCards,
+    yellowCards: yellowCards,
+    activeYellows: activeYellows,
+    suspendedUntilRound: suspendedUntilRound,
+    isProfessional: isProfessional,
+  );
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'clubId': clubId,
@@ -70,9 +94,12 @@ class PlayerStatsData {
     goals10m: (map['goals10m'] as num?) ?? 0,
     goals6m: (map['goals6m'] as num?) ?? 0,
     matchesPlayed: (map['matchesPlayed'] as num?) ?? 0,
-    playerId: map['playerId']?.toString() ?? map['odFCplayerId']?.toString() ?? '',
+    playerId:
+        map['playerId']?.toString() ?? map['odFCplayerId']?.toString() ?? '',
     ownGoals: (map['ownGoals'] as num?) ?? 0,
-    playerFullName: map['playerFullName']?.toString() ?? map['playerName']?.toString() ?? '',
+    playerFullName: formatPersonName(
+      map['playerFullName']?.toString() ?? map['playerName']?.toString(),
+    ),
     redCards: (map['redCards'] as num?) ?? 0,
     yellowCards: (map['yellowCards'] as num?) ?? 0,
     activeYellows: (map['activeYellows'] as num?) ?? 0,
@@ -97,7 +124,7 @@ class PlayerStatsData {
       matchesPlayed: map['matchesPlayed'] as num? ?? 0,
       playerId: map['odFCplayerId'] as String? ?? '',
       ownGoals: map['ownGoals'] as num? ?? 0,
-      playerFullName: map['playerName'] as String? ?? '',
+      playerFullName: formatPersonName(map['playerName'] as String?),
       redCards: map['redCards'] as num? ?? 0,
       yellowCards: map['yellowCards'] as num? ?? 0,
       activeYellows: map['activeYellows'] as num,

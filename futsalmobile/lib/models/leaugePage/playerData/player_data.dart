@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 class ClubHistoryEntry {
   final String clubId;
   final String clubName;
@@ -83,8 +85,8 @@ class PlayerData {
     id: map['id']?.toString() ?? '',
     clubName: map['clubName']?.toString() ?? '',
     dateOfBirth: _parseDate(map['dateOfBirth']),
-    firstName: map['firstName']?.toString() ?? '',
-    lastName: map['lastName']?.toString() ?? '',
+    firstName: formatPersonName(map['firstName']?.toString()),
+    lastName: formatPersonName(map['lastName']?.toString()),
     firstRegistrationDate: _parseDate(map['firstRegistrationDate']),
     idCardNumber: map['idCardNumber']?.toString() ?? '',
     liga: map['liga']?.toString() ?? '',
@@ -143,8 +145,8 @@ class PlayerData {
       id: map['id']?.toString() ?? docId,
       clubName: map['clubName']?.toString() ?? '',
       dateOfBirth: _parseDate(map['dateOfBirth']),
-      firstName: map['firstName']?.toString() ?? '',
-      lastName: map['lastName']?.toString() ?? '',
+      firstName: formatPersonName(map['firstName']?.toString()),
+      lastName: formatPersonName(map['lastName']?.toString()),
       firstRegistrationDate: _parseDate(map['firstRegistrationDate']),
       idCardNumber: map['idCardNumber']?.toString() ?? '',
       liga: map['liga']?.toString() ?? '',

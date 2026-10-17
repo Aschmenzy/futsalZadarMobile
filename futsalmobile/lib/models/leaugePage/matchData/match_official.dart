@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 /// Team staff entered on the match sheet (`homeOfficials` / `awayOfficials`).
 /// The admin records role, attendance and cards; `name` is usually left empty,
 /// in which case the club record's trainer / teamLead supplies it.
@@ -30,7 +32,7 @@ class MatchOfficial {
 
   factory MatchOfficial.fromJson(Map<String, dynamic> map) => MatchOfficial(
     role: map['role']?.toString() ?? '',
-    name: map['name']?.toString().trim() ?? '',
+    name: formatPersonName(map['name']?.toString()),
     present: map['present'] != false,
     yellowCards: (map['yellowCards'] as num?)?.toInt() ?? 0,
     redCards: (map['redCards'] as num?)?.toInt() ?? 0,

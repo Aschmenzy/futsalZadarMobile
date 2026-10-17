@@ -106,13 +106,20 @@ class _MatchLineupWidgetState extends State<MatchLineupWidget> {
           ('trainer', 'Trener', club?.trainer ?? ''),
           ('voditelj', 'Voditelj', club?.teamLead ?? ''),
         ]) {
-          final entry = officials.where((o) => o.role == role).firstOrNull;
-          if (entry != null && !entry.present) continue;
-          final name = (entry?.name.isNotEmpty ?? false)
-              ? entry!.name
-              : clubName.trim();
-          if (name.isEmpty) continue;
-          rows.add(_staffRow(label, name, entry));
+          // A club can bring several voditelji, each with its own entry.
+          final entries = officials.where((o) => o.role == role).toList();
+          if (entries.isEmpty) {
+            if (clubName.trim().isNotEmpty) {
+              rows.add(_staffRow(label, clubName.trim(), null));
+            }
+            continue;
+          }
+          for (final entry in entries) {
+            if (!entry.present) continue;
+            final name = entry.name.isNotEmpty ? entry.name : clubName.trim();
+            if (name.isEmpty) continue;
+            rows.add(_staffRow(label, name, entry));
+          }
         }
         if (rows.isEmpty) return const SizedBox.shrink();
         return Column(

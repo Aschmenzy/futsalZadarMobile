@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 /// A knockout tournament document from the top-level `tournaments` collection.
 ///
 /// Firestore shape:
@@ -124,12 +126,14 @@ class TournamentPlayer {
   });
 
   factory TournamentPlayer.fromFirestore(String id, Map<String, dynamic> data) {
-    final first = data['firstName']?.toString() ?? '';
-    final last = data['lastName']?.toString() ?? '';
-    final combined = '$first $last'.trim();
+    final combined = formatPersonName(
+      '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}',
+    );
     return TournamentPlayer(
       id: id,
-      name: combined.isNotEmpty ? combined : (data['name']?.toString() ?? ''),
+      name: combined.isNotEmpty
+          ? combined
+          : formatPersonName(data['name']?.toString()),
       isProfessional: data['isProfessional'] == true,
     );
   }
@@ -143,7 +147,7 @@ class TournamentPlayer {
   factory TournamentPlayer.fromJson(Map<String, dynamic> json) {
     return TournamentPlayer(
       id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
+      name: formatPersonName(json['name']?.toString()),
       isProfessional: json['isProfessional'] == true,
     );
   }

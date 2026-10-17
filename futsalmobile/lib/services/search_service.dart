@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 
 class PlayerSearchResult {
   final String id;
@@ -30,8 +31,8 @@ class PlayerSearchResult {
   });
 
   factory PlayerSearchResult.fromMap(Map<String, dynamic> m) {
-    final first = (m['firstName']?.toString() ?? '').trim();
-    final last = (m['lastName']?.toString() ?? '').trim();
+    final first = formatPersonName(m['firstName']?.toString());
+    final last = formatPersonName(m['lastName']?.toString());
     return PlayerSearchResult(
       id: m['id']?.toString() ?? m['_id']?.toString() ?? '',
       firstName: first,

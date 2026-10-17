@@ -1,4 +1,5 @@
 import 'leaugePage/playerData/player_data.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 
 class ClubData {
   final String id;
@@ -35,15 +36,15 @@ class ClubData {
       clubName: map['clubName'] ?? '',
       clubProfileImg: map['clubProfileImg'] ?? '',
       contact: map['contact'] ?? '',
-      contactPerson: map['contactPerson'] ?? '',
+      contactPerson: formatPersonName(map['contactPerson']?.toString()),
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as dynamic).toDate()
           : DateTime.now(),
       dresDomaci: map['dresDomaci'] ?? '',
       dresGostujuci: map['dresGostujuci'] ?? '',
       email: map['email'] ?? '',
-      teamLead: map['teamLead'] ?? '',
-      trainer: map['trainer'] ?? '',
+      teamLead: formatPersonName(map['teamLead']?.toString()),
+      trainer: formatPersonName(map['trainer']?.toString()),
       players: [],
     );
   }
@@ -67,13 +68,13 @@ class ClubData {
     clubName: map['clubName']?.toString() ?? '',
     clubProfileImg: map['clubProfileImg']?.toString() ?? '',
     contact: map['contact']?.toString() ?? '',
-    contactPerson: map['contactPerson']?.toString() ?? '',
+    contactPerson: formatPersonName(map['contactPerson']?.toString()),
     createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime(1970) : DateTime(1970),
     dresDomaci: map['dresDomaci']?.toString() ?? '',
     dresGostujuci: map['dresGostujuci']?.toString() ?? '',
     email: map['email']?.toString() ?? '',
-    teamLead: map['teamLead']?.toString() ?? '',
-    trainer: map['trainer']?.toString() ?? '',
+    teamLead: formatPersonName(map['teamLead']?.toString()),
+    trainer: formatPersonName(map['trainer']?.toString()),
   );
 
   /// Returns a copy with players populated

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 
 class FavoriteItem {
   final String entityId;
@@ -53,7 +54,11 @@ class FavoriteItem {
   factory FavoriteItem.fromMap(Map<String, dynamic> map) => FavoriteItem(
         entityId: map['entityId'] as String,
         type: map['type'] as String,
-        name: map['name'] as String,
+        // Player favorites store the name as the admin typed it; club names
+        // must stay verbatim (the FCM topic is derived from them).
+        name: map['type'] == 'player'
+            ? formatPersonName(map['name'] as String)
+            : map['name'] as String,
         imageUrl: map['imageUrl'] as String? ?? '',
         leagueId: map['leagueId'] as String,
         leagueName: map['leagueName'] as String? ?? '',

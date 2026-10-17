@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 class MatchPlayer {
   final String id;
   final String name;
@@ -14,14 +16,14 @@ class MatchPlayer {
 
   factory MatchPlayer.fromJson(Map<String, dynamic> map) => MatchPlayer(
         id: map['id']?.toString() ?? '',
-        name: map['name']?.toString() ?? '',
+        name: formatPersonName(map['name']?.toString()),
         isProfessional: map['isProfessional'] == true,
       );
 
   factory MatchPlayer.fromFirestore(Map<String, dynamic> map) {
     return MatchPlayer(
       id: map['id'] ?? '',
-      name: map['name'] ?? '',
+      name: formatPersonName(map['name']?.toString()),
       isProfessional: map['isProfessional'] == true,
     );
   }

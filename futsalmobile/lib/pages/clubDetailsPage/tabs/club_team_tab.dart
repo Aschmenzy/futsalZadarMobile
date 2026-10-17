@@ -4,6 +4,7 @@ import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
+import 'package:futsalmobile/models/team_lead_data.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/teamLead_container.dart';
 import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
@@ -32,6 +33,7 @@ class ClubTeamTab extends StatefulWidget {
 class _ClubTeamTabState extends State<ClubTeamTab> {
   final _service = FirebaseService();
   List<PlayerData> _players = [];
+  List<TeamLeadData> _teamLeads = [];
 
   /// playerId -> last round of a ban still running.
   Map<String, int> _suspendedUntil = {};
@@ -43,6 +45,17 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
     super.initState();
     _loadPlayers();
     _loadSuspensions();
+    _loadTeamLeads();
+  }
+
+  Future<void> _loadTeamLeads() async {
+    final leads = await _service.getClubTeamLeads(
+      widget.clubData,
+      widget.leagueId,
+      season: widget.season,
+    );
+    if (!mounted) return;
+    setState(() => _teamLeads = leads);
   }
 
   Future<void> _loadSuspensions() async {
@@ -103,7 +116,7 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
 
                   TeamleadContainer(
                     screenHeight: screenHeight,
-                    teamLead: widget.clubData.teamLead,
+                    teamLeads: _teamLeads,
                   ),
 
                   const SizedBox(height: 10),

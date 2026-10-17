@@ -121,13 +121,20 @@ class ClubDetailsAppBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          clubName!,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
+                        // Long club names shrink to stay on one line
+                        // instead of wrapping into the tab bar.
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            clubName!,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontFamily: AppFonts.roboto,
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ],

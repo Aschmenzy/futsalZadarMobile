@@ -1,3 +1,5 @@
+import 'package:futsalmobile/utils/name_format.dart';
+
 class MatchEvent {
   final String type;        // "goal" | "ownGoal" | "yellowCard" | "redCard" | "timeout"
   final String team;        // "home" | "away"
@@ -35,7 +37,7 @@ class MatchEvent {
     team: map['team']?.toString() ?? '',
     period: map['period']?.toString() ?? '',
     playerId: map['playerId']?.toString() ?? '',
-    playerName: map['playerName']?.toString() ?? '',
+    playerName: formatPersonName(map['playerName']?.toString()),
     shirtNumber: map['shirtNumber']?.toString() ?? '',
     timeInMatch: (map['timeInMatch'] as num?)?.toInt() ?? 0,
     timestamp: map['timestamp'] != null ? (DateTime.tryParse(map['timestamp'].toString()) ?? DateTime.now()) : DateTime.now(),
@@ -47,7 +49,7 @@ class MatchEvent {
       team: map['team'] ?? '',
       period: map['period'] ?? '',
       playerId: map['playerId'] ?? '',
-      playerName: map['playerName'] ?? '',
+      playerName: formatPersonName(map['playerName']?.toString()),
       shirtNumber: map['shirtNumber'] ?? '',
       timeInMatch: map['timeInMatch'] ?? 0,
       timestamp: DateTime.parse(map['timestamp']),

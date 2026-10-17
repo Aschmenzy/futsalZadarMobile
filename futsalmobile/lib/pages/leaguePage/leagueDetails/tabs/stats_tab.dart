@@ -462,13 +462,16 @@ class _StatisticsTabState extends State<StatisticsTab> {
                           child: ClipOval(child: _clubLogo(player)),
                         ),
                         const SizedBox(width: 5),
-                        Text(
-                          player.clubName,
-                          style: TextStyle(
-                            fontFamily: AppFonts.roboto,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                        Flexible(
+                          child: Text(
+                            player.clubName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: AppFonts.roboto,
+                              fontWeight: FontWeight.w400,
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ),
                       ],

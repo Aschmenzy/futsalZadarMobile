@@ -2,6 +2,7 @@ import 'match_media.dart';
 import 'match_official.dart';
 import 'match_player.dart';
 import 'match_state.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 
 class MatchData {
   final String matchId;
@@ -156,7 +157,7 @@ class MatchData {
       awayTeam: map['awayTeam']?.toString() ?? '',
       awayTeamLogo: map['awayTeamLogo']?.toString() ?? '',
       awayTeamGoals: (map['awayTeamGoals'] as num?)?.toInt() ?? 0,
-      delegate: map['delegate']?.toString() ?? '',
+      delegate: formatPersonName(map['delegate']?.toString()),
       referee1: map['referee1']?.toString(),
       referee2: map['referee2']?.toString(),
       homeOfficials: MatchOfficial.listFrom(map['homeOfficials']),
@@ -222,7 +223,7 @@ class MatchData {
       awayTeam: map['awayTeam'] as String? ?? '',
       awayTeamLogo: map['awayTeamLogo'] as String? ?? '',
       awayTeamGoals: map['awayTeamGoals'] as int? ?? 0,
-      delegate: map['delegate'] as String? ?? '',
+      delegate: formatPersonName(map['delegate'] as String?),
       referee1: map['referee1'] as String?,
       referee2: map['referee2'] as String?,
       homeOfficials: MatchOfficial.listFrom(map['homeOfficials']),
