@@ -25,12 +25,18 @@ class _AppSearchBarState extends State<AppSearchBar> {
   OverlayEntry? _overlayEntry;
   List<PlayerSearchResult> _results = [];
   bool _navigating = false;
+  String? _activeSeason;
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
     _search.ensureIndexLoaded();
+    _firebase.getActiveSeason().then((s) {
+      if (!mounted) return;
+      _activeSeason = s;
+      _overlayEntry?.markNeedsBuild();
+    }).catchError((_) {});
   }
 
   @override
@@ -251,6 +257,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                     ),
                     itemBuilder: (_, i) => _ResultTile(
                       entry: _results[i],
+                      isInactive: !_results[i].isActiveIn(_activeSeason),
                       onTap: () => _onResultTap(_results[i]),
                     ),
                   ),
@@ -263,9 +270,14 @@ class _AppSearchBarState extends State<AppSearchBar> {
 
 class _ResultTile extends StatelessWidget {
   final PlayerSearchResult entry;
+  final bool isInactive;
   final VoidCallback onTap;
 
-  const _ResultTile({required this.entry, required this.onTap});
+  const _ResultTile({
+    required this.entry,
+    required this.isInactive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -322,23 +334,31 @@ class _ResultTile extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withAlpha(20),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'Igrač',
-                style: TextStyle(
-                  fontFamily: AppFonts.roboto,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ),
+            if (isInactive) ...[
+              _badge('Neaktivan', Colors.red.shade600),
+              const SizedBox(width: 4),
+            ],
+            _badge('Igrač', AppColors.secondary),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _badge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: AppFonts.roboto,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );

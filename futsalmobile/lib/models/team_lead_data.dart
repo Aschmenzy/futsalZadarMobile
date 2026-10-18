@@ -1,4 +1,5 @@
 import 'package:futsalmobile/utils/name_format.dart';
+import 'package:futsalmobile/utils/season.dart';
 
 /// A club's voditelj, from `{liga}/{clubId}/voditelji/{id}`. A club can have
 /// several. Older clubs only have the plain `teamLead` string on the club
@@ -26,14 +27,7 @@ class TeamLeadData {
 
   String get fullName => '$firstName $lastName'.trim();
 
-  bool isActiveIn(String? season) {
-    if (season == null || season.isEmpty) return true;
-    final key = _seasonKey(season);
-    return !inactiveSeasons.any((s) => _seasonKey(s) == key);
-  }
-
-  /// "2026/2027" and "2026-2027" are the same season.
-  static String _seasonKey(String s) => s.replaceAll(RegExp(r'[^0-9]'), '');
+  bool isActiveIn(String? season) => isActiveInSeason(inactiveSeasons, season);
 
   Map<String, dynamic> toJson() => {
     'id': id,

@@ -6,6 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/utils/name_format.dart';
+import 'package:futsalmobile/utils/season.dart';
 
 class PlayerSearchResult {
   final String id;
@@ -17,6 +18,7 @@ class PlayerSearchResult {
   final String clubId;
   final String clubName;
   final String? position;
+  final List<String> inactiveSeasons;
 
   const PlayerSearchResult({
     required this.id,
@@ -28,7 +30,10 @@ class PlayerSearchResult {
     required this.clubId,
     required this.clubName,
     this.position,
+    this.inactiveSeasons = const [],
   });
+
+  bool isActiveIn(String? season) => isActiveInSeason(inactiveSeasons, season);
 
   factory PlayerSearchResult.fromMap(Map<String, dynamic> m) {
     final first = formatPersonName(m['firstName']?.toString());
@@ -43,6 +48,9 @@ class PlayerSearchResult {
       clubId: m['_clubId']?.toString() ?? '',
       clubName: m['clubName']?.toString() ?? '',
       position: m['position']?.toString(),
+      inactiveSeasons: (m['inactiveSeasons'] as List? ?? [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 }

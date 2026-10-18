@@ -1,4 +1,5 @@
 import 'package:futsalmobile/utils/name_format.dart';
+import 'package:futsalmobile/utils/season.dart';
 
 class ClubHistoryEntry {
   final String clubId;
@@ -45,6 +46,9 @@ class PlayerData {
   final List<ClubHistoryEntry> clubHistory;
   final bool isProfessional;
 
+  /// Seasons the player is not active in (same ids as `config/app.activeSeason`).
+  final List<String> inactiveSeasons;
+
   const PlayerData({
     required this.id,
     required this.clubName,
@@ -60,9 +64,12 @@ class PlayerData {
     this.profilePicture = '',
     this.clubHistory = const [],
     this.isProfessional = false,
+    this.inactiveSeasons = const [],
   });
 
   String get fullName => '$firstName $lastName';
+
+  bool isActiveIn(String? season) => isActiveInSeason(inactiveSeasons, season);
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -79,6 +86,7 @@ class PlayerData {
     'profilePicture': profilePicture,
     'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
     'isProfessional': isProfessional,
+    'inactiveSeasons': inactiveSeasons,
   };
 
   factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
@@ -95,12 +103,16 @@ class PlayerData {
     thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
     profilePicture: map['profilePhoto']?.toString() ?? map['profilePicture']?.toString() ?? '',
     isProfessional: map['isProfessional'] == true,
+    inactiveSeasons: _parseSeasons(map['inactiveSeasons']),
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
         .map(
           (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
         )
         .toList(),
   );
+
+  static List<String> _parseSeasons(dynamic value) =>
+      (value as List? ?? []).map((e) => e.toString()).toList();
 
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime(1970);
@@ -155,6 +167,7 @@ class PlayerData {
       thisYearRegistrationDate: _parseDate(map['thisYearRegistrationDate']),
       profilePicture: map['profilePhoto']?.toString() ?? '',
       isProfessional: map['isProfessional'] == true,
+    inactiveSeasons: _parseSeasons(map['inactiveSeasons']),
       clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
           .map(
             (e) =>

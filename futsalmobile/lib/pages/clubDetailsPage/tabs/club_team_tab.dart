@@ -77,9 +77,11 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
         widget.leagueId,
         widget.clubData.id,
       );
+      final season = widget.season ?? await _service.getActiveSeason();
       if (!mounted) return;
       setState(() {
-        _players = players;
+        // Players the admin marked inactive this season are not in the squad.
+        _players = players.where((p) => p.isActiveIn(season)).toList();
         _loading = false;
       });
     } catch (e) {

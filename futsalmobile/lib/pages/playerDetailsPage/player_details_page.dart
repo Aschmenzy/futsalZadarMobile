@@ -9,6 +9,7 @@ import 'package:futsalmobile/pages/playerDetailsPage/widgets/player_details_app_
 import 'package:futsalmobile/pages/playerDetailsPage/widgets/stats_card.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/season.dart';
 import 'package:futsalmobile/widgets/pro_badge.dart';
 
 // clubId → logo URL resolved from the cached clubs data
@@ -38,12 +39,24 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
   PlayerStatsData? _stats;
   bool _loading = true;
   _LogoMap _historyLogos = {};
+  String? _activeSeason;
+
+  bool get _isInactive => !widget.player.isActiveIn(_activeSeason);
 
   @override
   void initState() {
     super.initState();
     _loadStats();
     _loadHistoryLogos();
+    _loadActiveSeason();
+  }
+
+  Future<void> _loadActiveSeason() async {
+    try {
+      final season = await _service.getActiveSeason();
+      if (!mounted) return;
+      setState(() => _activeSeason = season);
+    } catch (_) {}
   }
 
   Future<void> _loadStats() async {
@@ -293,7 +306,12 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              widget.player.season,
+                              // Inactive is tracked per active season, so
+                              // show that season rather than the
+                              // registration one.
+                              _isInactive
+                                  ? formatSeason(_activeSeason!)
+                                  : widget.player.season,
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto,
                                 fontSize: 15,
@@ -305,6 +323,28 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                             const SizedBox(width: 16),
                           ],
                         ),
+                        if (_isInactive) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade600.withAlpha(20),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Neaktivan',
+                              style: TextStyle(
+                                fontFamily: AppFonts.roboto,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.red.shade600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
