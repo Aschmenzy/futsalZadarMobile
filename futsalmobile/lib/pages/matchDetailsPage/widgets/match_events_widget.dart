@@ -73,12 +73,11 @@ class MatchEventsWidget extends StatelessWidget {
     }
 
     if (sections.isEmpty) {
-      if (match.isScheduled) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'Nema događaja',
+            match.isScheduled ? 'Utakmica još nije počela' : 'Nema događaja',
             style: TextStyle(
               fontFamily: AppFonts.roboto,
               color: AppColors.ternaryGray,

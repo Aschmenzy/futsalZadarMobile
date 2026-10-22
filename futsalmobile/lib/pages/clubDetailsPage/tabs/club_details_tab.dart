@@ -52,6 +52,8 @@ class ClubDetailsTab extends StatelessWidget {
                     screenHeight: screenHeight,
                     trainer: clubData.trainer,
                   ),
+
+                  SizedBox(height: screenHeight * 0.03),
                 ],
               ),
             ),

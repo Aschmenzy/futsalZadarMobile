@@ -38,7 +38,7 @@ class NextMatch extends StatelessWidget {
                     children: [
                       const Spacer(),
                       Text(
-                        'Sljedeca utakmica',
+                        'Sljedeća utakmica',
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
                           fontSize: screenWidth * 0.042,

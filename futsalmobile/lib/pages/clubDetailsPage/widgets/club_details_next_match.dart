@@ -49,7 +49,7 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
       if (!mounted) return;
 
       setState(() {
-        _error = 'Greska pri ucitavanju podataka $e';
+        _error = 'Greška pri učitavanju podataka';
         _loading = false;
       });
     }
@@ -87,7 +87,7 @@ class _ClubDetailsNextMatchState extends State<ClubDetailsNextMatch> {
                     children: [
                       const Spacer(),
                       Text(
-                        'Sljedeca utakmica',
+                        'Sljedeća utakmica',
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
                           fontSize: screenWidth * 0.042,

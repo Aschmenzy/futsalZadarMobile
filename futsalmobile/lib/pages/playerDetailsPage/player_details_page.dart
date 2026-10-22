@@ -225,6 +225,7 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
               child: Row(
                 children: [
                   Expanded(
+                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -277,9 +278,10 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                     ),
                   ),
 
-                  Spacer(),
+                  const SizedBox(width: 12),
 
                   Expanded(
+                    flex: 2,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -306,12 +308,12 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              // Inactive is tracked per active season, so
-                              // show that season rather than the
-                              // registration one.
-                              _isInactive
+                              // Stats and the inactive flag are both for the
+                              // active season, so show that rather than the
+                              // registration season stored on the player.
+                              _activeSeason != null
                                   ? formatSeason(_activeSeason!)
-                                  : widget.player.season,
+                                  : '',
                               style: TextStyle(
                                 fontFamily: AppFonts.roboto,
                                 fontSize: 15,

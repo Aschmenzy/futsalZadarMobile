@@ -189,6 +189,14 @@ class MatchData {
   bool get isPostponed => status == 'postponed';
   bool get isInterrupted => status == 'interrupted';
 
+  /// Earliest kickoff first. matchDate is only "YYYY-MM-DD", so matches on
+  /// the same day need matchTime ("HH:MM") to come out in the right order.
+  static int byKickoff(MatchData a, MatchData b) {
+    final byDate = a.matchDate.compareTo(b.matchDate);
+    if (byDate != 0) return byDate;
+    return a.matchTime.compareTo(b.matchTime);
+  }
+
   factory MatchData.fromFirestore(Map<String, dynamic> map, String docId) {
     Map<String, PlayerStats>? originalStats;
     if (map['originalPlayerStats'] != null) {

@@ -6,7 +6,6 @@ import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/models/league_data.dart';
 import 'package:futsalmobile/models/club_data.dart';
-import 'package:intl/intl.dart';
 
 class DetailsTab extends StatefulWidget {
   final LeagueData league;
@@ -51,7 +50,7 @@ class _DetailsTabState extends State<DetailsTab> {
       if (!mounted) return;
 
       setState(() {
-        _error = 'Greska pri ucitavanju podataka $e';
+        _error = 'Greška pri učitavanju podataka';
         _loading = false;
       });
     }
@@ -61,7 +60,6 @@ class _DetailsTabState extends State<DetailsTab> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final dateFormat = DateFormat('d.M.yyyy');
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
@@ -111,42 +109,6 @@ class _DetailsTabState extends State<DetailsTab> {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: LinearProgressIndicator(
-                                  value: _currentRound / 22,
-                                  minHeight: 8,
-                                  backgroundColor: Colors.grey.shade300,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                        Colors.blue,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    dateFormat.format(LeagueData.startDate),
-                                    style: TextStyle(
-                                      fontFamily: AppFonts.roboto,
-                                      fontSize: 12,
-                                      color: AppColors.ternaryGray,
-                                    ),
-                                  ),
-                                  Text(
-                                    dateFormat.format(LeagueData.endDate),
-                                    style: TextStyle(
-                                      fontFamily: AppFonts.roboto,
-                                      fontSize: 12,
-                                      color: AppColors.ternaryGray,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ],
                           ),
@@ -218,7 +180,7 @@ class _DetailsTabState extends State<DetailsTab> {
                   _buildRelatedLeagueCard(
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
-                    label: 'Visa liga',
+                    label: 'Viša liga',
                     leagueName: widget.league.higherLeagueName!,
                   ),
 
@@ -227,7 +189,7 @@ class _DetailsTabState extends State<DetailsTab> {
                   _buildRelatedLeagueCard(
                     screenWidth: screenWidth,
                     screenHeight: screenHeight,
-                    label: 'Niza liga',
+                    label: 'Niža liga',
                     leagueName: widget.league.lowerLeagueName!,
                   ),
 
@@ -263,13 +225,12 @@ class _DetailsTabState extends State<DetailsTab> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Container(
           width: double.infinity,
-          height: screenHeight * 0.09,
           decoration: BoxDecoration(
             color: AppColors.ternary,
             borderRadius: BorderRadius.circular(15),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,

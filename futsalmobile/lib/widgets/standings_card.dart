@@ -286,14 +286,14 @@ class _StandingsCardState extends State<StandingsCard> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Row(
         children: [
-          SizedBox(width: 32, child: Text('#', style: style)),
+          SizedBox(width: 24, child: Text('#', style: style)),
           Expanded(child: Text('Tim', style: style)),
-          _labelCell('P', style),
-          _labelCell('W', style),
-          _labelCell('D', style),
-          _labelCell('L', style),
-          _labelCell('DIFF', style, width: 48),
-          _labelCell('PTS', style, width: 40),
+          _labelCell('P', style, width: 24),
+          _labelCell('W', style, width: 24),
+          _labelCell('D', style, width: 24),
+          _labelCell('L', style, width: 24),
+          _labelCell('DIFF', style, width: 40),
+          _labelCell('PTS', style, width: 34),
         ],
       ),
     );
@@ -411,7 +411,7 @@ class _StandingsCardState extends State<StandingsCard> {
           child: Row(
             children: [
               SizedBox(
-                width: 32,
+                width: 24,
                 child: Text(
                   '$rank',
                   style: TextStyle(
@@ -429,28 +429,29 @@ class _StandingsCardState extends State<StandingsCard> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        club?.clubName ?? '',
+                        _tableName(club?.clubName),
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                           color: AppColors.primary,
                         ),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
               ),
-              _dataCell('${club?.matchesPlayed ?? ''}', dataStyle),
-              _dataCell('${club?.wins ?? ''}', dataStyle),
-              _dataCell('${club?.draws ?? ''}', dataStyle),
-              _dataCell('${club?.losses ?? ''}', dataStyle),
-              _dataCell(_diffText(club?.goalDifference), dataStyle, width: 48),
+              _dataCell('${club?.matchesPlayed ?? ''}', dataStyle, width: 24),
+              _dataCell('${club?.wins ?? ''}', dataStyle, width: 24),
+              _dataCell('${club?.draws ?? ''}', dataStyle, width: 24),
+              _dataCell('${club?.losses ?? ''}', dataStyle, width: 24),
+              _dataCell(_diffText(club?.goalDifference), dataStyle, width: 40),
               _dataCell(
                 '${club?.points ?? ''}',
                 dataStyle.copyWith(fontWeight: FontWeight.w700),
-                width: 40,
+                width: 34,
               ),
             ],
           ),
@@ -513,7 +514,7 @@ class _StandingsCardState extends State<StandingsCard> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        club?.clubName ?? '',
+                        _tableName(club?.clubName),
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
                           fontWeight: FontWeight.w600,
@@ -605,7 +606,7 @@ class _StandingsCardState extends State<StandingsCard> {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        club?.clubName ?? '',
+                        _tableName(club?.clubName),
                         style: TextStyle(
                           fontFamily: AppFonts.roboto,
                           fontWeight: FontWeight.w600,
@@ -701,6 +702,10 @@ class _StandingsCardState extends State<StandingsCard> {
       ),
     );
   }
+
+  /// Every club is "Mnk …", so the prefix only eats the narrow name column.
+  static String _tableName(String? name) =>
+      (name ?? '').replaceFirst(RegExp(r'^mnk\s+', caseSensitive: false), '');
 
   Widget _dataCell(String text, TextStyle style, {double width = 28}) {
     return SizedBox(

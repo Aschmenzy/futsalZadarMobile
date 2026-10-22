@@ -17,9 +17,6 @@ class LeagueData {
 
   int get teamCount => clubs.length;
 
-  static final DateTime startDate = DateTime(2025, 9, 15);
-  static final DateTime endDate = DateTime(2026, 6, 1);
-
   // 1st is highest, 4th is lowest
   String? get higherLeagueName =>
       leagueNumber > 1 ? '${leagueNumber - 1}. futsal liga Zadar' : null;

@@ -112,7 +112,7 @@ class _MatchesListWidgetState extends State<MatchesListWidget> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Greska pri ucitavanju: $e';
+        _error = 'Greška pri učitavanju utakmica';
         _loading = false;
       });
     }

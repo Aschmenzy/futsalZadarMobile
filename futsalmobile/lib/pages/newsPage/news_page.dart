@@ -51,7 +51,7 @@ class _NewsPageState extends State<NewsPage> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Greska pri ucitavanju vijesti';
+        _error = 'Greška pri učitavanju vijesti';
         _isLoading = false;
       });
     }

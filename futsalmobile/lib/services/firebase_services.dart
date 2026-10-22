@@ -516,11 +516,36 @@ class FirebaseService {
       await _cache.invalidate(cacheKey);
     }
 
+    // Screens often ask in parallel (e.g. details tab: next match + current
+    // round), and an invalidation wakes every listener at once. Share one
+    // download of the season's match list instead of paying for N.
+    return _matchesInFlight[seasonId] ??= _fetchAllMatches(
+      seasonId,
+      cacheKey,
+    ).whenComplete(() {
+      // Block body on purpose: remove() returns this very future, and
+      // whenComplete would wait on it — the future would never complete.
+      _matchesInFlight.remove(seasonId);
+    });
+  }
+
+  final Map<String, Future<Map<String, List<MatchData>>>> _matchesInFlight =
+      {};
+
+  Future<Map<String, List<MatchData>>> _fetchAllMatches(
+    String seasonId,
+    String cacheKey,
+  ) async {
     // Always bust the proxy cache on a Hive miss — we're hitting the API anyway,
     // and checkForUpdates() may have cleared Hive without going through the
     // startConfigWatcher path (cold-start after an admin update).
     final bust = '&_t=${DateTime.now().millisecondsSinceEpoch}';
-    final data = await _getMap('/api/public/matches?season=$seasonId$bust');
+    // slim=1 drops matchState (~3/4 of the payload). Only the match detail
+    // page needs it, and that page gets it from the detail endpoint or a
+    // one-shot Firestore read. Servers that don't know the flag ignore it.
+    final data = await _getMap(
+      '/api/public/matches?season=$seasonId&slim=1$bust',
+    );
 
     // Inject leagueCode (map key) and normalise matchId before parsing/caching,
     // so watchMatch can build the correct Firestore path.
@@ -594,7 +619,7 @@ class FirebaseService {
                         .isBefore(DateTime(today.year, today.month, today.day)),
               )
               .toList()
-            ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+            ..sort(MatchData.byKickoff);
       return upcoming.isEmpty ? null : upcoming.first;
     } catch (e) {
       throw Exception('Greska pri dohvatu sljedece utakmice: $e');
@@ -621,7 +646,7 @@ class FirebaseService {
                     (m.homeTeam == homeClub || m.awayTeam == homeClub),
               )
               .toList()
-            ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+            ..sort(MatchData.byKickoff);
       return upcoming.isEmpty ? null : upcoming.first;
     } catch (e) {
       throw Exception('Greska pri dohvatu sljedece utakmice kluba: $e');
@@ -643,7 +668,7 @@ class FirebaseService {
                     .isBefore(target),
               )
               .toList()
-            ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+            ..sort(MatchData.byKickoff);
       return upcoming.isEmpty ? null : upcoming.first;
     } catch (e) {
       throw Exception('Greska pri dohvatu najblize utakmice: $e');
@@ -674,7 +699,7 @@ class FirebaseService {
                 (m) => m.matchDate.substring(0, 10).compareTo(dateString) >= 0,
               )
               .toList()
-            ..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+            ..sort(MatchData.byKickoff);
       return filtered;
     } catch (e) {
       throw Exception('Greška pri dohvatu utakmica: $e');
@@ -931,7 +956,7 @@ class FirebaseService {
       final upcoming = [
         ...all.values.expand((m) => m).where(isUpcoming),
         ...playoffMatches.where(isUpcoming),
-      ]..sort((a, b) => a.matchDate.compareTo(b.matchDate));
+      ]..sort(MatchData.byKickoff);
 
       // Update Hive cache.
       final cacheKey = 'upcoming_matches_$seasonId';

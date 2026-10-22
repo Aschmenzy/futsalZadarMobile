@@ -71,7 +71,7 @@ class _FavoritesContent extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
-                    'Greška: ${starSnap.error}',
+                    'Greška pri učitavanju favorita',
                     style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
@@ -639,19 +639,35 @@ class _PlayerFavoriteCardState extends State<_PlayerFavoriteCard> {
             const SizedBox(height: 12),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
             const SizedBox(height: 10),
+            // Same colors as the player profile's stats card, so goals and
+            // matches read the same on both screens.
             Row(
               children: [
                 _StatBadge(
                   value: _stats!.totalGoals,
-                  color: AppColors.secondary,
+                  label: 'Golovi',
+                  color: AppColors.gameWon,
+                ),
+                const SizedBox(width: 8),
+                _StatBadge(
+                  value: _stats!.matchesPlayed,
+                  label: 'Utakmice',
+                  color: AppColors.gameDraw,
                 ),
                 const SizedBox(width: 8),
                 _StatBadge(
                   value: _stats!.yellowCards,
-                  color: AppColors.accentYellow,
+                  label: 'Žuti',
+                  color: AppColors.ternaryGray,
+                  cardColor: AppColors.accentYellow,
                 ),
                 const SizedBox(width: 8),
-                _StatBadge(value: _stats!.redCards, color: AppColors.accent),
+                _StatBadge(
+                  value: _stats!.redCards,
+                  label: 'Crveni',
+                  color: AppColors.ternaryGray,
+                  cardColor: AppColors.gameInterrupted,
+                ),
               ],
             ),
           ],
@@ -808,24 +824,67 @@ class _NextMatchColumn extends StatelessWidget {
 
 class _StatBadge extends StatelessWidget {
   final num value;
+  final String label;
   final Color color;
-  const _StatBadge({required this.value, required this.color});
+
+  /// Draws a small card shape next to the value (yellow / red cards).
+  final Color? cardColor;
+  const _StatBadge({
+    required this.value,
+    required this.label,
+    required this.color,
+    this.cardColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '$value',
-        style: TextStyle(
-          fontFamily: AppFonts.roboto,
-          fontSize: 16,
-          fontWeight: FontWeight.w800,
-          color: color,
+    final valueColor = cardColor != null ? AppColors.primary : color;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (cardColor != null) ...[
+                  Container(
+                    width: 9,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  '${value.toInt()}',
+                  style: TextStyle(
+                    fontFamily: AppFonts.roboto,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: valueColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: AppFonts.roboto,
+                fontSize: 11,
+                color: cardColor != null ? AppColors.ternaryGray : color,
+              ),
+            ),
+          ],
         ),
       ),
     );

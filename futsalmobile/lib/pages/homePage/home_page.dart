@@ -6,6 +6,7 @@ import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/pages/legal/legal_page.dart';
 import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
+import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsDetails/news_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
 import 'package:futsalmobile/widgets/news_container.dart';
@@ -130,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                         }
                         return Center(
                           child: Text(
-                            'Greška pri učitavanju utakmica: ${snapshot.error}',
+                            'Greška pri učitavanju utakmica',
                           ),
                         );
                       }
@@ -235,7 +236,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMatchTile(MatchData match) {
-    if (match.isLive || match.status == 'paused') {
+    if (isRunningStatus(match.status)) {
       return StreamBuilder<MatchData>(
         stream: _service.watchMatch(match),
         initialData: match,
@@ -255,7 +256,7 @@ class _HomePageState extends State<HomePage> {
               team1Score: m.homeTeamGoals,
               team2Score: m.awayTeamGoals,
               footballArena: m.footballArena,
-              matchTime: _formatMatchDate(m.matchTime),
+              matchTime: m.matchTime,
             ),
           );
         },
@@ -275,7 +276,10 @@ class _HomePageState extends State<HomePage> {
         team1Score: match.homeTeamGoals,
         team2Score: match.awayTeamGoals,
         footballArena: match.footballArena,
-        matchTime: _formatMatchDate(match.matchTime),
+        matchTime: match.matchTime,
+        // Home mixes days (next matches can be days away), so show the date.
+        showMatchDate: true,
+        matchDate: match.matchDate,
       ),
     );
   }
@@ -292,9 +296,9 @@ class _HomePageState extends State<HomePage> {
     final referenceDateParsed = _parseMatchDate(referenceDate);
 
     for (final match in matches) {
-      if (match.status == 'ongoing') {
+      if (isRunningStatus(match.status)) {
         liveMatches.add(match);
-      } else if (match.matchDate.isNotEmpty) {
+      } else if (match.status == 'scheduled' && match.matchDate.isNotEmpty) {
         final matchDateTime = _parseMatchDate(match.matchDate);
         if (matchDateTime.isAfter(referenceDateParsed) ||
             _isSameDay(matchDateTime, referenceDateParsed)) {
@@ -303,12 +307,9 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    // Sort upcoming matches by date (closest first)
-    upcomingMatches.sort((a, b) {
-      final dateA = _parseMatchDate(a.matchDate);
-      final dateB = _parseMatchDate(b.matchDate);
-      return dateA.compareTo(dateB);
-    });
+    // Closest first — by date, then kickoff time within the day.
+    sortDayMatches(liveMatches);
+    sortDayMatches(upcomingMatches);
 
     // Return live matches first, then closest upcoming matches
     return [...liveMatches, ...upcomingMatches].take(2).toList();
@@ -327,17 +328,5 @@ class _HomePageState extends State<HomePage> {
     return date1.year == date2.year &&
         date1.month == date2.month &&
         date1.day == date2.day;
-  }
-
-  String _formatMatchDate(String dateString) {
-    try {
-      // Parse "2026-04-02" format
-      final date = DateTime.parse(dateString);
-      // Return "2.4.2026" format
-      return "${date.day}.${date.month}.${date.year}";
-    } catch (e) {
-      debugPrint('Error formatting date: $e');
-      return dateString;
-    }
   }
 }

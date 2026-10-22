@@ -30,7 +30,7 @@ class MatchRowWidget extends StatelessWidget {
     // the past kick-off time and label it "FT".
     if (match.isLive) return 'UŽIVO';
     if (match.status == 'paused') return 'PAUZA';
-    if (match.isAwarded) return 'Dodjeljena';
+    if (match.isAwarded) return 'Dodijeljena';
     if (match.isPostponed) return 'Odgođena';
     if (match.isInterrupted) return 'Prekinuta';
     return _formatTime(match.matchDate, match.matchTime);
