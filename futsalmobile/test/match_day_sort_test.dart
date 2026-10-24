@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
-import 'package:futsalmobile/pages/matchesPage/match_page.dart';
+import 'package:futsalmobile/utils/match_order.dart';
 
 MatchData _m(String id, String status, String time) => MatchData.fromJson({
   'matchId': id,

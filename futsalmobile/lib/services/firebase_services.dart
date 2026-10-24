@@ -361,10 +361,11 @@ class FirebaseService {
     }
   }
 
-  /// Voditelji of a club active in [season], read from the club's
-  /// `voditelji` subcollection (a handful of docs, only when a club page is
-  /// opened). Falls back to the club record's `teamLead` string for clubs
-  /// that have no voditelji docs yet.
+  /// Voditelji of a club active in [season], from /api/public/voditelji (the
+  /// liga collections are closed to the app by Firestore rules, and the docs
+  /// hold private fields). Only fetched when a club page is opened. Falls
+  /// back to the club record's `teamLead` string for clubs that have no
+  /// voditelji yet.
   Future<List<TeamLeadData>> getClubTeamLeads(
     ClubData club,
     String leagueId, {
@@ -382,14 +383,16 @@ class FirebaseService {
           .toList();
     } else {
       try {
-        final snap = await _db
-            .collection(leagueId)
-            .doc(club.id)
-            .collection('voditelji')
-            .get();
+        final list = await _getList(
+          '/api/public/voditelji?league=$leagueId&club=${club.id}',
+        );
         all =
-            snap.docs
-                .map((d) => TeamLeadData.fromJson({...d.data(), 'id': d.id}))
+            list
+                .map(
+                  (e) => TeamLeadData.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
                 .where((t) => t.fullName.isNotEmpty)
                 .toList()
               ..sort((a, b) => a.fullName.compareTo(b.fullName));

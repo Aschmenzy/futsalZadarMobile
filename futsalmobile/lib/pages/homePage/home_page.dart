@@ -6,9 +6,9 @@ import 'package:futsalmobile/models/leaugePage/matchData/match_data.dart';
 import 'package:futsalmobile/models/news/news_data.dart';
 import 'package:futsalmobile/pages/legal/legal_page.dart';
 import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
-import 'package:futsalmobile/pages/matchesPage/match_page.dart';
 import 'package:futsalmobile/pages/newsDetails/news_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/match_order.dart';
 import 'package:futsalmobile/widgets/news_container.dart';
 import 'package:futsalmobile/widgets/search_bar_widget.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
@@ -28,6 +28,12 @@ class _HomePageState extends State<HomePage> {
   late Stream<List<MatchData>> _matchesStream;
   List<MatchData>? _cachedMatches;
   StreamSubscription? _invalidationSub;
+
+  /// Drops a "live" match from the list as soon as its doc says it ended,
+  /// even if the API list still reports it as ongoing.
+  late final _live = LiveStatusTracker(() {
+    if (mounted) setState(() {});
+  });
 
   @override
   void initState() {
@@ -50,6 +56,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _invalidationSub?.cancel();
+    _live.dispose();
     super.dispose();
   }
 
@@ -220,6 +227,7 @@ class _HomePageState extends State<HomePage> {
 
   /// Build matches list from cached or new data
   Widget _buildMatchesList(List<MatchData> matches) {
+    _live.watch(matches);
     final filtered = _filterMatchesClosestToDate(
       matches,
       DateTime.now().toIso8601String(),
@@ -296,9 +304,10 @@ class _HomePageState extends State<HomePage> {
     final referenceDateParsed = _parseMatchDate(referenceDate);
 
     for (final match in matches) {
-      if (isRunningStatus(match.status)) {
+      final status = _live.statusOf(match);
+      if (isRunningStatus(status)) {
         liveMatches.add(match);
-      } else if (match.status == 'scheduled' && match.matchDate.isNotEmpty) {
+      } else if (status == 'scheduled' && match.matchDate.isNotEmpty) {
         final matchDateTime = _parseMatchDate(match.matchDate);
         if (matchDateTime.isAfter(referenceDateParsed) ||
             _isSameDay(matchDateTime, referenceDateParsed)) {

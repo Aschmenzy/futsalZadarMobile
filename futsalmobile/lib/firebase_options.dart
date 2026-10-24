@@ -49,10 +49,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDHvkHVzVEq9dcq71UfGpCH4wzQErbiXjU',
-    appId: '1:723278264803:ios:1b948e4eeddcda365148d6',
+    appId: '1:723278264803:ios:1f6fce55cbabaf4b5148d6',
     messagingSenderId: '723278264803',
     projectId: 'fucalzadar',
     storageBucket: 'fucalzadar.firebasestorage.app',
-    iosBundleId: 'com.example.futsalmobile',
+    iosBundleId: 'hr.futsalzadar.app',
   );
 }

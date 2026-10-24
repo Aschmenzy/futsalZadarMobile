@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/favorite_item.dart';
@@ -8,34 +6,10 @@ import 'package:futsalmobile/pages/matchDetailsPage/match_details_page.dart';
 import 'package:futsalmobile/pages/matchesPage/widgets/calendar_container.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/match_order.dart';
 import 'package:futsalmobile/widgets/shimmer_loading.dart';
 import 'package:futsalmobile/widgets/sponsors_banner.dart';
 import 'package:futsalmobile/widgets/utakmica_container.dart';
-
-bool isRunningStatus(String status) =>
-    status == 'ongoing' || status == 'paused';
-
-/// Live and paused first, then not yet started, then everything that is
-/// over (finished, awarded, postponed, interrupted).
-int _statusRank(String status) {
-  if (isRunningStatus(status)) return 0;
-  if (status == 'scheduled') return 1;
-  return 2;
-}
-
-/// Orders one day's matches: live → upcoming → finished, each by kickoff.
-/// [statusOf] lets the page supply a fresher status than the list's.
-void sortDayMatches(
-  List<MatchData> matches, {
-  String Function(MatchData)? statusOf,
-}) {
-  final status = statusOf ?? (MatchData m) => m.status;
-  matches.sort((a, b) {
-    final byStatus = _statusRank(status(a)).compareTo(_statusRank(status(b)));
-    if (byStatus != 0) return byStatus;
-    return MatchData.byKickoff(a, b);
-  });
-}
 
 class MatchPage extends StatefulWidget {
   const MatchPage({super.key});
@@ -52,11 +26,11 @@ class _MatchPageState extends State<MatchPage> {
   List<MatchData>? _cachedMatches;
   DateTime _selectedDate = DateTime.now();
 
-  /// Latest Firestore status of the selected day's running matches. A match
-  /// finishing doesn't refresh the list right away, so this keeps the order
-  /// (live → upcoming → finished) correct while the page is open.
-  final Map<String, String> _liveStatus = {};
-  final Map<String, StreamSubscription<MatchData>> _liveSubs = {};
+  /// Keeps the day's order (live → upcoming → finished) right while the page
+  /// is open, even when a match ends before the list refreshes.
+  late final _live = LiveStatusTracker(() {
+    if (mounted) setState(() {});
+  });
 
   @override
   void initState() {
@@ -66,30 +40,8 @@ class _MatchPageState extends State<MatchPage> {
 
   @override
   void dispose() {
-    for (final sub in _liveSubs.values) {
-      sub.cancel();
-    }
+    _live.dispose();
     super.dispose();
-  }
-
-  String _statusOf(MatchData m) => _liveStatus[m.matchId] ?? m.status;
-
-  /// Listens to the day's running matches so a status change re-sorts the
-  /// list. Shares the Firestore listener with the live cards' StreamBuilders.
-  void _watchRunning(List<MatchData> dayMatches) {
-    final running = {
-      for (final m in dayMatches)
-        if (isRunningStatus(m.status)) m.matchId: m,
-    };
-    for (final id in _liveSubs.keys.toList()) {
-      if (!running.containsKey(id)) _liveSubs.remove(id)!.cancel();
-    }
-    for (final m in running.values) {
-      _liveSubs[m.matchId] ??= _service.watchMatch(m).listen((fresh) {
-        if (!mounted || _statusOf(m) == fresh.status) return;
-        setState(() => _liveStatus[m.matchId] = fresh.status);
-      }, onError: (_) {});
-    }
   }
 
   @override
@@ -195,14 +147,8 @@ class _MatchPageState extends State<MatchPage> {
 
   Widget _buildMatchesList(List<MatchData> matches, DateTime selectedDate) {
     final filtered = _filterMatchesByDate(matches, selectedDate);
-    // A newer list fetch is the source of truth again; only keep live
-    // statuses for matches the list still shows as running.
-    _liveStatus.removeWhere(
-      (id, _) =>
-          !filtered.any((m) => m.matchId == id && isRunningStatus(m.status)),
-    );
-    _watchRunning(filtered);
-    sortDayMatches(filtered, statusOf: _statusOf);
+    _live.watch(filtered);
+    sortDayMatches(filtered, statusOf: _live.statusOf);
 
     if (filtered.isEmpty) {
       return Center(

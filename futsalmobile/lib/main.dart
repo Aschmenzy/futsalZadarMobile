@@ -26,6 +26,18 @@ import 'package:futsalmobile/widgets/bottom_navigation_bar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'firebase_options.dart';
 
+// Dark status bar icons over the light page background. Pages with a blue
+// AppBar switch to light icons; this is what the others go back to.
+const _defaultOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.dark,
+  statusBarBrightness: Brightness.light,
+  systemNavigationBarColor: Colors.transparent,
+  systemNavigationBarDividerColor: Colors.transparent,
+  systemNavigationBarIconBrightness: Brightness.dark,
+  systemNavigationBarContrastEnforced: false,
+);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -33,17 +45,7 @@ void main() async {
   // explicitly and make both system bars transparent — pages already wrap
   // their content in SafeArea, and Scaffold pads the bottom nav bar itself.
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarContrastEnforced: false,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(_defaultOverlayStyle);
 
   await dotenv.load(fileName: '.env');
 
@@ -147,11 +149,16 @@ class MyApp extends StatelessWidget {
               installed != null &&
               minBuild != null &&
               installed < minBuild;
-          return Stack(
-            children: [
-              child!,
-              if (mustUpdate) const Positioned.fill(child: ForceUpdatePage()),
-            ],
+          // Without a region here, light icons left by a page with a blue
+          // AppBar stay after leaving it (white on white, e.g. match details).
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: _defaultOverlayStyle,
+            child: Stack(
+              children: [
+                child!,
+                if (mustUpdate) const Positioned.fill(child: ForceUpdatePage()),
+              ],
+            ),
           );
         },
       ),

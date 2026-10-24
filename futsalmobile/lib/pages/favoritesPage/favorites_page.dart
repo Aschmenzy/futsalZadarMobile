@@ -268,10 +268,13 @@ class _LeagueFavoriteCardState extends State<_LeagueFavoriteCard> {
                       value: _clubCount != null ? '$_clubCount' : '—',
                     ),
                     const SizedBox(width: 16),
-                    _InfoChip(
-                      icon: Icons.emoji_events_outlined,
-                      label: 'Vodeći tim:',
-                      value: _leader?.clubName ?? '—',
+                    // Long club names wrap instead of overflowing narrow phones
+                    Flexible(
+                      child: _InfoChip(
+                        icon: Icons.emoji_events_outlined,
+                        label: 'Vodeći tim:',
+                        value: _leader?.clubName ?? '—',
+                      ),
                     ),
                   ],
                 ),
@@ -978,6 +981,8 @@ class _InfoChip extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontFamily: AppFonts.roboto,
             fontSize: 13,
