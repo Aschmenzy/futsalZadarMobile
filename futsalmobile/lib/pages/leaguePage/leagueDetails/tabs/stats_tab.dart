@@ -6,10 +6,11 @@ import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_stats_data.dart';
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 import 'package:futsalmobile/widgets/pro_badge.dart';
 
-/// Player statistics for a league season. With [clubId] / [clubName] set it
-/// narrows to that club's players and leads with who is suspended right now.
+/// Player statistics for a league season, led by who is suspended right now.
+/// With [clubId] / [clubName] set it narrows to that club's players.
 class StatisticsTab extends StatefulWidget {
   final String leagueId;
   final String leagueName;
@@ -39,8 +40,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
   List<PlayerStatsData> _twoYellows = [];
   List<PlayerStatsData> _threeYellows = [];
 
-  /// Club view only: players banned right now, and playerId -> last round
-  /// they miss.
+  /// Players banned right now, and playerId -> last round they miss.
   List<PlayerStatsData> _suspended = [];
   Map<String, int> _suspendedUntil = {};
 
@@ -120,17 +120,15 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   Future<void> _loadData() async {
     try {
-      final Map<String, List<PlayerStatsData>> stats;
-      var suspended = <PlayerStatsData>[];
+      final List<PlayerStatsData> players;
       var suspendedUntil = <String, int>{};
       if (_isClubView) {
-        final players = await _service.getClubPlayerStats(
+        players = await _service.getClubPlayerStats(
           widget.leagueId,
           clubId: widget.clubId!,
           clubName: widget.clubName!,
           season: widget.season,
         );
-        stats = FirebaseService.groupPlayerStats(players);
         try {
           suspendedUntil = await _service.getSuspendedPlayers(
             widget.leagueId,
@@ -139,21 +137,30 @@ class _StatisticsTabState extends State<StatisticsTab> {
             season: widget.season,
           );
         } catch (_) {}
-        suspended =
-            players
-                .where((p) => suspendedUntil.containsKey(p.playerId))
-                .toList()
-              ..sort(
-                (a, b) => suspendedUntil[b.playerId]!.compareTo(
-                  suspendedUntil[a.playerId]!,
-                ),
-              );
       } else {
-        stats = await _service.getAllLeaguePlayerStats(
+        players = await _service.getLeaguePlayerStats(
           widget.leagueId,
           season: widget.season,
         );
+        try {
+          suspendedUntil = await _service.getLeagueSuspendedPlayers(
+            widget.leagueId,
+            season: widget.season,
+          );
+        } catch (_) {}
       }
+      final stats = FirebaseService.groupPlayerStats(players);
+      // Longest-running ban first, then by name.
+      final suspended =
+          players.where((p) => suspendedUntil.containsKey(p.playerId)).toList()
+            ..sort((a, b) {
+              final byRound = suspendedUntil[b.playerId]!.compareTo(
+                suspendedUntil[a.playerId]!,
+              );
+              return byRound != 0
+                  ? byRound
+                  : compareNames(a.playerFullName, b.playerFullName);
+            });
 
       if (!mounted) return;
       setState(() {
@@ -185,18 +192,16 @@ class _StatisticsTabState extends State<StatisticsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Column(
             children: [
-              // 0. Suspended players (club view)
-              if (_isClubView) ...[
-                _buildStatCard(
-                  title: 'Suspendirani igrači',
-                  titleIcon: Icons.block,
-                  titleColor: _suspendedColor,
-                  players: _suspended,
-                  trailing: (p) => _suspensionLabel(p),
-                  emptyText: 'Nema suspendiranih igrača',
-                ),
-                const SizedBox(height: 10),
-              ],
+              // 0. Suspended players
+              _buildStatCard(
+                title: 'Suspendirani igrači',
+                titleIcon: Icons.block,
+                titleColor: _suspendedColor,
+                players: _suspended,
+                trailing: (p) => _suspensionLabel(p),
+                emptyText: 'Nema suspendiranih igrača',
+              ),
+              const SizedBox(height: 10),
 
               // 1. Top Scorers
               _buildStatCard(

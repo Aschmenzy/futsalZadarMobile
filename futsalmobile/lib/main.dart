@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -143,9 +142,9 @@ class MyApp extends StatelessWidget {
         valueListenable: FirebaseService().minBuildNumber,
         builder: (context, minBuild, _) {
           final installed = kInstalledBuildNumber;
-          // Android only for now: the update button links to Google Play.
+          // One minBuildNumber gates both platforms, so raise it only once
+          // the new build is live on Google Play and the App Store.
           final mustUpdate =
-              Platform.isAndroid &&
               installed != null &&
               minBuild != null &&
               installed < minBuild;

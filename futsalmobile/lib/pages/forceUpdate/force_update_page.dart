@@ -1,8 +1,11 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _androidPackageId = 'hr.futsalzadar.app';
+const _appStoreId = '6826592607';
 
 /// Full-screen blocker shown when the installed build is below
 /// `minBuildNumber` in config/app. There is no way past it except updating.
@@ -10,6 +13,14 @@ class ForceUpdatePage extends StatelessWidget {
   const ForceUpdatePage({super.key});
 
   Future<void> _openStore() async {
+    if (Platform.isIOS) {
+      // https App Store links open straight in the App Store app on iOS.
+      await launchUrl(
+        Uri.parse('https://apps.apple.com/hr/app/futsal-zadar/id$_appStoreId'),
+        mode: LaunchMode.externalApplication,
+      );
+      return;
+    }
     // Play Store app first, browser as a fallback.
     final market = Uri.parse('market://details?id=$_androidPackageId');
     final web = Uri.parse(

@@ -11,9 +11,35 @@ initializeApp();
 
 const db = getFirestore("main");
 
-// Croatia is UTC+2 in summer, UTC+1 in winter.
-// Using a fixed +2 offset (daylight saving). Adjust if needed.
-const CROATIA_OFFSET_MS = 2 * 60 * 60 * 1000;
+// Croatia is UTC+2 in summer, UTC+1 in winter — derive the offset from the
+// Europe/Zagreb zone so DST switches are handled automatically.
+const CROATIA_TZ = "Europe/Zagreb";
+const zagrebFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: CROATIA_TZ,
+  hourCycle: "h23",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+// Offset of Croatian local time from UTC (ms) at the given instant.
+function croatiaOffsetMs(date) {
+  const parts = Object.fromEntries(
+    zagrebFormatter.formatToParts(date).map((p) => [p.type, p.value]),
+  );
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return asUTC - Math.floor(date.getTime() / 1000) * 1000;
+}
 
 // Matches the sanitization in Flutter's _topicFor()
 function sanitize(name) {
@@ -50,65 +76,76 @@ async function sendToTopic(topic, title, body) {
 // ── Goal notification ─────────────────────────────────────────────────────────
 // Fires on every match document update. Only sends if a goal was scored.
 
-exports.onGoalScored = onDocumentUpdated(
-  {
-    document: "seasons/{season}/leagues/{league}/matches/{matchId}",
-    database: "main",
-  },
-  async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
+// Regular season, playoff (Finale + Ligaška) and tournament match documents
+// share the same shape, so one handler serves all four triggers.
+async function handleGoalScored(event) {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
 
-    const homeGoalsBefore = before.homeTeamGoals ?? 0;
-    const awayGoalsBefore = before.awayTeamGoals ?? 0;
-    const homeGoalsAfter = after.homeTeamGoals ?? 0;
-    const awayGoalsAfter = after.awayTeamGoals ?? 0;
+  const homeGoalsBefore = before.homeTeamGoals ?? 0;
+  const awayGoalsBefore = before.awayTeamGoals ?? 0;
+  const homeGoalsAfter = after.homeTeamGoals ?? 0;
+  const awayGoalsAfter = after.awayTeamGoals ?? 0;
 
-    const homeScored = homeGoalsAfter > homeGoalsBefore;
-    const awayScored = awayGoalsAfter > awayGoalsBefore;
+  const homeScored = homeGoalsAfter > homeGoalsBefore;
+  const awayScored = awayGoalsAfter > awayGoalsBefore;
 
-    if (!homeScored && !awayScored) return null;
+  if (!homeScored && !awayScored) return null;
 
-    const matchId = event.params.matchId;
-    const scoringTeam = homeScored ? "home" : "away";
+  const matchId = event.params.matchId;
+  const scoringTeam = homeScored ? "home" : "away";
 
-    // Find the scorer from the events array
-    const events = after.matchState?.events ?? [];
-    const lastGoal = [...events]
-      .reverse()
-      .find((e) => e.type === "goal" && e.team === scoringTeam);
+  // Find the scorer from the events array
+  const events = after.matchState?.events ?? [];
+  const lastGoal = [...events]
+    .reverse()
+    .find((e) => e.type === "goal" && e.team === scoringTeam);
 
-    const scorerName = lastGoal?.playerName ?? null;
-    const scorerId = lastGoal?.playerId ?? null;
-    const minute = lastGoal?.timeInMatch ?? null;
-    const score = `${homeGoalsAfter}-${awayGoalsAfter}`;
-    const scoringTeamName = homeScored ? after.homeTeam : after.awayTeam;
+  const scorerName = lastGoal?.playerName ?? null;
+  const scorerId = lastGoal?.playerId ?? null;
+  const minute = lastGoal?.timeInMatch ?? null;
+  const score = `${homeGoalsAfter}-${awayGoalsAfter}`;
+  const scoringTeamName = homeScored ? after.homeTeam : after.awayTeam;
 
-    const title = `GOL! ${scoringTeamName}`;
-    const body = [
-      scorerName,
-      minute != null ? `${minute}'` : null,
-      `• ${after.homeTeam} ${score} ${after.awayTeam}`,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  const title = `GOL! ${scoringTeamName}`;
+  const body = [
+    scorerName,
+    minute != null ? `${minute}'` : null,
+    `• ${after.homeTeam} ${score} ${after.awayTeam}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    const sends = [
-      // Users who favorited this match directly
-      sendToTopic(matchTopic(matchId), title, body),
-      // Fans of the scoring club
-      sendToTopic(clubTopic(scoringTeamName), title, body),
-    ];
+  const sends = [
+    // Users who favorited this match directly
+    sendToTopic(matchTopic(matchId), title, body),
+    // Fans of the scoring club
+    sendToTopic(clubTopic(scoringTeamName), title, body),
+  ];
 
-    // Fans of the scorer (player notification)
-    if (scorerId) {
-      sends.push(sendToTopic(playerTopic(scorerId), title, body));
-    }
+  // Fans of the scorer (player notification)
+  if (scorerId) {
+    sends.push(sendToTopic(playerTopic(scorerId), title, body));
+  }
 
-    await Promise.all(sends);
-    return null;
-  },
-);
+  await Promise.all(sends);
+  return null;
+}
+
+const GOAL_TRIGGER_PATHS = {
+  onGoalScored: "seasons/{season}/leagues/{league}/matches/{matchId}",
+  onPlayoffGoalScored: "seasons/{season}/playoff/{playoffId}/matches/{matchId}",
+  onLigaskaGoalScored:
+    "seasons/{season}/playoff/{playoffId}/groups/{groupId}/matches/{matchId}",
+  onTournamentGoalScored: "tournaments/{tournamentId}/matches/{matchId}",
+};
+
+for (const [name, document] of Object.entries(GOAL_TRIGGER_PATHS)) {
+  exports[name] = onDocumentUpdated(
+    { document, database: "main" },
+    handleGoalScored,
+  );
+}
 
 // ── News published notification ───────────────────────────────────────────────
 // Fires when a news article becomes active (created active, or flipped
@@ -144,7 +181,7 @@ exports.matchReminder = onSchedule("every 5 minutes", async () => {
   const windowEnd = new Date(now.getTime() + 35 * 60 * 1000);
 
   // Today's date in Croatia timezone
-  const nowCroatia = new Date(now.getTime() + CROATIA_OFFSET_MS);
+  const nowCroatia = new Date(now.getTime() + croatiaOffsetMs(now));
   const todayStr = nowCroatia.toISOString().slice(0, 10);
 
   console.log(
@@ -181,7 +218,12 @@ exports.matchReminder = onSchedule("every 5 minutes", async () => {
     const [h, m] = matchTime.split(":").map(Number);
     const [year, month, day] = todayStr.split("-").map(Number);
 
-    const kickoffUTC = new Date(Date.UTC(year, month - 1, day, h - 2, m));
+    // Kickoff wall-clock time read as UTC, then shifted by Croatia's offset
+    // on that day (DST switches happen at night, never around kickoff).
+    const kickoffWall = new Date(Date.UTC(year, month - 1, day, h, m));
+    const kickoffUTC = new Date(
+      kickoffWall.getTime() - croatiaOffsetMs(kickoffWall),
+    );
 
     console.log(
       `[matchReminder] match=${matchId} matchTime=${matchTime} kickoffUTC=${kickoffUTC.toISOString()} inWindow=${kickoffUTC >= windowStart && kickoffUTC <= windowEnd}`,

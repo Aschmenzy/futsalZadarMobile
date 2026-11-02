@@ -20,6 +20,7 @@ import 'package:futsalmobile/models/news/news_paginated.dart';
 import 'package:futsalmobile/models/leaugePage/playerData/player_data.dart';
 import 'package:futsalmobile/services/cache_service.dart';
 import 'package:futsalmobile/services/shared_match_stream.dart';
+import 'package:futsalmobile/utils/name_format.dart';
 import 'package:http/http.dart' as http;
 import 'package:rxdart/rxdart.dart';
 
@@ -395,7 +396,7 @@ class FirebaseService {
                 )
                 .where((t) => t.fullName.isNotEmpty)
                 .toList()
-              ..sort((a, b) => a.fullName.compareTo(b.fullName));
+              ..sort((a, b) => compareNames(a.fullName, b.fullName));
         await _cache.setRaw(
           key,
           all.map((t) => t.toJson()).toList(),
@@ -456,7 +457,8 @@ class FirebaseService {
       return all
           .where((p) => p['_league'] == leagueId && p['_clubId'] == clubId)
           .map((e) => PlayerData.fromJson(e))
-          .toList();
+          .toList()
+        ..sort((a, b) => compareNames(a.fullName, b.fullName));
     } catch (e) {
       throw Exception('Greska pri dohvatu igraca: $e');
     }
@@ -680,10 +682,13 @@ class FirebaseService {
 
   Future<int> getCurrentRound(String leagueCode, {String? season}) async {
     try {
+      // Latest round that is scheduled or already played. Counting scheduled
+      // matches alone showed 0 between rounds, once everything was played
+      // and the next round wasn't drawn up yet.
       final matches = await getAllMatches(leagueCode, season: season);
-      final scheduled = matches.where((m) => m.status == 'scheduled').toList();
-      if (scheduled.isEmpty) return 0;
-      return scheduled.map((m) => m.round).reduce((a, b) => a > b ? a : b);
+      return matches
+          .where((m) => m.status == 'scheduled' || m.isPlayed)
+          .fold<int>(0, (last, m) => m.round > last ? m.round : last);
     } catch (e) {
       throw Exception('Greska pri dohvatu runde: $e');
     }
@@ -1084,6 +1089,12 @@ class FirebaseService {
     return groupPlayerStats(players);
   }
 
+  /// All stats rows of a league season, ungrouped.
+  Future<List<PlayerStatsData>> getLeaguePlayerStats(
+    String leagueCode, {
+    String? season,
+  }) => _loadLeagueStats(leagueCode, season: season);
+
   /// Stats rows of one club. Matched on club id, with the club name as a
   /// fallback for rows written before clubId was stored.
   Future<List<PlayerStatsData>> getClubPlayerStats(
@@ -1144,6 +1155,35 @@ class FirebaseService {
     return {
       for (final p in players)
         if (p.playerId.isNotEmpty && p.suspendedUntilRound.toInt() > lastRound)
+          p.playerId: p.suspendedUntilRound.toInt(),
+    };
+  }
+
+  /// League-wide [getSuspendedPlayers]: every player serving a ban right now,
+  /// as playerId → the last round they miss. Each ban is checked against the
+  /// last round played by the player's own club.
+  Future<Map<String, int>> getLeagueSuspendedPlayers(
+    String leagueCode, {
+    String? season,
+  }) async {
+    final players = await _loadLeagueStats(leagueCode, season: season);
+    final matches = await getAllMatches(leagueCode, season: season);
+    String key(String name) => name.trim().toLowerCase();
+
+    final lastRoundByClub = <String, int>{};
+    for (final m in matches) {
+      if (!m.isPlayed) continue;
+      for (final team in [m.homeTeam, m.awayTeam]) {
+        final k = key(team);
+        if (m.round > (lastRoundByClub[k] ?? 0)) lastRoundByClub[k] = m.round;
+      }
+    }
+
+    return {
+      for (final p in players)
+        if (p.playerId.isNotEmpty &&
+            p.suspendedUntilRound.toInt() >
+                (lastRoundByClub[key(p.clubName)] ?? 0))
           p.playerId: p.suspendedUntilRound.toInt(),
     };
   }
@@ -1496,7 +1536,7 @@ class FirebaseService {
           .map((e) =>
               TournamentPlayer.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      players.sort((a, b) => a.name.compareTo(b.name));
+      players.sort((a, b) => compareNames(a.name, b.name));
       return players;
     }
 
@@ -1511,7 +1551,7 @@ class FirebaseService {
       final players = snap.docs
           .map((d) => TournamentPlayer.fromFirestore(d.id, d.data()))
           .toList();
-      players.sort((a, b) => a.name.compareTo(b.name));
+      players.sort((a, b) => compareNames(a.name, b.name));
       await _cache.setRaw(
         cacheKey,
         players.map((p) => p.toJson()).toList(),

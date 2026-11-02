@@ -11,3 +11,24 @@ String formatPersonName(String? raw) {
     (m) => '${m[1]}${m[2]!.toUpperCase()}',
   );
 }
+
+// Croatian alphabet order for the diacritic letters: C < Č < Ć < D < Đ < E,
+// S < Š < T, Z < Ž. Each maps to its base letter plus a suffix above every
+// other character, so code-unit comparison sorts it after all words that
+// continue with the plain base letter ("Zoran" < "Žarko").
+const _croatianSortKeys = {
+  'č': 'c\uFFF0',
+  'ć': 'c\uFFF1',
+  'đ': 'd\uFFF0',
+  'š': 's\uFFF0',
+  'ž': 'z\uFFF0',
+};
+
+String _sortKey(String s) => s
+    .toLowerCase()
+    .split('')
+    .map((ch) => _croatianSortKeys[ch] ?? ch)
+    .join();
+
+/// Case-insensitive name comparison in Croatian alphabetical order.
+int compareNames(String a, String b) => _sortKey(a).compareTo(_sortKey(b));
