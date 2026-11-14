@@ -49,6 +49,11 @@ class PlayerData {
   /// Seasons the player is not active in (same ids as `config/app.activeSeason`).
   final List<String> inactiveSeasons;
 
+  /// Valid liječnički for the active season, computed by the admin API
+  /// (personal certificate or the club's batch upload). Null when the API
+  /// doesn't send it (older admin deploy) — the app then shows nothing.
+  final bool? hasMedical;
+
   const PlayerData({
     required this.id,
     required this.clubName,
@@ -65,6 +70,7 @@ class PlayerData {
     this.clubHistory = const [],
     this.isProfessional = false,
     this.inactiveSeasons = const [],
+    this.hasMedical,
   });
 
   String get fullName => '$firstName $lastName';
@@ -87,6 +93,7 @@ class PlayerData {
     'clubHistory': clubHistory.map((e) => e.toJson()).toList(),
     'isProfessional': isProfessional,
     'inactiveSeasons': inactiveSeasons,
+    'hasMedical': hasMedical,
   };
 
   factory PlayerData.fromJson(Map<String, dynamic> map) => PlayerData(
@@ -104,6 +111,7 @@ class PlayerData {
     profilePicture: map['profilePhoto']?.toString() ?? map['profilePicture']?.toString() ?? '',
     isProfessional: map['isProfessional'] == true,
     inactiveSeasons: _parseSeasons(map['inactiveSeasons']),
+    hasMedical: map['hasMedical'] is bool ? map['hasMedical'] as bool : null,
     clubHistory: (map['clubHistory'] as List<dynamic>? ?? [])
         .map(
           (e) => ClubHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),

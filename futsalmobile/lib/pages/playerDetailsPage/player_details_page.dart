@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsalmobile/widgets/medical_badge.dart';
 import 'package:futsalmobile/widgets/cached_image.dart';
 import 'package:futsalmobile/constants/constants.dart';
 import 'package:futsalmobile/models/club_data.dart';
@@ -344,6 +345,22 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
                                 fontWeight: FontWeight.w600,
                                 color: Colors.red.shade600,
                               ),
+                            ),
+                          ),
+                        ],
+                        // hasMedical is for the active season only.
+                        if (!_isInactive &&
+                            _activeSeason != null &&
+                            widget.player.hasMedical != null) ...[
+                          const SizedBox(height: 6),
+                          // The season column is narrow; shrink rather
+                          // than overflow on small screens.
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: MedicalBadge(
+                              hasMedical: widget.player.hasMedical!,
+                              fontSize: 12,
                             ),
                           ),
                         ],

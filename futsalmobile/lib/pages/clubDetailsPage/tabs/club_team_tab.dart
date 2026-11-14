@@ -10,6 +10,8 @@ import 'package:futsalmobile/pages/clubDetailsPage/widgets/trainer_container.dar
 import 'package:futsalmobile/pages/playerDetailsPage/player_details_page.dart';
 import 'package:futsalmobile/services/favorites_service.dart';
 import 'package:futsalmobile/services/firebase_services.dart';
+import 'package:futsalmobile/utils/season.dart';
+import 'package:futsalmobile/widgets/medical_badge.dart';
 import 'package:futsalmobile/widgets/pro_badge.dart';
 
 class ClubTeamTab extends StatefulWidget {
@@ -37,6 +39,10 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
 
   /// playerId -> last round of a ban still running.
   Map<String, int> _suspendedUntil = {};
+
+  /// Medical status is only known for the active season, so it's hidden
+  /// when browsing an older season's squad.
+  bool _showMedical = false;
   bool _loading = true;
   String? _error;
 
@@ -77,9 +83,13 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
         widget.leagueId,
         widget.clubData.id,
       );
-      final season = widget.season ?? await _service.getActiveSeason();
+      final activeSeason = await _service.getActiveSeason();
+      final season = widget.season ?? activeSeason;
       if (!mounted) return;
       setState(() {
+        _showMedical =
+            widget.season == null ||
+            seasonKey(widget.season!) == seasonKey(activeSeason);
         // Players the admin marked inactive this season are not in the squad.
         _players = players.where((p) => p.isActiveIn(season)).toList();
         _loading = false;
@@ -234,6 +244,10 @@ class _ClubTeamTabState extends State<ClubTeamTab> {
                       ],
                     ],
                   ),
+                  if (_showMedical && player.hasMedical != null) ...[
+                    const SizedBox(height: 4),
+                    MedicalBadge(hasMedical: player.hasMedical!),
+                  ],
                   if (_suspendedUntil[player.id] case final until?) ...[
                     const SizedBox(height: 3),
                     Text(
